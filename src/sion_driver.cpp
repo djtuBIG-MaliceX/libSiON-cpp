@@ -6,9 +6,9 @@
 
 #include "sion_driver.h"
 
-#include <godot_cpp/classes/time.hpp>
-#include <godot_cpp/core/math.hpp>
-#include <godot_cpp/variant/packed_vector2_array.hpp>
+//#include <godot_cpp/classes/time.hpp>
+//#include <godot_cpp/core/math.hpp>
+//#include <godot_cpp/variant/packed_vector2_array.hpp>
 
 #include "sion_data.h"
 #include "sion_enums.h"
@@ -47,51 +47,51 @@ bool SiONDriver::_allow_multiple_drivers = false;
 
 // Data.
 
-Ref<SiOPMWaveTable> SiONDriver::set_wave_table(int p_index, Vector<double> p_table) {
+std::shared_ptr<SiOPMWaveTable> SiONDriver::set_wave_table(int p_index, std::vector<double> p_table) {
 	int bits = -1;
 	for (int i = p_table.size(); i > 0; i >>= 1) {
 		bits += 1;
 	}
 
 	if (bits < 2) {
-		return Ref<SiOPMWaveTable>();
+		return std::shared_ptr<SiOPMWaveTable>();
 	}
 
-	Vector<int> wave_data = TransformerUtil::transform_pcm_data(p_table, 1);
-	wave_data.resize_zeroed(1 << bits);
+	std::vector<int> wave_data = TransformerUtil::transform_pcm_data(p_table, 1);
+	wave_data.resize(1 << bits); // TODO zeroed?
 
-	Ref<SiOPMWaveTable> wave_table = memnew(SiOPMWaveTable(wave_data));
+	std::shared_ptr<SiOPMWaveTable> wave_table = memnew(SiOPMWaveTable(wave_data));
 	SiOPMRefTable::get_instance()->register_wave_table(p_index, wave_table);
 	return wave_table;
 }
 
-Ref<SiOPMWavePCMData> SiONDriver::set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_num, int p_channel_num) {
-	Ref<SiMMLVoice> pcm_voice = SiOPMRefTable::get_instance()->get_global_pcm_voice(p_index & (SiOPMRefTable::PCM_DATA_MAX - 1));
-	Ref<SiOPMWavePCMTable> pcm_table = pcm_voice->get_wave_data();
-	Ref<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, (int)(p_sampling_note * 64), p_src_channel_num, p_channel_num));
+std::shared_ptr<SiOPMWavePCMData> SiONDriver::set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_num, int p_channel_num) {
+	std::shared_ptr<SiMMLVoice> pcm_voice = SiOPMRefTable::get_instance()->get_global_pcm_voice(p_index & (SiOPMRefTable::PCM_DATA_MAX - 1));
+	std::shared_ptr<SiOPMWavePCMTable> pcm_table = pcm_voice->get_wave_data();
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, (int)(p_sampling_note * 64), p_src_channel_num, p_channel_num));
 
 	pcm_table->set_key_range_data(pcm_data, p_key_range_from, p_key_range_to);
 	return pcm_data;
 }
 
-Ref<SiOPMWaveSamplerData> SiONDriver::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_num, int p_channel_num) {
+std::shared_ptr<SiOPMWaveSamplerData> SiONDriver::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_num, int p_channel_num) {
 	return SiOPMRefTable::get_instance()->register_sampler_data(p_index, p_data, p_ignore_note_off, p_pan, p_src_channel_num, p_channel_num);
 }
 
-void SiONDriver::set_pcm_voice(int p_index, const Ref<SiONVoice> &p_voice) {
+void SiONDriver::set_pcm_voice(int p_index, const std::shared_ptr<SiONVoice> &p_voice) {
 	SiOPMRefTable::get_instance()->set_global_pcm_voice(p_index & (SiOPMRefTable::PCM_DATA_MAX - 1), p_voice);
 }
 
-void SiONDriver::set_sampler_table(int p_bank, const Ref<SiOPMWaveSamplerTable> &p_table) {
-	SiOPMRefTable::get_instance()->sampler_tables.write[p_bank & (SiOPMRefTable::SAMPLER_TABLE_MAX - 1)] = p_table;
+void SiONDriver::set_sampler_table(int p_bank, const std::shared_ptr<SiOPMWaveSamplerTable> &p_table) {
+	SiOPMRefTable::get_instance()->sampler_tables[p_bank & (SiOPMRefTable::SAMPLER_TABLE_MAX - 1)] = p_table;
 }
 
-void SiONDriver::set_envelope_table(int p_index, Vector<int> p_table, int p_loop_point) {
+void SiONDriver::set_envelope_table(int p_index, std::vector<int> p_table, int p_loop_point) {
 	SiMMLRefTable::get_instance()->register_master_envelope_table(p_index, memnew(SiMMLEnvelopeTable(p_table, p_loop_point)));
 }
 
-void SiONDriver::set_voice(int p_index, const Ref<SiONVoice> &p_voice) {
-	ERR_FAIL_COND_MSG(!p_voice->is_suitable_for_fm_voice(), "SiONDriver: Cannot register a voice that is not suitable to be an FM voice.");
+void SiONDriver::set_voice(int p_index, const std::shared_ptr<SiONVoice> &p_voice) {
+	////ERR_FAIL_COND_MSG(!p_voice->is_suitable_for_fm_voice(), "SiONDriver: Cannot register a voice that is not suitable to be an FM voice.");
 
 	SiMMLRefTable::get_instance()->register_master_voice(p_index, p_voice);
 }
@@ -114,12 +114,12 @@ void SiONDriver::notify_user_defined_track(int p_event_trigger_id, int p_note) {
 
 // Background sound.
 
-void SiONDriver::_set_background_sample(const Ref<AudioStream> &p_sound) {
+void SiONDriver::_set_background_sample(const std::shared_ptr<AudioStream> &p_sound) {
 	_background_sample = p_sound;
 	if (_background_sample.is_valid()) {
-		_background_sample_data = Ref<SiOPMWaveSamplerData>(memnew(SiOPMWaveSamplerData(_background_sample, true)));
+		_background_sample_data = std::shared_ptr<SiOPMWaveSamplerData>(memnew(SiOPMWaveSamplerData(_background_sample, true)));
 	} else {
-		_background_sample_data = Ref<SiOPMWaveSamplerData>();
+		_background_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
 	}
 
 	if (_is_streaming) {
@@ -127,7 +127,7 @@ void SiONDriver::_set_background_sample(const Ref<AudioStream> &p_sound) {
 	}
 }
 
-void SiONDriver::set_background_sample(const Ref<AudioStream> &p_sound, double p_mix_level, double p_loop_point) {
+void SiONDriver::set_background_sample(const std::shared_ptr<AudioStream> &p_sound, double p_mix_level, double p_loop_point) {
 	set_background_sample_volume(p_mix_level);
 	_background_loop_point = p_loop_point;
 	_set_background_sample(p_sound);
@@ -172,7 +172,7 @@ void SiONDriver::_start_background_sample() {
 
 		end_frame = _background_total_fade_frames;
 	} else {
-		_background_voice->set_wave_data(Ref<SiOPMWaveBase>());
+		_background_voice->set_wave_data(std::shared_ptr<SiOPMWaveBase>());
 		_background_loop_point = -1;
 		end_frame = _background_fade_out_frames + _background_fade_gap_frames;
 	}
@@ -197,7 +197,7 @@ void SiONDriver::_fade_background_callback(double p_value) {
 	if (_background_fade_out_track) {
 		if (_background_fade_out_frames > 0) {
 			fade_out = 1.0 - p_value / _background_fade_out_frames;
-			fade_out = CLAMP(fade_out, 0, 1);
+			fade_out = std::clamp(fade_out, 0, 1);
 		}
 
 		_background_fade_out_track->set_expression(fade_out * 128);
@@ -206,7 +206,7 @@ void SiONDriver::_fade_background_callback(double p_value) {
 	if (_background_track) {
 		if (_background_fade_in_frames > 0) {
 			fade_in = 1.0 - (_background_total_fade_frames - p_value) / _background_fade_in_frames;
-			fade_in = CLAMP(fade_in, 0, 1);
+			fade_in = std::clamp(fade_in, 0, 1);
 		} else {
 			fade_in = 1.0;
 		}
@@ -280,7 +280,7 @@ int SiONDriver::get_max_track_count() const {
 }
 
 void SiONDriver::set_max_track_count(int p_value) {
-	ERR_FAIL_COND_MSG(p_value < 1, "SiONDriver: Max track limit cannot be lower than 1.");
+	////ERR_FAIL_COND_MSG(p_value < 1, "SiONDriver: Max track limit cannot be lower than 1.");
 
 	sequencer->set_max_track_count(p_value);
 }
@@ -295,7 +295,7 @@ double SiONDriver::get_volume() const {
 }
 
 void SiONDriver::set_volume(double p_value) {
-	ERR_FAIL_COND_MSG(p_value < 0 || p_value > 1, "SiONDriver: Volume must be between 0.0 and 1.0 (inclusive).");
+	////ERR_FAIL_COND_MSG(p_value < 0 || p_value > 1, "SiONDriver: Volume must be between 0.0 and 1.0 (inclusive).");
 
 	_master_volume = p_value;
 	_update_volume();
@@ -310,7 +310,7 @@ void SiONDriver::set_bpm(double p_value) {
 	// with no discernible beat in earshot. But having no limit at all for the API feels strange. Besides, we don't have
 	// infinitely scalable performance. So as a compromise you can set the BPM to up to 4000 beats per minute.
 	// You're welcome!
-	ERR_FAIL_COND_MSG(p_value < 1 || p_value > 4000, "SiONDriver: BPM must be between 1 and 4000 (inclusive).");
+	////ERR_FAIL_COND_MSG(p_value < 1 || p_value > 4000, "SiONDriver: BPM must be between 1 and 4000 (inclusive).");
 
 	sequencer->set_effective_bpm(p_value);
 }
@@ -318,7 +318,7 @@ void SiONDriver::set_bpm(double p_value) {
 // Streaming and rendering.
 
 void SiONDriver::set_note_on_exception_mode(ExceptionMode p_mode) {
-	ERR_FAIL_INDEX(p_mode, NEM_MAX);
+	////ERR_FAIL_INDEX(p_mode, NEM_MAX);
 
 	_note_on_exception_mode = p_mode;
 }
@@ -335,10 +335,10 @@ void SiONDriver::set_start_position(double p_value) {
 	}
 }
 
-bool SiONDriver::_parse_system_command(const List<Ref<MMLSystemCommand>> &p_system_commands) {
+bool SiONDriver::_parse_system_command(const List<std::shared_ptr<MMLSystemCommand>> &p_system_commands) {
 	bool effect_set = false;
 
-	for (const Ref<MMLSystemCommand> &command : p_system_commands) {
+	for (const std::shared_ptr<MMLSystemCommand> &command : p_system_commands) {
 		if (command->command == "#EFFECT") {
 			effect_set = true;
 			effector->parse_global_effect_mml(command->number, command->content, command->postfix);
@@ -351,8 +351,8 @@ bool SiONDriver::_parse_system_command(const List<Ref<MMLSystemCommand>> &p_syst
 	return effect_set;
 }
 
-void SiONDriver::_prepare_compile(String p_mml, const Ref<SiONData> &p_data) {
-	ERR_FAIL_COND(p_data.is_null());
+void SiONDriver::_prepare_compile(std::string p_mml, const std::shared_ptr<SiONData> &p_data) {
+	////ERR_FAIL_COND(p_data.is_null());
 
 	p_data->clear();
 	_data = p_data;
@@ -368,7 +368,7 @@ void SiONDriver::_prepare_render(const Variant &p_data, int p_buffer_size, int p
 	_prepare_process(p_data, p_reset_effector);
 
 	_render_buffer.clear();
-	_render_buffer.resize_zeroed(p_buffer_size);
+	_render_buffer.resize(p_buffer_size); // TODO zeroed
 
 	_render_buffer_channel_num = (p_buffer_channel_num == 2 ? 2 : 1);
 	_render_buffer_size_max = p_buffer_size;
@@ -400,19 +400,19 @@ bool SiONDriver::_rendering() {
 
 	// Extend the buffer.
 	if (_render_buffer.size() < (_render_buffer_index + buffer_extension)) {
-		_render_buffer.resize_zeroed(_render_buffer_index + buffer_extension);
+		_render_buffer.resize(_render_buffer_index + buffer_extension); // TODO zeroed
 	}
 
 	// Read the output.
-	Vector<double> *output_buffer = sound_chip->get_output_buffer_ptr();
+	std::vector<double> *output_buffer = sound_chip->get_output_buffer_ptr();
 
 	if (_render_buffer_channel_num == 2) {
 		for (int i = 0, j = _render_buffer_index; i < rendering_length && j < _render_buffer.size(); i++, j++) {
-			_render_buffer.write[j] = (*output_buffer)[i];
+			_render_buffer[j] = (*output_buffer)[i];
 		}
 	} else {
 		for (int i = 0, j = _render_buffer_index; i < rendering_length && j < _render_buffer.size(); i += 2, j++) {
-			_render_buffer.write[j] = (*output_buffer)[i];
+			_render_buffer[j] = (*output_buffer)[i];
 		}
 	}
 
@@ -438,12 +438,12 @@ void SiONDriver::_streaming() {
 	// _performance_stats.streaming_latency = (event.position * 0.022675736961451247 - channel.position) * 1000;
 
 	_in_streaming_process = true;
-	PackedVector2Array stream_buffer;
+	Packedstd::vector2Array stream_buffer;
 
 	if (_is_paused || _suspend_streaming) {
 		// Zero-fill when there is nothing to write.
 		for (int i = 0; i < _buffer_length; i++) {
-			stream_buffer.push_back(Vector2(0, 0));
+			stream_buffer.push_back(std::vector2(0, 0));
 		}
 		_audio_playback->push_buffer(stream_buffer);
 
@@ -464,7 +464,7 @@ void SiONDriver::_streaming() {
 	// Calculate an average processing time.
 
 	const int frame_time = Time::get_singleton()->get_ticks_msec() - start_time;
-	SinglyLinkedList<int>::Element *frame_record = _performance_stats.processing_time_data->get();
+	std::forward_list<int>::Element *frame_record = _performance_stats.processing_time_data->get();
 	_performance_stats.processing_time_data->next();
 
 	_performance_stats.total_processing_time -= frame_record->value;
@@ -473,9 +473,9 @@ void SiONDriver::_streaming() {
 	_performance_stats.update_average_processing_time();
 
 	// Write samples.
-	Vector<double> *output_buffer = sound_chip->get_output_buffer_ptr();
+	std::vector<double> *output_buffer = sound_chip->get_output_buffer_ptr();
 	for (int i = 0; i < output_buffer->size(); i += 2) {
-		stream_buffer.push_back(Vector2((*output_buffer)[i], (*output_buffer)[i + 1]));
+		stream_buffer.push_back(std::vector2((*output_buffer)[i], (*output_buffer)[i + 1]));
 	}
 	_audio_playback->push_buffer(stream_buffer);
 
@@ -490,7 +490,7 @@ void SiONDriver::_streaming() {
 
 	bool finished = false;
 	if (_fader->execute()) {
-		String event_type = (_fader->is_incrementing() ? SiONEvent::FADE_IN_COMPLETED : SiONEvent::FADE_OUT_COMPLETED);
+		std::string event_type = (_fader->is_incrementing() ? SiONEvent::FADE_IN_COMPLETED : SiONEvent::FADE_OUT_COMPLETED);
 		_dispatch_event(memnew(SiONEvent(event_type, this, stream_buffer)));
 		finished = !_fader->is_incrementing();
 	} else {
@@ -504,11 +504,11 @@ void SiONDriver::_streaming() {
 	_in_streaming_process = false;
 }
 
-Ref<SiONData> SiONDriver::compile(String p_mml) {
+std::shared_ptr<SiONData> SiONDriver::compile(std::string p_mml) {
 	stop();
 
 	int start_time = Time::get_singleton()->get_ticks_msec();
-	Ref<SiONData> temp_data;
+	std::shared_ptr<SiONData> temp_data;
 	temp_data.instantiate();
 	_prepare_compile(p_mml, temp_data);
 
@@ -516,15 +516,15 @@ Ref<SiONData> SiONDriver::compile(String p_mml) {
 	_performance_stats.compiling_time = Time::get_singleton()->get_ticks_msec() - start_time;
 	_mml_string = "";
 
-	static const StringName compilation_finished = StringName("compilation_finished");
+	static const std::stringName compilation_finished = std::stringName("compilation_finished");
 	emit_signal(compilation_finished, _data);
 	return _data;
 }
 
-int SiONDriver::queue_compile(String p_mml) {
-	ERR_FAIL_COND_V_MSG(p_mml.is_empty(), _job_queue.size(), "SiONDriver: Cannot queue a compile task, the MML string is empty.");
+int SiONDriver::queue_compile(std::string p_mml) {
+	////ERR_FAIL_COND_V_MSG(p_mml.empty()(), _job_queue.size(), "SiONDriver: Cannot queue a compile task, the MML string is empty.");
 
-	Ref<SiONData> sion_data;
+	std::shared_ptr<SiONData> sion_data;
 	sion_data.instantiate();
 
 	SiONDriverJob compile_job;
@@ -555,22 +555,22 @@ PackedFloat64Array SiONDriver::render(const Variant &p_data, int p_buffer_size, 
 		buffer.push_back(value);
 	}
 
-	static const StringName render_finished = StringName("render_finished");
+	static const std::stringName render_finished = std::stringName("render_finished");
 	emit_signal(render_finished, buffer);
 	return buffer;
 }
 
 int SiONDriver::queue_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
-	ERR_FAIL_COND_V_MSG(p_data.get_type() == Variant::NIL, _job_queue.size(), "SiONDriver: Cannot queue a render task, the data object is empty.");
-	ERR_FAIL_COND_V_MSG(p_buffer_size <= 0, _job_queue.size(), "SiONDriver: Cannot queue a render task, the buffer size must be a positive number.");
+	////ERR_FAIL_COND_V_MSG(p_data.get_type() == Variant::NIL, _job_queue.size(), "SiONDriver: Cannot queue a render task, the data object is empty.");
+	////ERR_FAIL_COND_V_MSG(p_buffer_size <= 0, _job_queue.size(), "SiONDriver: Cannot queue a render task, the buffer size must be a positive number.");
 
 	Variant::Type data_type = p_data.get_type();
 	switch (data_type) {
 		case Variant::STRING: {
-			String mml_string = p_data;
+			std::string mml_string = p_data;
 
 			// Data is shared between the two tasks.
-			Ref<SiONData> sion_data = memnew(SiONData);
+			std::shared_ptr<SiONData> sion_data = memnew(SiONData);
 			sion_data.instantiate();
 
 			// Queue compilation first.
@@ -595,7 +595,7 @@ int SiONDriver::queue_render(const Variant &p_data, int p_buffer_size, int p_buf
 		} break;
 
 		case Variant::OBJECT: {
-			Ref<SiONData> sion_data = p_data;
+			std::shared_ptr<SiONData> sion_data = p_data;
 			if (sion_data.is_valid()) {
 				SiONDriverJob render_job;
 				render_job.type = JobType::RENDER;
@@ -612,7 +612,7 @@ int SiONDriver::queue_render(const Variant &p_data, int p_buffer_size, int p_buf
 		default: break; // Silences enum warnings.
 	}
 
-	ERR_FAIL_V_MSG(_job_queue.size(), "SiONDriver: Data type is unsupported by the render.");
+	//ERR_FAIL_V_MSG(_job_queue.size(), "SiONDriver: Data type is unsupported by the render.");
 }
 
 // Playback.
@@ -664,7 +664,7 @@ void SiONDriver::stop() {
 
 	_fader->stop();
 	_fader_volume = 1;
-	_audio_playback = Ref<AudioStreamGeneratorPlayback>();
+	_audio_playback = std::shared_ptr<AudioStreamGeneratorPlayback>();
 	_audio_player->stop();
 	_update_volume();
 	sequencer->stop_sequence();
@@ -689,7 +689,7 @@ void SiONDriver::resume() {
 }
 
 SiMMLTrack *SiONDriver::_find_or_create_track(int p_track_id, double p_delay, double p_quant, bool p_disposable, int *r_delay_samples) {
-	ERR_FAIL_COND_V_MSG(p_delay < 0, nullptr, "SiONDriver: Playback delay cannot be less than zero.");
+	////ERR_FAIL_COND_V_MSG(p_delay < 0, nullptr, "SiONDriver: Playback delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_NOTE;
 	double delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
@@ -720,13 +720,13 @@ SiMMLTrack *SiONDriver::_find_or_create_track(int p_track_id, double p_delay, do
 	}
 
 	track = sequencer->create_controllable_track(internal_track_id, p_disposable);
-	ERR_FAIL_NULL_V_MSG(track, nullptr, "SiONDriver: Failed to allocate a track for playback. Pushing the limits?");
+	//ERR_FAIL_NULL_V_MSG(track, nullptr, "SiONDriver: Failed to allocate a track for playback. Pushing the limits?");
 	return track;
 }
 
 SiMMLTrack *SiONDriver::sample_on(int p_sample_number, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
-	ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
-	ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Sample length cannot be less than zero.");
+	////ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
+	////ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Sample length cannot be less than zero.");
 
 	int delay_samples = 0;
 	SiMMLTrack *track = _find_or_create_track(p_delay, p_quant, p_track_id, p_disposable, &delay_samples);
@@ -740,9 +740,9 @@ SiMMLTrack *SiONDriver::sample_on(int p_sample_number, double p_length, double p
 	return track;
 }
 
-SiMMLTrack *SiONDriver::note_on(int p_note, const Ref<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
-	ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
-	ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Note length cannot be less than zero.");
+SiMMLTrack *SiONDriver::note_on(int p_note, const std::shared_ptr<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
+	////ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
+	////ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Note length cannot be less than zero.");
 
 	int delay_samples = 0;
 	SiMMLTrack *track = _find_or_create_track(p_delay, p_quant, p_track_id, p_disposable, &delay_samples);
@@ -758,10 +758,10 @@ SiMMLTrack *SiONDriver::note_on(int p_note, const Ref<SiONVoice> &p_voice, doubl
 	return track;
 }
 
-SiMMLTrack *SiONDriver::note_on_with_bend(int p_note, int p_note_to, double p_bend_length, const Ref<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
-	ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
-	ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Note length cannot be less than zero.");
-	ERR_FAIL_COND_V_MSG(p_bend_length < 0, nullptr, "SiONDriver: Pitch bending length cannot be less than zero.");
+SiMMLTrack *SiONDriver::note_on_with_bend(int p_note, int p_note_to, double p_bend_length, const std::shared_ptr<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
+	////ERR_FAIL_COND_V_MSG(!_is_streaming, nullptr, "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
+	////ERR_FAIL_COND_V_MSG(p_length < 0, nullptr, "SiONDriver: Note length cannot be less than zero.");
+	////ERR_FAIL_COND_V_MSG(p_bend_length < 0, nullptr, "SiONDriver: Pitch bending length cannot be less than zero.");
 
 	int delay_samples = 0;
 	SiMMLTrack *track = _find_or_create_track(p_delay, p_quant, p_track_id, p_disposable, &delay_samples);
@@ -778,14 +778,14 @@ SiMMLTrack *SiONDriver::note_on_with_bend(int p_note, int p_note_to, double p_be
 	return track;
 }
 
-TypedArray<SiMMLTrack> SiONDriver::note_off(int p_note, int p_track_id, double p_delay, double p_quant, bool p_stop_immediately) {
-	ERR_FAIL_COND_V_MSG(!_is_streaming, TypedArray<SiMMLTrack>(), "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
-	ERR_FAIL_COND_V_MSG(p_delay < 0, TypedArray<SiMMLTrack>(), "SiONDriver: Note off delay cannot be less than zero.");
+std::vector<SiMMLTrack> SiONDriver::note_off(int p_note, int p_track_id, double p_delay, double p_quant, bool p_stop_immediately) {
+	////ERR_FAIL_COND_V_MSG(!_is_streaming, std::vector<SiMMLTrack>(), "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
+	////ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Note off delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_NOTE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 
-	TypedArray<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack> tracks;
 	for (SiMMLTrack *track : sequencer->get_tracks()) {
 		if (track->get_internal_track_id() != internal_track_id) {
 			continue;
@@ -804,22 +804,22 @@ TypedArray<SiMMLTrack> SiONDriver::note_off(int p_note, int p_track_id, double p
 	return tracks;
 }
 
-TypedArray<SiMMLTrack> SiONDriver::sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
-	ERR_FAIL_COND_V(p_data.is_null(), TypedArray<SiMMLTrack>());
-	ERR_FAIL_COND_V_MSG(p_length < 0, TypedArray<SiMMLTrack>(), "SiONDriver: Sequence length cannot be less than zero.");
-	ERR_FAIL_COND_V_MSG(p_delay < 0, TypedArray<SiMMLTrack>(), "SiONDriver: Sequence delay cannot be less than zero.");
+std::vector<SiMMLTrack> SiONDriver::sequence_on(const std::shared_ptr<SiONData> &p_data, const std::shared_ptr<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
+	////ERR_FAIL_COND_V(p_data.is_null(), std::vector<SiMMLTrack>());
+	////ERR_FAIL_COND_V_MSG(p_length < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence length cannot be less than zero.");
+	////ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_SEQUENCE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 	int length_samples = sequencer->calculate_sample_length(p_length);
 
-	TypedArray<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack> tracks;
 
 	MMLSequence *sequence = p_data->get_sequence_group()->get_head_sequence();
 	while (sequence) {
 		if (sequence->is_active()) {
 			SiMMLTrack *track =	sequencer->create_controllable_track(internal_track_id, p_disposable);
-			ERR_FAIL_NULL_V_MSG(track, tracks, "SiONDriver: Failed to allocate a track for playback. Pushing the limits?");
+			//ERR_FAIL_NULL_V_MSG(track, tracks, "SiONDriver: Failed to allocate a track for playback. Pushing the limits?");
 
 			track->sequence_on(p_data, sequence, length_samples, delay_samples);
 			if (p_voice.is_valid()) {
@@ -835,13 +835,13 @@ TypedArray<SiMMLTrack> SiONDriver::sequence_on(const Ref<SiONData> &p_data, cons
 	return tracks;
 }
 
-TypedArray<SiMMLTrack> SiONDriver::sequence_off(int p_track_id, double p_delay, double p_quant, bool p_stop_with_reset) {
-	ERR_FAIL_COND_V_MSG(p_delay < 0, TypedArray<SiMMLTrack>(), "SiONDriver: Sequence off delay cannot be less than zero.");
+std::vector<SiMMLTrack> SiONDriver::sequence_off(int p_track_id, double p_delay, double p_quant, bool p_stop_with_reset) {
+	////ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence off delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_SEQUENCE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 
-	TypedArray<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack> tracks;
 	for (SiMMLTrack *track : sequencer->get_tracks()) {
 		if (track->get_internal_track_id() != internal_track_id) {
 			continue;
@@ -876,13 +876,13 @@ void SiONDriver::fade_out(double p_time) {
 // Processing.
 
 void SiONDriver::_set_processing_queue() {
-	ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin processing the queue, driver is busy (%d).", _current_frame_processing));
+	////ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin processing the queue, driver is busy (%d).", _current_frame_processing));
 	_current_frame_processing = FrameProcessingType::PROCESSING_QUEUE;
 	_update_node_processing();
 }
 
 void SiONDriver::_set_processing_immediate() {
-	ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin immediate processing, driver is busy (%d).", _current_frame_processing));
+	////ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin immediate processing, driver is busy (%d).", _current_frame_processing));
 	_current_frame_processing = FrameProcessingType::PROCESSING_IMMEDIATE;
 	_update_node_processing();
 
@@ -902,12 +902,12 @@ void SiONDriver::_prepare_process(const Variant &p_data, bool p_reset_effector) 
 		} break;
 
 		case Variant::STRING: { // MML string.
-			String mml_string = p_data;
+			std::string mml_string = p_data;
 			compile(mml_string); // Populates _data inside.
 		} break;
 
 		case Variant::OBJECT: {
-			Ref<SiONData> sion_data = p_data;
+			std::shared_ptr<SiONData> sion_data = p_data;
 			if (sion_data.is_valid()) {
 				_data = sion_data;
 				break;
@@ -915,11 +915,11 @@ void SiONDriver::_prepare_process(const Variant &p_data, bool p_reset_effector) 
 
 			// TODO: Add MIDI/SMF support.
 
-			ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
+			//ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
 		} break;
 
 		default: {
-			ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
+			//ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
 		} break;
 	}
 
@@ -1004,12 +1004,12 @@ void SiONDriver::_process_frame_queue() {
 	if (_job_progress == 1) {
 		switch (_current_job_type) {
 			case JobType::COMPILE: {
-				static const StringName compilation_finished = StringName("compilation_finished");
+				static const std::stringName compilation_finished = std::stringName("compilation_finished");
 				emit_signal(compilation_finished, _data);
 			} break;
 
 			case JobType::RENDER: {
-				static const StringName render_finished = StringName("render_finished");
+				static const std::stringName render_finished = std::stringName("render_finished");
 
 				PackedFloat64Array buffer;
 				for (double value : _render_buffer) {
@@ -1052,8 +1052,8 @@ void SiONDriver::_process_frame_immediate() {
 
 	// Process events and keep the ones which are still remaining.
 	if (_track_event_queue.size() > 0) {
-		List<Ref<SiONTrackEvent>> remaining_events;
-		for (const Ref<SiONTrackEvent> &event : _track_event_queue) {
+		List<std::shared_ptr<SiONTrackEvent>> remaining_events;
+		for (const std::shared_ptr<SiONTrackEvent> &event : _track_event_queue) {
 			if (event->decrement_timer(_performance_stats.frame_rate)) {
 				_dispatch_event(event);
 				continue;
@@ -1067,7 +1067,7 @@ void SiONDriver::_process_frame_immediate() {
 }
 
 bool SiONDriver::_prepare_next_job() {
-	_data = Ref<SiONData>();
+	_data = std::shared_ptr<SiONData>();
 	_mml_string = "";
 
 	_current_job_type = JobType::NO_JOB;
@@ -1084,7 +1084,7 @@ bool SiONDriver::_prepare_next_job() {
 
 	switch (job.type) {
 		case JobType::COMPILE: {
-			if (job.mml_string.is_empty()) {
+			if (job.mml_string.empty()()) {
 				WARN_PRINT("SiONDriver: Invalid compile job queued up, missing MML string.");
 				return _prepare_next_job(); // Skip this job.
 			}
@@ -1111,7 +1111,7 @@ bool SiONDriver::_prepare_next_job() {
 }
 
 void SiONDriver::_cancel_all_jobs() {
-	_data = Ref<SiONData>();
+	_data = std::shared_ptr<SiONData>();
 	_mml_string = "";
 
 	_current_job_type = JobType::NO_JOB;
@@ -1166,14 +1166,14 @@ double SiONDriver::_convert_event_length(double p_length) const {
 	return p_length * beat_resolution * 0.0625;
 }
 
-void SiONDriver::_dispatch_event(const Ref<SiONEvent> &p_event) {
+void SiONDriver::_dispatch_event(const std::shared_ptr<SiONEvent> &p_event) {
 	// This method exists as a proxy. Original implementation relied on native events, whereas we
 	// want to rely on signals. For simplicity's sake, we keep original event objects but strip any
 	// Event-related logic from them. Instead, they are just data objects which we pass to signals.
 	// Signal names are event types.
 
-	String signal_name = p_event->get_event_type();
-	ERR_FAIL_COND(signal_name.is_empty());
+	std::string signal_name = p_event->get_event_type();
+	////ERR_FAIL_COND(signal_name.empty()());
 
 	emit_signal(signal_name, p_event);
 }
@@ -1186,24 +1186,24 @@ void SiONDriver::_note_off_callback(SiMMLTrack *p_track) {
 	_publish_note_event(p_track, p_track->get_event_trigger_type_off(), SiONTrackEvent::NOTE_OFF_FRAME, SiONTrackEvent::NOTE_OFF_STREAM);
 }
 
-void SiONDriver::_publish_note_event(SiMMLTrack *p_track, int p_type, String p_frame_event, String p_stream_event) {
+void SiONDriver::_publish_note_event(SiMMLTrack *p_track, int p_type, std::string p_frame_event, std::string p_stream_event) {
 	// Frame event; dispatch later.
 	if (p_type & 1) {
-		Ref<SiONTrackEvent> event = memnew(SiONTrackEvent(p_frame_event, this, p_track));
+		std::shared_ptr<SiONTrackEvent> event = memnew(SiONTrackEvent(p_frame_event, this, p_track));
 		_track_event_queue.push_back(event);
 		return;
 	}
 
 	// Stream event; dispatch immediately.
 	if (p_type & 2) {
-		Ref<SiONTrackEvent> event = memnew(SiONTrackEvent(p_stream_event, this, p_track));
+		std::shared_ptr<SiONTrackEvent> event = memnew(SiONTrackEvent(p_stream_event, this, p_track));
 		_dispatch_event(event);
 		return;
 	}
 }
 
 void SiONDriver::_tempo_changed_callback(int p_buffer_index, bool p_dummy) {
-	Ref<SiONTrackEvent> event = memnew(SiONTrackEvent(SiONTrackEvent::BPM_CHANGED, this, nullptr, p_buffer_index));
+	std::shared_ptr<SiONTrackEvent> event = memnew(SiONTrackEvent(SiONTrackEvent::BPM_CHANGED, this, nullptr, p_buffer_index));
 
 	if (p_dummy && _notify_change_bpm_on_position_changed) {
 		_dispatch_event(event);
@@ -1217,12 +1217,12 @@ void SiONDriver::_beat_callback(int p_buffer_index, int p_beat_counter) {
 		return;
 	}
 
-	Ref<SiONTrackEvent> event = memnew(SiONTrackEvent(SiONTrackEvent::STREAMING_BEAT, this, nullptr, p_buffer_index, 0, p_beat_counter));
+	std::shared_ptr<SiONTrackEvent> event = memnew(SiONTrackEvent(SiONTrackEvent::STREAMING_BEAT, this, nullptr, p_buffer_index, 0, p_beat_counter));
 	_track_event_queue.push_back(event);
 }
 
 void SiONDriver::set_beat_callback_interval(double p_length_16th) {
-	ERR_FAIL_COND_MSG(p_length_16th < 0, "SiONDriver: Beat callback interval value cannot be less than zero.");
+	////ERR_FAIL_COND_MSG(p_length_16th < 0, "SiONDriver: Beat callback interval value cannot be less than zero.");
 
 	int filter = 1;
 	double length = p_length_16th;
@@ -1236,12 +1236,12 @@ void SiONDriver::set_beat_callback_interval(double p_length_16th) {
 }
 
 void SiONDriver::_timer_callback() {
-	static const StringName timer_interval = StringName("timer_interval");
+	static const std::stringName timer_interval = std::stringName("timer_interval");
 	emit_signal(timer_interval);
 }
 
 void SiONDriver::set_timer_interval(double p_length) {
-	ERR_FAIL_COND_MSG(p_length < 0, "SiONDriver: Timer interval value cannot be less than zero.");
+	////ERR_FAIL_COND_MSG(p_length < 0, "SiONDriver: Timer interval value cannot be less than zero.");
 
 	_timer_interval_event->set_length(_convert_event_length(p_length));
 
@@ -1519,12 +1519,12 @@ void SiONDriver::_bind_methods() {
 }
 
 SiONDriver::SiONDriver(int p_buffer_length, int p_channel_num, int p_sample_rate, int p_bitrate) {
-	ERR_FAIL_COND_MSG(!_allow_multiple_drivers && _mutex, "SiONDriver: Only one driver instance is allowed.");
+	////ERR_FAIL_COND_MSG(!_allow_multiple_drivers && _mutex, "SiONDriver: Only one driver instance is allowed.");
 	_mutex = this;
 
-	ERR_FAIL_COND_MSG((p_buffer_length != 2048 && p_buffer_length != 4096 && p_buffer_length != 8192), "SiONDriver: Buffer length can only be 2048, 4096, or 8192.");
-	ERR_FAIL_COND_MSG((p_channel_num != 1 && p_channel_num != 2), "SiONDriver: Channel number can only be 1 (mono) or 2 (stereo).");
-	ERR_FAIL_COND_MSG((p_sample_rate != 44100), "SiONDriver: Sampling rate can only be 44100.");
+	////ERR_FAIL_COND_MSG((p_buffer_length != 2048 && p_buffer_length != 4096 && p_buffer_length != 8192), "SiONDriver: Buffer length can only be 2048, 4096, or 8192.");
+	////ERR_FAIL_COND_MSG((p_channel_num != 1 && p_channel_num != 2), "SiONDriver: Channel number can only be 1 (mono) or 2 (stereo).");
+	////ERR_FAIL_COND_MSG((p_sample_rate != 44100), "SiONDriver: Sampling rate can only be 44100.");
 
 	sound_chip = memnew(SiOPMSoundChip);
 	effector = memnew(SiEffector(sound_chip));
@@ -1551,7 +1551,7 @@ SiONDriver::SiONDriver(int p_buffer_length, int p_channel_num, int p_sample_rate
 
 	// Background sound.
 	{
-		Ref<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_SAMPLE));
+		std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_SAMPLE));
 		_background_voice = voice;
 		_background_voice->set_update_volumes(true);
 		_background_fader = memnew(FaderUtil);
@@ -1577,7 +1577,7 @@ SiONDriver::SiONDriver(int p_buffer_length, int p_channel_num, int p_sample_rate
 		_timer_interval_event = _timer_sequence->append_new_event(MMLEvent::GLOBAL_WAIT, 0, 0);
 	}
 
-	_performance_stats.processing_time_data = memnew(SinglyLinkedList<int>(TIME_AVERAGING_COUNT, 0, true));
+	_performance_stats.processing_time_data = memnew(std::forward_list<int>(TIME_AVERAGING_COUNT, 0, true));
 	_performance_stats.total_processing_time_ratio = _sample_rate / (_buffer_length * TIME_AVERAGING_COUNT);
 }
 

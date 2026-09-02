@@ -28,30 +28,30 @@ void SiOPMChannelKS::set_karplus_strong_params(int p_attack_rate, int p_decay_ra
 	set_params_by_value(p_attack_rate, p_decay_rate, 0, 63, 15, p_total_level, 0, 0, 1, 0, 0, 0, 0, p_fixed_pitch);
 
 	_active_operator->set_pulse_generator_type(p_wave_shape);
-	Ref<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
+	std::shared_ptr<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
 	_active_operator->set_pitch_table_type(wave_table->get_default_pitch_table_type());
 
 	set_all_release_rate(p_tension);
 }
 
-void SiOPMChannelKS::set_parameters(Vector<int> p_params) {
+void SiOPMChannelKS::set_parameters(std::vector<int> p_params) {
 	_ks_seed_type = (p_params[0] == INT32_MIN ? KS_SEED_DEFAULT : (KSSeedType)p_params[0]);
 	_ks_seed_index = (p_params[1] == INT32_MIN ? 0 : p_params[1]);
 
 	switch (_ks_seed_type) {
 		case KS_SEED_FM: {
-			ERR_FAIL_INDEX(_ks_seed_index, SiMMLRefTable::VOICE_MAX);
+			////ERR_FAIL_INDEX(_ks_seed_index, SiMMLRefTable::VOICE_MAX);
 
-			Ref<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(_ks_seed_index);
+			std::shared_ptr<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(_ks_seed_index);
 			if (voice.is_valid()) {
 				set_channel_params(voice->get_channel_params(), false);
 			}
 		} break;
 
 		case KS_SEED_PCM: {
-			ERR_FAIL_INDEX(_ks_seed_index, SiOPMRefTable::PCM_DATA_MAX);
+			////ERR_FAIL_INDEX(_ks_seed_index, SiOPMRefTable::PCM_DATA_MAX);
 
-			Ref<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(_ks_seed_index);
+			std::shared_ptr<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(_ks_seed_index);
 			if (pcm_table.is_valid()) {
 				set_wave_data(pcm_table);
 			}
@@ -62,7 +62,7 @@ void SiOPMChannelKS::set_parameters(Vector<int> p_params) {
 			set_params_by_value(p_params[1], p_params[2], 0, 63, 15, p_params[3], 0, 0, 1, 0, 0, 0, 0, p_params[4]);
 
 			_active_operator->set_pulse_generator_type(p_params[5] == INT32_MIN ? SiONPulseGeneratorType::PULSE_NOISE_PINK : p_params[5]);
-			Ref<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
+			std::shared_ptr<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
 			_active_operator->set_pitch_table_type(wave_table->get_default_pitch_table_type());
 		} break;
 	}
@@ -112,7 +112,7 @@ void SiOPMChannelKS::note_on() {
 	_output = 0;
 
 	for (int i = 0; i < KS_BUFFER_SIZE; i++) {
-		_ks_delay_buffer.write[i] *= 0.3;
+		_ks_delay_buffer[i] *= 0.3;
 	}
 
 	_decay_lpf = _ks_decay_lpf;
@@ -131,12 +131,12 @@ void SiOPMChannelKS::reset_channel_buffer_status() {
 	_is_idling = false;
 }
 
-void SiOPMChannelKS::_apply_karplus_strong(SinglyLinkedList<int>::Element *p_buffer_start, int p_length) {
-	SinglyLinkedList<int>::Element *target = p_buffer_start;
+void SiOPMChannelKS::_apply_karplus_strong(std::forward_list<int>::Element *p_buffer_start, int p_length) {
+	std::forward_list<int>::Element *target = p_buffer_start;
 	const int pitch_idx_max = SiOPMRefTable::PITCH_TABLE_SIZE - 1;
 
 	int pitch_idx = _ks_pitch_index + _operators[0]->get_ptss_detune() + _pitch_modulation_output_level;
-	pitch_idx = CLAMP(pitch_idx, 0, pitch_idx_max);
+	pitch_idx = std::clamp(pitch_idx, 0, pitch_idx_max);
 	double wave_length_max = _table->pitch_wave_length[pitch_idx];
 
 	for (int i = 0; i < p_length; i++) {
@@ -149,7 +149,7 @@ void SiOPMChannelKS::_apply_karplus_strong(SinglyLinkedList<int>::Element *p_buf
 			_pitch_modulation_output_level = (((value_base << 1) - 255) * _pitch_modulation_depth) >> 8;
 
 			pitch_idx = _ks_pitch_index + _operators[0]->get_ptss_detune() + _pitch_modulation_output_level;
-			pitch_idx = CLAMP(pitch_idx, 0, pitch_idx_max);
+			pitch_idx = std::clamp(pitch_idx, 0, pitch_idx_max);
 			wave_length_max = _table->pitch_wave_length[pitch_idx];
 
 			_lfo_timer += _lfo_timer_initial;
@@ -165,7 +165,7 @@ void SiOPMChannelKS::_apply_karplus_strong(SinglyLinkedList<int>::Element *p_buf
 		_output *= _decay;
 		_output += (_ks_delay_buffer[buffer_index] - _output) * _decay_lpf + target->value;
 
-		_ks_delay_buffer.write[buffer_index] = _output;
+		_ks_delay_buffer[buffer_index] = _output;
 		target->value = (int)_output;
 		target = target->next();
 	}
@@ -180,7 +180,7 @@ void SiOPMChannelKS::buffer(int p_length) {
 	}
 
 	// Preserve the start of the output pipe.
-	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
+	std::forward_list<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
 	if (_process_function.is_valid()) {
@@ -248,8 +248,8 @@ void SiOPMChannelKS::reset() {
 	SiOPMChannelFM::reset();
 }
 
-String SiOPMChannelKS::_to_string() const {
-	String params = "";
+std::string SiOPMChannelKS::_to_string() const {
+	std::string params = "";
 
 	params += "ops=" + itos(_operator_count) + ", ";
 
@@ -261,5 +261,5 @@ String SiOPMChannelKS::_to_string() const {
 }
 
 SiOPMChannelKS::SiOPMChannelKS(SiOPMSoundChip *p_chip) : SiOPMChannelFM(p_chip) {
-	_ks_delay_buffer.resize_zeroed(KS_BUFFER_SIZE);
+	_ks_delay_buffer.resize(KS_BUFFER_SIZE); // TODO zeroed
 }

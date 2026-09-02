@@ -6,11 +6,11 @@
 
 #include "chip/siopm_ref_table.h"
 
-#include <godot_cpp/core/memory.hpp>
-#include <godot_cpp/classes/random_number_generator.hpp>
+//#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/classes/random_number_generator.hpp>
 #include "sequencer/simml_voice.h"
 
-using namespace godot;
+
 
 SiOPMRefTable *SiOPMRefTable::_instance = nullptr;
 
@@ -38,7 +38,7 @@ void SiOPMRefTable::finalize() {
 
 int SiOPMRefTable::calculate_log_table_index(double p_number) {
 	// Original code suggests that the incoming number must be between -1 and 1, but this isn't true in practice.
-	// ERR_FAIL_COND_V(p_number < -1 || p_number > 1, LOG_TABLE_BOTTOM);
+	// ////ERR_FAIL_COND_V(p_number < -1 || p_number > 1, LOG_TABLE_BOTTOM);
 
 	static const double log_coefficient = 369.3299304675746; // 369.3299304675746 = 256/log(2)
 	static const double log_threshold = 0.0001220703125;     // 0.0001220703125 = 1/(2^13)
@@ -54,16 +54,16 @@ int SiOPMRefTable::calculate_log_table_index(double p_number) {
 
 void SiOPMRefTable::reset_all_user_tables() {
 	for (int i = 0; i < WAVE_TABLE_MAX; i++) {
-		_custom_wave_tables.write[i] = Ref<SiOPMWaveTable>();
+		_custom_wave_tables[i] = std::shared_ptr<SiOPMWaveTable>();
 	}
 
 	for (int i = 0; i < PCM_DATA_MAX; i++) {
 		if (_pcm_voices[i].is_valid()) {
-			Ref<SiOPMWavePCMTable> pcm_table = _pcm_voices[i]->get_wave_data();
+			std::shared_ptr<SiOPMWavePCMTable> pcm_table = _pcm_voices[i]->get_wave_data();
 			if (pcm_table.is_valid()) {
 				pcm_table->clear();
 			}
-			_pcm_voices.write[i] = Ref<SiMMLVoice>();
+			_pcm_voices[i] = std::shared_ptr<SiMMLVoice>();
 		}
 	}
 
@@ -71,20 +71,20 @@ void SiOPMRefTable::reset_all_user_tables() {
 	_stencil_pcm_voices.clear();
 }
 
-void SiOPMRefTable::register_wave_table(int p_index, const Ref<SiOPMWaveTable> &p_table) {
+void SiOPMRefTable::register_wave_table(int p_index, const std::shared_ptr<SiOPMWaveTable> &p_table) {
 	int index = p_index & (WAVE_TABLE_MAX - 1);
-	_custom_wave_tables.write[index] = p_table;
+	_custom_wave_tables[index] = p_table;
 
 	// MA-3 waveforms support up to 3 user defined values. If this table is one of the first
 	// 3 custom tables, use it.
 	if (index < 3) {
 		// User defined waves are at offsets 15,23,31.
-		wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SINE + 15 + index * 8] = p_table;
+		wave_tables[SiONPulseGeneratorType::PULSE_MA3_SINE + 15 + index * 8] = p_table;
 	}
 }
 
-Ref<SiOPMWaveSamplerData> SiOPMRefTable::register_sampler_data(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
-	Ref<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count));
+std::shared_ptr<SiOPMWaveSamplerData> SiOPMRefTable::register_sampler_data(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
+	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count));
 
 	int bank = (p_index >> NOTE_BITS) & (SAMPLER_TABLE_MAX - 1);
 	sampler_tables[bank]->set_sample(sampler_data, p_index & (SAMPLER_DATA_MAX - 1));
@@ -92,9 +92,9 @@ Ref<SiOPMWaveSamplerData> SiOPMRefTable::register_sampler_data(int p_index, cons
 	return sampler_data;
 }
 
-Ref<SiOPMWaveTable> SiOPMRefTable::get_wave_table(int p_index) {
+std::shared_ptr<SiOPMWaveTable> SiOPMRefTable::get_wave_table(int p_index) {
 	if (p_index < SiONPulseGeneratorType::PULSE_CUSTOM) {
-		ERR_FAIL_INDEX_V(p_index, wave_tables.size(), no_wave_table);
+		////ERR_FAIL_INDEX_V(p_index, wave_tables.size(), no_wave_table);
 		return wave_tables[p_index];
 	}
 	if (p_index < SiONPulseGeneratorType::PULSE_PCM) {
@@ -114,7 +114,7 @@ Ref<SiOPMWaveTable> SiOPMRefTable::get_wave_table(int p_index) {
 	return no_wave_table;
 }
 
-Ref<SiOPMWavePCMTable> SiOPMRefTable::get_pcm_data(int p_index) {
+std::shared_ptr<SiOPMWavePCMTable> SiOPMRefTable::get_pcm_data(int p_index) {
 	int table_index = p_index & (PCM_DATA_MAX - 1);
 
 	if (table_index < _stencil_pcm_voices.size() && _stencil_pcm_voices[table_index].is_valid()) {
@@ -128,35 +128,35 @@ Ref<SiOPMWavePCMTable> SiOPMRefTable::get_pcm_data(int p_index) {
 	return nullptr;
 }
 
-Ref<SiMMLVoice> SiOPMRefTable::get_global_pcm_voice(int p_index) {
+std::shared_ptr<SiMMLVoice> SiOPMRefTable::get_global_pcm_voice(int p_index) {
 	int index = p_index & (PCM_DATA_MAX - 1);
 	if (_pcm_voices[index].is_null()) {
-		_pcm_voices.write[index] = SiMMLVoice::create_blank_pcm_voice(index);
+		_pcm_voices[index] = SiMMLVoice::create_blank_pcm_voice(index);
 	}
 
 	return _pcm_voices[index];
 }
 
-Ref<SiMMLVoice> SiOPMRefTable::set_global_pcm_voice(int p_index, const Ref<SiMMLVoice> &p_from_voice) {
+std::shared_ptr<SiMMLVoice> SiOPMRefTable::set_global_pcm_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_from_voice) {
 	int index = p_index & (PCM_DATA_MAX - 1);
 	if (_pcm_voices[index].is_null()) {
-		Ref<SiMMLVoice> voice;
+		std::shared_ptr<SiMMLVoice> voice;
 		voice.instantiate();
-		_pcm_voices.write[index] = voice;
+		_pcm_voices[index] = voice;
 	}
 
 	_pcm_voices[index]->copy_from(p_from_voice);
 	return _pcm_voices[index];
 }
 
-void SiOPMRefTable::set_sampler_table_stencil(int p_index, const Ref<SiOPMWaveSamplerTable> &p_table) {
-	ERR_FAIL_INDEX(p_index, sampler_tables.size());
+void SiOPMRefTable::set_sampler_table_stencil(int p_index, const std::shared_ptr<SiOPMWaveSamplerTable> &p_table) {
+	////ERR_FAIL_INDEX(p_index, sampler_tables.size());
 
 	sampler_tables[p_index]->set_stencil(p_table);
 }
 
 void SiOPMRefTable::clear_sampler_table_stencil(int p_index) {
-	ERR_FAIL_INDEX(p_index, sampler_tables.size());
+	////ERR_FAIL_INDEX(p_index, sampler_tables.size());
 
 	sampler_tables[p_index]->set_stencil(nullptr);
 }
@@ -164,7 +164,7 @@ void SiOPMRefTable::clear_sampler_table_stencil(int p_index) {
 //
 
 void SiOPMRefTable::_set_constants(int p_fm_clock, double p_psg_clock, int p_sampling_rate) {
-	ERR_FAIL_COND_MSG((p_sampling_rate != 44100 && p_sampling_rate != 22050), vformat("SiOPMRefTable: Invalid sampling rate '%d', only 44100 and 22050 are allowed.", p_sampling_rate));
+	////ERR_FAIL_COND_MSG((p_sampling_rate != 44100 && p_sampling_rate != 22050), vformat("SiOPMRefTable: Invalid sampling rate '%d', only 44100 and 22050 are allowed.", p_sampling_rate));
 
 	fm_clock = p_fm_clock;
 	psg_clock = p_psg_clock;
@@ -290,7 +290,7 @@ void SiOPMRefTable::_create_pg_tables() {
 		}
 	}
 
-	pitch_table.resize_zeroed(SiONPitchTableType::PITCH_TABLE_MAX);
+	pitch_table.resize(SiONPitchTableType::PITCH_TABLE_MAX); // TODO zeroed
 
 	// Pitch table.
 	{
@@ -319,8 +319,8 @@ void SiOPMRefTable::_create_pg_tables() {
 
 		// OPM
 		{
-			Vector<int> table;
-			table.resize_zeroed(PITCH_TABLE_SIZE);
+			std::vector<int> table;
+			table.resize(PITCH_TABLE_SIZE); // TODO zeroed
 
 			double pitch_value = 0;
 			double pitch_coef = 8.175798915643707 * PHASE_MAX / sampling_rate; // dphase @ MIDI note number = 0
@@ -329,21 +329,21 @@ void SiOPMRefTable::_create_pg_tables() {
 				double value = Math::pow(2, pitch_value) * pitch_coef;
 
 				for (int j = i; j < table_size; j += table_step) {
-					table.write[j] = (int)value;
+					table[j] = (int)value;
 					value *= 2;
 				}
 
 				pitch_value += pitch_delta;
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_OPM] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_OPM] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_OPM] = 0;
 		}
 
 		// PCM
 		{
-			Vector<int> table;
-			table.resize_zeroed(PITCH_TABLE_SIZE);
+			std::vector<int> table;
+			table.resize(PITCH_TABLE_SIZE); // TODO zeroed
 
 			double pitch_value = 0;
 			// dphase = pitchTablePCM[pitchIndex] >> (table_size (= PHASE_BITS - waveTable.fixedBits))
@@ -353,21 +353,21 @@ void SiOPMRefTable::_create_pg_tables() {
 				double value = Math::pow(2, pitch_value) * pitch_coef;
 
 				for (int j = i; j < table_size; j += table_step) {
-					table.write[j] = (int)value;
+					table[j] = (int)value;
 					value *= 2;
 				}
 
 				pitch_value += pitch_delta;
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_PCM] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_PCM] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_PCM] = 0xffffffff;
 		}
 
 		// PSG (table_size = 16)
 		{
-			Vector<int> table;
-			table.resize_zeroed(PITCH_TABLE_SIZE);
+			std::vector<int> table;
+			table.resize(PITCH_TABLE_SIZE); // TODO zeroed
 
 			double pitch_value = 0;
 			double pitch_coef = psg_clock * (PHASE_MAX >> 4) / sampling_rate;
@@ -379,16 +379,16 @@ void SiOPMRefTable::_create_pg_tables() {
 
 				for (int j = i; j < table_size; j += table_step) {
 					// Register value.
-					int reg_value = MIN((int)(value + 0.5), 4096); // Cap at 4096.
+					int reg_value = std::min((int)(value + 0.5), 4096); // Cap at 4096.
 
-					table.write[j] = (int)(pitch_coef / reg_value);
+					table[j] = (int)(pitch_coef / reg_value);
 					value *= 0.5;
 				}
 
 				pitch_value += pitch_delta;
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_PSG] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_PSG] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_PSG] = 0;
 		}
 	}
@@ -398,8 +398,8 @@ void SiOPMRefTable::_create_pg_tables() {
 		// OPM noise period table.
 		{
 			int table_size = 32 << HALF_TONE_BITS;
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			// noise_phase_shift = pitchTable[SiONPitchTableType::PITCH_TABLE_OPM_NOISE][noiseFreq] >> (PHASE_BITS - waveTable.fixedBits).
 			double pitch_coef = PHASE_MAX * clock_ratio; // clock_ratio = ((clock/64)/rate) << CLOCK_RATIO_BITS
@@ -409,22 +409,22 @@ void SiOPMRefTable::_create_pg_tables() {
 				value = ((int)(pitch_coef / ((32 - i) * 0.5))) >> CLOCK_RATIO_BITS;
 
 				for (int j = 0; j < HALF_TONE_RESOLUTION; j++) {
-					table.write[(i << HALF_TONE_BITS) + j] = value;
+					table[(i << HALF_TONE_BITS) + j] = value;
 				}
 			}
 			for (int i = 31 << HALF_TONE_BITS; i < table_size; i++) {
-				table.write[i] = value;
+				table[i] = value;
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_OPM_NOISE] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_OPM_NOISE] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_OPM_NOISE] = 0xffffffff;
 		}
 
 		// PSG noise period table.
 		{
 			int table_size = 32 << HALF_TONE_BITS;
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			// noise_phase_shift = ((1<<PHASE_BIT)  /  ((nf/(clock/16))[sec]  /  (1/44100)[sec])) >> (PHASE_BIT - waveTable.fixedBits)
 			double pitch_coef = PHASE_MAX * (double)fm_clock / (sampling_rate * 16);
@@ -433,11 +433,11 @@ void SiOPMRefTable::_create_pg_tables() {
 				int value = pitch_coef / i;
 
 				for (int j = 0; j < HALF_TONE_RESOLUTION; j++) {
-					table.write[(i << HALF_TONE_BITS) + j] = value;
+					table[(i << HALF_TONE_BITS) + j] = value;
 				}
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_PSG_NOISE] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_PSG_NOISE] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_PSG_NOISE] = 0xffffffff;
 		}
 
@@ -446,8 +446,8 @@ void SiOPMRefTable::_create_pg_tables() {
 			static const int ref_values[] = { 4, 8, 16, 32, 64, 96, 128, 160, 202, 254, 380, 508, 762, 1016, 2034, 4068 };
 
 			int table_size = 16 << HALF_TONE_BITS;
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			// noise_phase_shift = ((1<<PHASE_BIT)  /  ((nf/clock)[sec]  /  (1/44100)[sec])) >> (PHASE_BIT - waveTable.fixedBits)
 			double pitch_coef = PHASE_MAX * psg_clock / sampling_rate;
@@ -456,11 +456,11 @@ void SiOPMRefTable::_create_pg_tables() {
 				int value = pitch_coef / ref_values[i];
 
 				for (int j = 0; j < HALF_TONE_RESOLUTION; j++) {
-					table.write[(i << HALF_TONE_BITS) + j] = value;
+					table[(i << HALF_TONE_BITS) + j] = value;
 				}
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_APU_NOISE] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_APU_NOISE] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_APU_NOISE] = 0xffffffff;
 		}
 
@@ -474,8 +474,8 @@ void SiOPMRefTable::_create_pg_tables() {
 			};
 
 			int table_size = 64 << HALF_TONE_BITS;
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			// noise_phase_shift = ((1<<PHASE_BIT)  /  ((nf/clock)[sec]  /  (1/44100)[sec])) >> (PHASE_BIT - waveTable.fixedBits)
 			double pitch_coef = PHASE_MAX * 1048576.0 / sampling_rate; // gb clock = 1048576
@@ -484,11 +484,11 @@ void SiOPMRefTable::_create_pg_tables() {
 				int value = pitch_coef / ref_values[i];
 
 				for (int j = 0; j < HALF_TONE_RESOLUTION; j++) {
-					table.write[(i << HALF_TONE_BITS) + j] = value;
+					table[(i << HALF_TONE_BITS) + j] = value;
 				}
 			}
 
-			pitch_table.write[SiONPitchTableType::PITCH_TABLE_GB_NOISE] = table;
+			pitch_table[SiONPitchTableType::PITCH_TABLE_GB_NOISE] = table;
 			phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_GB_NOISE] = 0xffffffff;
 		}
 	}
@@ -565,27 +565,27 @@ void SiOPMRefTable::_create_wave_samples() {
 	{
 		int table_size = calculate_log_table_index(1);
 
-		Vector<int> no_wave_table_wave;
-		no_wave_table_wave.resize_zeroed(table_size);
-		no_wave_table = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(no_wave_table_wave, SiONPitchTableType::PITCH_TABLE_PCM)));
+		std::vector<int> no_wave_table_wave;
+		no_wave_table_wave.resize(table_size); // TODO zeroed
+		no_wave_table = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(no_wave_table_wave, SiONPitchTableType::PITCH_TABLE_PCM)));
 
-		Vector<int> no_wave_table_opm_wave;
-		no_wave_table_opm_wave.resize_zeroed(table_size);
-		no_wave_table_opm = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(no_wave_table_opm_wave, SiONPitchTableType::PITCH_TABLE_OPM)));
+		std::vector<int> no_wave_table_opm_wave;
+		no_wave_table_opm_wave.resize(table_size); // TODO zeroed
+		no_wave_table_opm = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(no_wave_table_opm_wave, SiONPitchTableType::PITCH_TABLE_OPM)));
 
-		wave_tables.resize_zeroed(DEFAULT_PG_MAX);
+		wave_tables.resize(DEFAULT_PG_MAX); // TODO zeroed
 		wave_tables.fill(no_wave_table);
-		sampler_tables.resize_zeroed(SAMPLER_TABLE_MAX);
+		sampler_tables.resize(SAMPLER_TABLE_MAX); // TODO zeroed
 		for (int i = 0; i < SAMPLER_TABLE_MAX; i++) {
-			Ref<SiOPMWaveSamplerTable> sampler = memnew(SiOPMWaveSamplerTable);
+			std::shared_ptr<SiOPMWaveSamplerTable> sampler = memnew(SiOPMWaveSamplerTable);
 			sampler->clear();
-			sampler_tables.write[i] = sampler;
+			sampler_tables[i] = sampler;
 		}
 
-		_custom_wave_tables.resize_zeroed(WAVE_TABLE_MAX);
+		_custom_wave_tables.resize(WAVE_TABLE_MAX); // TODO zeroed
 		_custom_wave_tables.fill(nullptr);
-		_pcm_voices.resize_zeroed(PCM_DATA_MAX);
-		_pcm_voices.fill(Ref<SiMMLVoice>());
+		_pcm_voices.resize(PCM_DATA_MAX); // TODO zeroed
+		_pcm_voices.fill(std::shared_ptr<SiMMLVoice>());
 	}
 
 	// Sine wave tables.
@@ -593,8 +593,8 @@ void SiOPMRefTable::_create_wave_samples() {
 		int table_step = SAMPLING_TABLE_SIZE >> 1;
 		int table_size = SAMPLING_TABLE_SIZE;
 
-		Vector<int> table;
-		table.resize_zeroed(table_size);
+		std::vector<int> table;
+		table.resize(table_size); // TODO zeroed
 
 		double value_delta = 6.283185307179586 / table_size;
 		double value_base = value_delta * 0.5;
@@ -602,13 +602,13 @@ void SiOPMRefTable::_create_wave_samples() {
 		for (int i = 0; i < table_step; i++) {
 			int value = calculate_log_table_index(Math::sin(value_base));
 
-			table.write[i] = value;                  // positive
-			table.write[i + table_step] = value + 1; // negative
+			table[i] = value;                  // positive
+			table[i + table_step] = value + 1; // negative
 
 			value_base += value_delta;
 		}
 
-		wave_tables.write[SiONPulseGeneratorType::PULSE_SINE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[SiONPulseGeneratorType::PULSE_SINE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// Saw wave tables.
@@ -617,10 +617,10 @@ void SiOPMRefTable::_create_wave_samples() {
 			int table_step = SAMPLING_TABLE_SIZE >> 1;
 			int table_size = SAMPLING_TABLE_SIZE;
 
-			Vector<int> table1;
-			table1.resize_zeroed(table_size);
-			Vector<int> table2;
-			table2.resize_zeroed(table_size);
+			std::vector<int> table1;
+			table1.resize(table_size); // TODO zeroed
+			std::vector<int> table2;
+			table2.resize(table_size); // TODO zeroed
 
 			double value_delta = 1.0 / table_step;
 			double value_base = value_delta * 0.5;
@@ -628,34 +628,34 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (int i = 0; i < table_step; i++) {
 				int value = calculate_log_table_index(value_base);
 
-				table1.write[i]                  = value;     // positive
-				table1.write[table_size - i - 1] = value + 1; // negative
-				table2.write[table_step - i - 1] = value;     // positive
-				table2.write[table_step + i]     = value + 1; // negative
+				table1[i]                  = value;     // positive
+				table1[table_size - i - 1] = value + 1; // negative
+				table2[table_step - i - 1] = value;     // positive
+				table2[table_step + i]     = value + 1; // negative
 
 				value_base += value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_SAW_UP]   = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
-			wave_tables.write[SiONPulseGeneratorType::PULSE_SAW_DOWN] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
+			wave_tables[SiONPulseGeneratorType::PULSE_SAW_UP]   = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
+			wave_tables[SiONPulseGeneratorType::PULSE_SAW_DOWN] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
 		}
 
 		{
 			int table_size = 32;
 
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			double value_delta = 0.0625;
 			double value_base = -0.96875;
 
 			for (int i = 0; i < table_size; i++) {
-				table.write[i] = calculate_log_table_index(value_base);
+				table[i] = calculate_log_table_index(value_base);
 
 				value_base += value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_SAW_VC6] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_SAW_VC6] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 	}
 
@@ -667,8 +667,8 @@ void SiOPMRefTable::_create_wave_samples() {
 			int table_offset = SAMPLING_TABLE_SIZE >> 1;
 			int table_size = SAMPLING_TABLE_SIZE;
 
-			Vector<int> table;
-			table.resize_zeroed(table_size);
+			std::vector<int> table;
+			table.resize(table_size); // TODO zeroed
 
 			double value_delta = 1.0 / table_step;
 			double value_base = value_delta * 0.5;
@@ -676,42 +676,42 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (int i = 0; i < table_step; i++) {
 				int value = calculate_log_table_index(value_base);
 
-				table.write[i]                    = value;     // positive
-				table.write[table_offset - i - 1] = value;     // positive
-				table.write[table_offset + i]     = value + 1; // negative
-				table.write[table_size - i - 1]   = value + 1; // negative
+				table[i]                    = value;     // positive
+				table[table_offset - i - 1] = value;     // positive
+				table[table_offset + i]     = value + 1; // negative
+				table[table_size - i - 1]   = value + 1; // negative
 
 				value_base += value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_TRIANGLE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_TRIANGLE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 
 		// FC triangle wave.
 		{
-			Vector<int> table;
-			table.resize_zeroed(32);
+			std::vector<int> table;
+			table.resize(32); // TODO zeroed
 
 			double value_delta = 0.125;
 			double value_base = 0.125;
 
-			table.write[0]  = LOG_TABLE_BOTTOM;
-			table.write[15] = LOG_TABLE_BOTTOM;
-			table.write[23] = 3;
-			table.write[24] = 3;
+			table[0]  = LOG_TABLE_BOTTOM;
+			table[15] = LOG_TABLE_BOTTOM;
+			table[23] = 3;
+			table[24] = 3;
 
 			for (int i = 1; i < 8; i++) {
 				int value = calculate_log_table_index(value_base);
 
-				table.write[i]      = value;
-				table.write[15 - i] = value;
-				table.write[15 + i] = value + 1;
-				table.write[32 - i] = value + 1;
+				table[i]      = value;
+				table[15 - i] = value;
+				table[15 + i] = value + 1;
+				table[32 - i] = value + 1;
 
 				value_base += value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_TRIANGLE_FC] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_TRIANGLE_FC] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 	}
 
@@ -719,27 +719,27 @@ void SiOPMRefTable::_create_wave_samples() {
 	{
 		// 50% square wave.
 		int value = calculate_log_table_index(SQUARE_WAVE_OUTPUT);
-		Vector<int> table = { value, value + 1 };
+		std::vector<int> table = { value, value + 1 };
 
-		wave_tables.write[SiONPulseGeneratorType::PULSE_SQUARE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[SiONPulseGeneratorType::PULSE_SQUARE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// Pulse wave tables.
 	{
-		Vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_SQUARE]->get_wavelet();
+		std::vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_SQUARE]->get_wavelet();
 
 		// Pulse wave.
 		// NOTE: The resolution of duty ratio is twice than pAPU. [pAPU pulse wave table] = waveTables[PULSE_PULSE+duty*2].
 		{
 			for (int j = 0; j < 16; j++) {
-				Vector<int> table;
-				table.resize_zeroed(16);
+				std::vector<int> table;
+				table.resize(16); // TODO zeroed
 
 				for (int i = 0; i < 16; i++) {
-					table.write[i] = (i < j ? base_table[0] : base_table[1]);
+					table[i] = (i < j ? base_table[0] : base_table[1]);
 				}
 
-				wave_tables.write[SiONPulseGeneratorType::PULSE_PULSE + j] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+				wave_tables[SiONPulseGeneratorType::PULSE_PULSE + j] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 			}
 		}
 
@@ -748,19 +748,19 @@ void SiOPMRefTable::_create_wave_samples() {
 			int value = calculate_log_table_index(0);
 
 			for (int j = 0; j < 16; j++) {
-				Vector<int> table;
-				table.resize_zeroed(32);
+				std::vector<int> table;
+				table.resize(32); // TODO zeroed
 
 				int i = 0;
 				int table_step = j << 1;
 				for (; i < table_step; i++) {
-					table.write[i] = (i < j ? base_table[0] : base_table[1]);
+					table[i] = (i < j ? base_table[0] : base_table[1]);
 				}
 				for (; i < 32; i++) {
-					table.write[i] = value;
+					table[i] = value;
 				}
 
-				wave_tables.write[SiONPulseGeneratorType::PULSE_PULSE_SPIKE + j] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+				wave_tables[SiONPulseGeneratorType::PULSE_PULSE_SPIKE + j] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 			}
 		}
 
@@ -773,22 +773,22 @@ void SiOPMRefTable::_create_wave_samples() {
 			-16,-96,0,80,16,-64,-48,-16,-96,-128,-80,0,-48,-112,-80,-32
 		};
 
-		Vector<int> table;
-		table.resize_zeroed(32);
+		std::vector<int> table;
+		table.resize(32); // TODO zeroed
 
 		for (int i = 0; i < 32; i++) {
-			table.write[i] = calculate_log_table_index((double)ref_table[i] / 128.0);
+			table[i] = calculate_log_table_index((double)ref_table[i] / 128.0);
 		}
 
-		wave_tables.write[SiONPulseGeneratorType::PULSE_KNM_BUBBLE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[SiONPulseGeneratorType::PULSE_KNM_BUBBLE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// Pseudo sync wave tables.
 	{
-		Vector<int> table1;
-		table1.resize_zeroed(SAMPLING_TABLE_SIZE);
-		Vector<int> table2;
-		table2.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table1;
+		table1.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
+		std::vector<int> table2;
+		table2.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 		int table_step = SAMPLING_TABLE_SIZE;
 		double value_delta = 1.0 / table_step;
@@ -797,14 +797,14 @@ void SiOPMRefTable::_create_wave_samples() {
 		for (int i = 0; i < table_step; i++) {
 			int value = calculate_log_table_index(value_base);
 
-			table1.write[i] = value + 1; // negative
-			table2.write[i] = value;     // positive
+			table1[i] = value + 1; // negative
+			table2[i] = value;     // positive
 
 			value_base += value_delta;
 		}
 
-		wave_tables.write[SiONPulseGeneratorType::PULSE_SYNC_LOW]  = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
-		wave_tables.write[SiONPulseGeneratorType::PULSE_SYNC_HIGH] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
+		wave_tables[SiONPulseGeneratorType::PULSE_SYNC_LOW]  = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
+		wave_tables[SiONPulseGeneratorType::PULSE_SYNC_HIGH] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
 	}
 
 	// Noise tables.
@@ -812,10 +812,10 @@ void SiOPMRefTable::_create_wave_samples() {
 		// White noise, pulse noise.
 		// NOTE: Naive implementation. Details are shown in MAME or VirtuaNes source.
 		{
-			Vector<int> table1;
-			table1.resize_zeroed(NOISE_TABLE_SIZE);
-			Vector<int> table2;
-			table2.resize_zeroed(NOISE_TABLE_SIZE);
+			std::vector<int> table1;
+			table1.resize(NOISE_TABLE_SIZE); // TODO zeroed
+			std::vector<int> table2;
+			table2.resize(NOISE_TABLE_SIZE); // TODO zeroed
 
 			int table_step = NOISE_TABLE_SIZE;
 
@@ -826,21 +826,21 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (int i = 0; i < table_step; i++) {
 				value_base = (((value_base << 13) ^ (value_base << 14)) & 0x4000) | (value_base >> 1);
 
-				table1.write[i] = calculate_log_table_index((value_base & 0x7fff) * value_coef * 2 - 1);
-				table2.write[i] = (value_base & 1 ? value : value + 1);
+				table1[i] = calculate_log_table_index((value_base & 0x7fff) * value_coef * 2 - 1);
+				table2[i] = (value_base & 1 ? value : value + 1);
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_WHITE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1, SiONPitchTableType::PITCH_TABLE_PCM)));
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_PULSE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2, SiONPitchTableType::PITCH_TABLE_PCM)));
-			wave_tables.write[SiONPulseGeneratorType::PULSE_PC_NZ_OPM]   = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2, SiONPitchTableType::PITCH_TABLE_OPM_NOISE)));
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE] = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE];
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_PULSE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_PC_NZ_OPM]   = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2, SiONPitchTableType::PITCH_TABLE_OPM_NOISE)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE] = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE];
 		}
 
 		// FC short noise.
 		//NOTE: Naive implementation. 93*11=1023 approx.-> 1024.
 		{
-			Vector<int> table;
-			table.resize_zeroed(SAMPLING_TABLE_SIZE);
+			std::vector<int> table;
+			table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 			int table_step = SAMPLING_TABLE_SIZE;
 			int value_base = 1; // 15bit LFSR
@@ -849,16 +849,16 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (int i = 0; i < table_step; i++) {
 				value_base = (((value_base << 8) ^ (value_base << 14)) & 0x4000) | (value_base >> 1);
 
-				table.write[i] = (value_base & 1 ? value : value + 1);
+				table[i] = (value_base & 1 ? value : value + 1);
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_SHORT] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_SHORT] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
 		}
 
 		// GB short noise.
 		{
-			Vector<int> table;
-			table.resize_zeroed(128);
+			std::vector<int> table;
+			table.resize(128); // TODO zeroed
 
 			int value_base = 0xffff; // 16bit LFSR
 			int value_offset = 0;
@@ -868,30 +868,30 @@ void SiOPMRefTable::_create_wave_samples() {
 				value_base += value_base + (((value_base >> 6) ^ (value_base >> 5)) & 1);
 				value_offset ^= value_base & 1;
 
-				table.write[i] = (value_offset & 1 ? value : value + 1);
+				table[i] = (value_offset & 1 ? value : value + 1);
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_GB_SHORT] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_GB_SHORT] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
 		}
 
 		// Periodic noise.
 		{
-			Vector<int> table;
-			table.resize_zeroed(16);
+			std::vector<int> table;
+			table.resize(16); // TODO zeroed
 
-			table.write[0] = calculate_log_table_index(SQUARE_WAVE_OUTPUT);
+			table[0] = calculate_log_table_index(SQUARE_WAVE_OUTPUT);
 			for (int i = 1; i < 16; i++) {
-				table.write[i] = LOG_TABLE_BOTTOM;
+				table[i] = LOG_TABLE_BOTTOM;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_PC_NZ_16BIT] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_PC_NZ_16BIT] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 
 		// High-passed white noise.
 		{
-			Vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE]->get_wavelet();
-			Vector<int> table;
-			table.resize_zeroed(NOISE_TABLE_SIZE);
+			std::vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE]->get_wavelet();
+			std::vector<int> table;
+			table.resize(NOISE_TABLE_SIZE); // TODO zeroed
 
 			int table_step = NOISE_TABLE_SIZE;
 
@@ -901,23 +901,23 @@ void SiOPMRefTable::_create_wave_samples() {
 			int log_value2 = base_table[NOISE_TABLE_SIZE - 1] + value_offset;
 			double value = (log_table[log_value1] - log_table[log_value2]) * 0.0625;
 
-			table.write[0] = calculate_log_table_index(value * value_coef);
+			table[0] = calculate_log_table_index(value * value_coef);
 			for (int i = 1; i < table_step; i++) {
 				log_value1 = base_table[i] + value_offset;
 				log_value2 = base_table[i - 1] + value_offset;
 				value = (value + log_table[log_value1] - log_table[log_value2]) * 0.0625;
 
-				table.write[i] = calculate_log_table_index(value * value_coef);
+				table[i] = calculate_log_table_index(value * value_coef);
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_HIPASS] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_HIPASS] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
 		}
 
 		// Pink noise.
 		{
-			Vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE]->get_wavelet();
-			Vector<int> table;
-			table.resize_zeroed(NOISE_TABLE_SIZE);
+			std::vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_WHITE]->get_wavelet();
+			std::vector<int> table;
+			table.resize(NOISE_TABLE_SIZE); // TODO zeroed
 
 			int table_step = NOISE_TABLE_SIZE;
 
@@ -935,28 +935,28 @@ void SiOPMRefTable::_create_wave_samples() {
 				b1 = 0.96300 * b1 + value_base * 0.2965164;
 				b2 = 0.57000 * b2 + value_base * 1.0526913;
 
-				table.write[i] = calculate_log_table_index((b0 + b1 + b2 + value_base * 0.1848) * value_coef);
+				table[i] = calculate_log_table_index((b0 + b1 + b2 + value_base * 0.1848) * value_coef);
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_NOISE_PINK] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
+			wave_tables[SiONPulseGeneratorType::PULSE_NOISE_PINK] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table, SiONPitchTableType::PITCH_TABLE_PCM)));
 		}
 
 		// Pitch-controllable noise.
 		{
-			Vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_SHORT]->get_wavelet();
-			Vector<int> table;
-			table.resize_zeroed(SAMPLING_TABLE_SIZE);
+			std::vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_NOISE_SHORT]->get_wavelet();
+			std::vector<int> table;
+			table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 			for (int j = 0; j < SAMPLING_TABLE_SIZE; j++) {
 				int i = j * 11;
-				int table_step = MIN((i + 11), SAMPLING_TABLE_SIZE);
+				int table_step = std::min((i + 11), SAMPLING_TABLE_SIZE);
 
 				for (; i < table_step; i++) {
-					table.write[i] = base_table[j];
+					table[i] = base_table[j];
 				}
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_PC_NZ_SHORT] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_PC_NZ_SHORT] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 	}
 
@@ -972,16 +972,16 @@ void SiOPMRefTable::_create_wave_samples() {
 			curr -= (curr * (j & 7)) >> 4;
 
 			if (prev == curr) {
-				wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + 64 - j] = wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 65 - j];
-				wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + 64 + j] = wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 63 + j];
+				wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 64 - j] = wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 65 - j];
+				wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 64 + j] = wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 63 + j];
 				continue;
 			}
 			prev = curr;
 
-			Vector<int> table1;
-			table1.resize_zeroed(SAMPLING_TABLE_SIZE);
-			Vector<int> table2;
-			table2.resize_zeroed(SAMPLING_TABLE_SIZE);
+			std::vector<int> table1;
+			table1.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
+			std::vector<int> table2;
+			table2.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 			int table_step = table_offset - curr;
 
@@ -992,10 +992,10 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (; i < table_step; i++) {
 				int value = calculate_log_table_index(value_base);
 
-				table1.write[i]                    = value;     // positive
-				table1.write[table_size - i - 1]   = value + 1; // negative
-				table2.write[table_offset + i]     = value + 1; // negative
-				table2.write[table_offset - i - 1] = value;     // positive
+				table1[i]                    = value;     // positive
+				table1[table_size - i - 1]   = value + 1; // negative
+				table2[table_offset + i]     = value + 1; // negative
+				table2[table_offset - i - 1] = value;     // positive
 
 				value_base += value_delta;
 			}
@@ -1005,26 +1005,26 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (; i < table_offset; i++) {
 				int value = calculate_log_table_index(value_base);
 
-				table1.write[i]                    = value;     // positive
-				table1.write[table_size - i - 1]   = value + 1; // negative
-				table2.write[table_offset + i]     = value + 1; // negative
-				table2.write[table_offset - i - 1] = value;     // positive
+				table1[i]                    = value;     // positive
+				table1[table_size - i - 1]   = value + 1; // negative
+				table2[table_offset + i]     = value + 1; // negative
+				table2[table_offset - i - 1] = value;     // positive
 
 				value_base -= value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + 64 - j] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
-			wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + 64 + j] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
+			wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 64 - j] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
+			wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 64 + j] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table2)));
 		}
 
 		for (int j = 0; j < 5; j++) {
-			wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + j] = wave_tables[SiONPulseGeneratorType::PULSE_SAW_UP];
+			wave_tables[SiONPulseGeneratorType::PULSE_RAMP + j] = wave_tables[SiONPulseGeneratorType::PULSE_SAW_UP];
 		}
 		for (int j = 124; j < 128; j++) {
-			wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + j] = wave_tables[SiONPulseGeneratorType::PULSE_SAW_DOWN];
+			wave_tables[SiONPulseGeneratorType::PULSE_RAMP + j] = wave_tables[SiONPulseGeneratorType::PULSE_SAW_DOWN];
 		}
 
-		wave_tables.write[SiONPulseGeneratorType::PULSE_RAMP + 64] = wave_tables[SiONPulseGeneratorType::PULSE_TRIANGLE];
+		wave_tables[SiONPulseGeneratorType::PULSE_RAMP + 64] = wave_tables[SiONPulseGeneratorType::PULSE_TRIANGLE];
 	}
 
 	// MA3 wave tables.
@@ -1033,12 +1033,12 @@ void SiOPMRefTable::_create_wave_samples() {
 		_create_ma3_waveset(SiONPulseGeneratorType::PULSE_MA3_SINE, wave_tables[SiONPulseGeneratorType::PULSE_SINE]);
 
 		// 6 - square wave.
-		wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SQUARE] = wave_tables[SiONPulseGeneratorType::PULSE_SQUARE];
+		wave_tables[SiONPulseGeneratorType::PULSE_MA3_SQUARE] = wave_tables[SiONPulseGeneratorType::PULSE_SQUARE];
 
 		// 7 - downwards saw wave with sine flattening. Best name I can come up with, not sure if there is a more common description.
 		{
-			Vector<int> table1;
-			table1.resize_zeroed(SAMPLING_TABLE_SIZE);
+			std::vector<int> table1;
+			table1.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 			int table_step = SAMPLING_TABLE_SIZE >> 2;
 			int table_offset = SAMPLING_TABLE_SIZE >> 1;
@@ -1050,38 +1050,38 @@ void SiOPMRefTable::_create_wave_samples() {
 			for (int i = 0; i < table_step; i++) {
 				int value = calculate_log_table_index(1 - Math::sin(value_base));
 
-				table1.write[i]                  = value;     // positive
-				table1.write[i + table_step]     = LOG_TABLE_BOTTOM;
-				table1.write[i + table_offset]   = LOG_TABLE_BOTTOM;
-				table1.write[table_size - i - 1] = value + 1; // negative
+				table1[i]                  = value;     // positive
+				table1[i + table_step]     = LOG_TABLE_BOTTOM;
+				table1[i + table_offset]   = LOG_TABLE_BOTTOM;
+				table1[table_size - i - 1] = value + 1; // negative
 
 				value_base += value_delta;
 			}
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SAW_SINE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
+			wave_tables[SiONPulseGeneratorType::PULSE_MA3_SAW_SINE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table1)));
 		}
 
 		// 8-13 - triangle modulated sine
 		{
-			Vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_SINE]->get_wavelet();
-			Vector<int> table;
-			table.resize_zeroed(SAMPLING_TABLE_SIZE);
+			std::vector<int> base_table = wave_tables[SiONPulseGeneratorType::PULSE_SINE]->get_wavelet();
+			std::vector<int> table;
+			table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 
 			int j = 0;
 			for (int i = 0; i<SAMPLING_TABLE_SIZE; i++) {
-				table.write[i] = base_table[i + j];
+				table[i] = base_table[i + j];
 				j += 1 - (((i >> (SAMPLING_TABLE_BITS - 3)) + 1) & 2); // triangle wave
 			}
 
-			_create_ma3_waveset(SiONPulseGeneratorType::PULSE_MA3_TRI_SINE, Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table))));
+			_create_ma3_waveset(SiONPulseGeneratorType::PULSE_MA3_TRI_SINE, std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table))));
 		}
 
 		// 14 - half square
 		{
 			int value = calculate_log_table_index(1);
-			Vector<int> table = { value, LOG_TABLE_BOTTOM };
+			std::vector<int> table = { value, LOG_TABLE_BOTTOM };
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SQUARE_HALF] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_MA3_SQUARE_HALF] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 
 		// 16-21 - triangle waves
@@ -1090,9 +1090,9 @@ void SiOPMRefTable::_create_wave_samples() {
 		// 22 - quarter square doubled.
 		{
 			int value = calculate_log_table_index(1);
-			Vector<int> table = { value, LOG_TABLE_BOTTOM, value, LOG_TABLE_BOTTOM };
+			std::vector<int> table = { value, LOG_TABLE_BOTTOM, value, LOG_TABLE_BOTTOM };
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SQUARE_QUART_DOUBLE] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_MA3_SQUARE_QUART_DOUBLE] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 
 		// 24-29 - upwards saw waves.
@@ -1101,88 +1101,88 @@ void SiOPMRefTable::_create_wave_samples() {
 		// 30 - quarter square wave.
 		{
 			int value = calculate_log_table_index(1);
-			Vector<int> table = { value, LOG_TABLE_BOTTOM, LOG_TABLE_BOTTOM, LOG_TABLE_BOTTOM };
+			std::vector<int> table = { value, LOG_TABLE_BOTTOM, LOG_TABLE_BOTTOM, LOG_TABLE_BOTTOM };
 
-			wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_SQUARE_QUART] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+			wave_tables[SiONPulseGeneratorType::PULSE_MA3_SQUARE_QUART] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 		}
 
 		// 15,23,31 - user defined waves.
-		wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_USER1] = no_wave_table;
-		wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_USER2] = no_wave_table;
-		wave_tables.write[SiONPulseGeneratorType::PULSE_MA3_USER3] = no_wave_table;
+		wave_tables[SiONPulseGeneratorType::PULSE_MA3_USER1] = no_wave_table;
+		wave_tables[SiONPulseGeneratorType::PULSE_MA3_USER2] = no_wave_table;
+		wave_tables[SiONPulseGeneratorType::PULSE_MA3_USER3] = no_wave_table;
 	}
 }
 
-void SiOPMRefTable::_create_ma3_waveset(int p_index, const Ref<SiOPMWaveTable> &p_table) {
+void SiOPMRefTable::_create_ma3_waveset(int p_index, const std::shared_ptr<SiOPMWaveTable> &p_table) {
 	// MA-3 waveforms contain 4 sets with the same basic premise. We take the base one,
 	// then modify it via the same transforms to get 5 variations.
 
 	// 0 - Full wave.
-	wave_tables.write[p_index] = p_table;
-	Vector<int> basic_waveform = p_table->get_wavelet();
+	wave_tables[p_index] = p_table;
+	std::vector<int> basic_waveform = p_table->get_wavelet();
 
 	// 1 - Half wave.
 	{
-		Vector<int> table;
-		table.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table;
+		table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 		int table_offset = SAMPLING_TABLE_SIZE >> 1;
 		for (int i = 0; i < table_offset; i++) {
-			table.write[i]                = basic_waveform[i];
-			table.write[i + table_offset] = LOG_TABLE_BOTTOM;
+			table[i]                = basic_waveform[i];
+			table[i + table_offset] = LOG_TABLE_BOTTOM;
 		}
-		wave_tables.write[p_index + 1] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[p_index + 1] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// 2 - Half wave doubled.
 	{
-		Vector<int> table;
-		table.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table;
+		table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 		int table_offset = SAMPLING_TABLE_SIZE >> 1;
 		for (int i = 0; i < table_offset; i++) {
-			table.write[i]                = basic_waveform[i];
-			table.write[i + table_offset] = basic_waveform[i];
+			table[i]                = basic_waveform[i];
+			table[i + table_offset] = basic_waveform[i];
 		}
-		wave_tables.write[p_index + 2] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[p_index + 2] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// 3 - Quarter wave doubled.
 	{
-		Vector<int> table;
-		table.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table;
+		table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 		int table_offset = SAMPLING_TABLE_SIZE >> 2;
 		for (int i = 0; i < table_offset; i++) {
-			table.write[i]                    = basic_waveform[i];
-			table.write[i + table_offset]     = LOG_TABLE_BOTTOM;
-			table.write[i + table_offset * 2] = basic_waveform[i];
-			table.write[i + table_offset * 3] = LOG_TABLE_BOTTOM;
+			table[i]                    = basic_waveform[i];
+			table[i + table_offset]     = LOG_TABLE_BOTTOM;
+			table[i + table_offset * 2] = basic_waveform[i];
+			table[i + table_offset * 3] = LOG_TABLE_BOTTOM;
 		}
-		wave_tables.write[p_index + 3] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[p_index + 3] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// 4 - Sped up wave.
 	{
-		Vector<int> table;
-		table.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table;
+		table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 		int table_offset = SAMPLING_TABLE_SIZE >> 1;
 		for (int i = 0; i < table_offset; i++) {
-			table.write[i]                = basic_waveform[i << 1];
-			table.write[i + table_offset] = LOG_TABLE_BOTTOM;
+			table[i]                = basic_waveform[i << 1];
+			table[i + table_offset] = LOG_TABLE_BOTTOM;
 		}
-		wave_tables.write[p_index + 4] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[p_index + 4] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 
 	// 5 - Sped up half wave doubled.
 	{
-		Vector<int> table;
-		table.resize_zeroed(SAMPLING_TABLE_SIZE);
+		std::vector<int> table;
+		table.resize(SAMPLING_TABLE_SIZE); // TODO zeroed
 		int table_offset = SAMPLING_TABLE_SIZE >> 2;
 		for (int i = 0; i < table_offset; i++) {
-			table.write[i]                  = basic_waveform[i << 1];
-			table.write[i + table_offset]   = table[i];
-			table.write[i + table_offset * 2] = LOG_TABLE_BOTTOM;
-			table.write[i + table_offset * 3] = LOG_TABLE_BOTTOM;
+			table[i]                  = basic_waveform[i << 1];
+			table[i + table_offset]   = table[i];
+			table[i + table_offset * 2] = LOG_TABLE_BOTTOM;
+			table[i + table_offset * 3] = LOG_TABLE_BOTTOM;
 		}
-		wave_tables.write[p_index + 5] = Ref<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
+		wave_tables[p_index + 5] = std::shared_ptr<SiOPMWaveTable>(memnew(SiOPMWaveTable(table)));
 	}
 }
 
@@ -1223,7 +1223,7 @@ void SiOPMRefTable::_create_lfo_tables() {
 		}
 
 		// Noise wave.
-		Ref<RandomNumberGenerator> rng;
+		std::shared_ptr<RandomNumberGenerator> rng;
 		rng.instantiate();
 		for (int i = 0; i < LFO_TABLE_SIZE; i++) {
 			int value = rng->randi_range(0, 255);

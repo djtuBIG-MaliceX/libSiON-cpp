@@ -10,7 +10,7 @@
 #include "effector/si_effect_base.h"
 
 class SiEffectEqualizer : public SiEffectBase {
-	GDCLASS(SiEffectEqualizer, SiEffectBase)
+	//GDCLASS(SiEffectEqualizer, SiEffectBase)
 
 	// Filter pipes.
 
@@ -57,8 +57,8 @@ class SiEffectEqualizer : public SiEffectBase {
 	double _high_gain = 0;
 
 	double _process_channel(PipeChannel *p_channel, double p_value);
-	void _process_mono(Vector<double> *r_buffer, int p_start_index, int p_length);
-	void _process_stereo(Vector<double> *r_buffer, int p_start_index, int p_length);
+	void _process_mono(std::vector<double> *r_buffer, int p_start_index, int p_length);
+	void _process_stereo(std::vector<double> *r_buffer, int p_start_index, int p_length);
 
 protected:
 	static void _bind_methods();
@@ -69,9 +69,9 @@ public:
 	//
 
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 	virtual void reset() override;
 
 	SiEffectEqualizer(double p_low_gain = 1, double p_mid_gain = 1, double p_high_gain = 1, double p_low_frequency = 880, double p_high_frequency = 5000);

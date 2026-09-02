@@ -60,7 +60,7 @@ void SiOPMOperatorParams::initialize() {
 	envelope_reset_on_attack = false;
 }
 
-void SiOPMOperatorParams::copy_from(const Ref<SiOPMOperatorParams> &p_params) {
+void SiOPMOperatorParams::copy_from(const std::shared_ptr<SiOPMOperatorParams> &p_params) {
 	pulse_generator_type = p_params->pulse_generator_type;
 	pitch_table_type     = p_params->pitch_table_type;
 
@@ -88,8 +88,8 @@ void SiOPMOperatorParams::copy_from(const Ref<SiOPMOperatorParams> &p_params) {
 	envelope_reset_on_attack   = p_params->envelope_reset_on_attack;
 }
 
-String SiOPMOperatorParams::_to_string() const {
-	String params = "";
+std::string SiOPMOperatorParams::_to_string() const {
+	std::string params = "";
 
 	params += "pg=" + itos(pulse_generator_type) + ", ";
 	params += "pt=" + itos(pitch_table_type) + ", ";
@@ -110,8 +110,8 @@ String SiOPMOperatorParams::_to_string() const {
 	params += "note=" + itos(fixed_pitch) + ", ";
 
 	params += "ssgec=" + itos(ssg_envelope_control) + ", ";
-	params += "mute=" + String(mute ? "yes" : "no") + ", ";
-	params += "reset=" + String(envelope_reset_on_attack ? "yes" : "no");
+	params += "mute=" + std::string(mute ? "yes" : "no") + ", ";
+	params += "reset=" + std::string(envelope_reset_on_attack ? "yes" : "no");
 
 	return "SiOPMOperatorParams: " + params;
 }

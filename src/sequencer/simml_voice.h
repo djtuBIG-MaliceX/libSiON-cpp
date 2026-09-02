@@ -7,20 +7,20 @@
 #ifndef SIMML_VOICE_H
 #define SIMML_VOICE_H
 
-#include <godot_cpp/classes/ref_counted.hpp>
+////#include <godot_cpp/classes/ref_counted.hpp>
 #include "chip/siopm_channel_params.h"
 #include "chip/wave/siopm_wave_base.h"
 #include "sequencer/simml_envelope_table.h"
 
-using namespace godot;
+
 
 class SiMMLTrack;
 enum SiONChipType : signed int;
 enum SiONModuleType : unsigned int;
 
 // Base voice data class.
-class SiMMLVoice : public RefCounted {
-	GDCLASS(SiMMLVoice, RefCounted)
+class SiMMLVoice {
+	////GDCLASS(SiMMLVoice, RefCounted)
 
 	friend class TranslatorUtil;
 
@@ -46,16 +46,16 @@ class SiMMLVoice : public RefCounted {
 	int velocity_shift = 4;
 	int expression_mode = 0;
 
-	Ref<SiMMLEnvelopeTable> note_on_tone_envelope;
-	Ref<SiMMLEnvelopeTable> note_on_amplitude_envelope;
-	Ref<SiMMLEnvelopeTable> note_on_filter_envelope;
-	Ref<SiMMLEnvelopeTable> note_on_pitch_envelope;
-	Ref<SiMMLEnvelopeTable> note_on_note_envelope;
-	Ref<SiMMLEnvelopeTable> note_off_tone_envelope;
-	Ref<SiMMLEnvelopeTable> note_off_amplitude_envelope;
-	Ref<SiMMLEnvelopeTable> note_off_filter_envelope;
-	Ref<SiMMLEnvelopeTable> note_off_pitch_envelope;
-	Ref<SiMMLEnvelopeTable> note_off_note_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_on_tone_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_on_amplitude_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_on_filter_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_on_pitch_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_on_note_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_off_tone_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_off_amplitude_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_off_filter_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_off_pitch_envelope;
+	std::shared_ptr<SiMMLEnvelopeTable> note_off_note_envelope;
 
 	int note_on_tone_envelope_step = 1;
 	int note_on_amplitude_envelope_step = 1;
@@ -76,8 +76,8 @@ protected:
 	int pms_tension = 8;
 
 	// Params for the FM sound channel.
-	Ref<SiOPMChannelParams> channel_params;
-	Ref<SiOPMWaveBase> wave_data;
+	std::shared_ptr<SiOPMChannelParams> channel_params;
+	std::shared_ptr<SiOPMWaveBase> wave_data;
 
 	int pitch_shift = 0;
 
@@ -93,7 +93,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	static Ref<SiMMLVoice> create_blank_pcm_voice(int p_channel_num);
+	static std::shared_ptr<SiMMLVoice> create_blank_pcm_voice(int p_channel_num);
 
 	SiONChipType get_chip_type() const { return chip_type; }
 	void set_chip_type(SiONChipType p_type) { chip_type = p_type; }
@@ -104,9 +104,9 @@ public:
 	int get_tone_num() const { return tone_num; }
 	void set_tone_num(int p_num) { tone_num = p_num; }
 
-	Ref<SiOPMChannelParams> get_channel_params() const { return channel_params; }
-	Ref<SiOPMWaveBase> get_wave_data() const { return wave_data; }
-	void set_wave_data(const Ref<SiOPMWaveBase> &p_data) { wave_data = p_data; }
+	std::shared_ptr<SiOPMChannelParams> get_channel_params() const { return channel_params; }
+	std::shared_ptr<SiOPMWaveBase> get_wave_data() const { return wave_data; }
+	void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_data) { wave_data = p_data; }
 
 	bool is_fm_voice() const;
 	bool is_pcm_voice() const;
@@ -141,10 +141,10 @@ public:
 	void update_track_voice(SiMMLTrack *p_track);
 
 	virtual void reset();
-	virtual void copy_from(const Ref<SiMMLVoice> &p_source);
+	virtual void copy_from(const std::shared_ptr<SiMMLVoice> &p_source);
 
 	SiMMLVoice();
-	~SiMMLVoice() {}
+	virtual ~SiMMLVoice() {}
 };
 
 #endif // SIMML_VOICE_H

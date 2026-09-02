@@ -6,10 +6,10 @@
 
 #include "simml_sequencer.h"
 
-#include <godot_cpp/classes/reg_ex.hpp>
-#include <godot_cpp/classes/reg_ex_match.hpp>
-#include <godot_cpp/core/error_macros.hpp>
-#include <godot_cpp/variant/variant.hpp>
+//#include <godot_cpp/classes/reg_ex.hpp>
+//#include <godot_cpp/classes/reg_ex_match.hpp>
+//#include <godot_cpp/core/error_macros.hpp>
+//#include <godot_cpp/variant/variant.hpp>
 #include "sion_enums.h"
 #include "chip/channels/siopm_channel_base.h"
 #include "chip/siopm_channel_params.h"
@@ -32,7 +32,7 @@
 #include "sequencer/simml_voice.h"
 #include "utils/translator_util.h"
 
-using namespace godot;
+
 
 // Properties.
 
@@ -43,7 +43,7 @@ double SiMMLSequencer::get_effective_bpm() const {
 void SiMMLSequencer::set_effective_bpm(double p_value) {
 	set_default_bpm(p_value);
 
-	ERR_FAIL_COND_MSG(is_ready_to_process() && !_bpm_change_enabled, "SiMMLSequencer: Cannot change BPM while rendering (SiONTrackEvent::NOTE_*_STREAM).");
+	////ERR_FAIL_COND_MSG(is_ready_to_process() && !_bpm_change_enabled, "SiMMLSequencer: Cannot change BPM while rendering (SiONTrackEvent::NOTE_*_STREAM).");
 	set_bpm(p_value);
 }
 
@@ -70,7 +70,7 @@ void SiMMLSequencer::reset_all_tracks() {
 }
 
 void SiMMLSequencer::_initialize_track(SiMMLTrack *p_track, int p_internal_track_id, bool p_disposable) {
-	p_track->initialize(Ref<SiMMLData>(), nullptr, 60, (p_internal_track_id >= 0 ? p_internal_track_id : 0), _callback_event_note_on, _callback_event_note_off, p_disposable);
+	p_track->initialize(std::shared_ptr<SiMMLData>(), nullptr, 60, (p_internal_track_id >= 0 ? p_internal_track_id : 0), _callback_event_note_on, _callback_event_note_off, p_disposable);
 	p_track->reset(_global_buffer_index);
 	p_track->get_channel()->set_master_volume(_parser_settings->default_fine_volume);
 }
@@ -123,7 +123,7 @@ SiMMLTrack *SiMMLSequencer::create_controllable_track(int p_internal_track_id, b
 
 	SiMMLTrack *track = nullptr;
 	if (_tracks.size() < _max_track_count) {
-		if (!_free_tracks.is_empty()) {
+		if (!_free_tracks.empty()()) {
 			track = _free_tracks.back()->get();
 			_free_tracks.pop_back();
 		} else {
@@ -167,16 +167,16 @@ void SiMMLSequencer::stop_sequence() {
 
 // Compilation and processing.
 
-String SiMMLSequencer::_on_before_compile(String p_mml) {
+std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 	_reset_parser_parameters();
 
-	String mml = p_mml + "\n";
+	std::string mml = p_mml + "\n";
 
 	// Remove comments.
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
+	std::shared_ptr<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
 	mml = re_comments->sub(mml, "", true);
 
 	// Ensure the string ends with a semicolon.
@@ -199,25 +199,25 @@ String SiMMLSequencer::_on_before_compile(String p_mml) {
 
 	// Expand macros.
 
-	String expanded_mml;
+	std::string expanded_mml;
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_sequence = RegEx::create_from_string("(?s)[ \\t\\r\\n]*(#([A-Z@\\-]+)(\\+=|=)?)?([^;{]*({.*?})?[^;]*);");
-	Ref<RegEx> re_macro_id = RegEx::create_from_string("([A-Z])?(-([A-Z])?)?");
+	std::shared_ptr<RegEx> re_sequence = RegEx::create_from_string("(?s)[ \\t\\r\\n]*(#([A-Z@\\-]+)(\\+=|=)?)?([^;{]*({.*?})?[^;]*);");
+	std::shared_ptr<RegEx> re_macro_id = RegEx::create_from_string("([A-Z])?(-([A-Z])?)?");
 
-	TypedArray<RegExMatch> matches = re_sequence->search_all(mml);
+	std::vector<RegExMatch> matches = re_sequence->search_all(mml);
 	for (int i = 0; i < matches.size(); i++) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 
 		// Normal sequence.
-		if (res->get_string(1).is_empty()) {
+		if (res->get_string(1).empty()()) {
 			expanded_mml += _expand_macro(res->get_string(4)) + ";";
 			continue;
 		}
 
 		// System command.
-		if (res->get_string(3).is_empty()) {
+		if (res->get_string(3).empty()()) {
 			if (res->get_string(2) == "END") {
 				break; // The #END command.
 			}
@@ -230,25 +230,25 @@ String SiMMLSequencer::_on_before_compile(String p_mml) {
 
 		// Macro definition.
 
-		String macro_id = res->get_string(2);
+		std::string macro_id = res->get_string(2);
 		bool concat = (res->get_string(3) == "+=");
 
 		// Parse macro IDs.
-		TypedArray<RegExMatch> mid_matches = re_macro_id->search_all(macro_id);
+		std::vector<RegExMatch> mid_matches = re_macro_id->search_all(macro_id);
 		for (int j = 0; j < mid_matches.size(); j++) {
-			Ref<RegExMatch> mid_res = mid_matches[j];
-			if (mid_res->get_string().is_empty()) {
+			std::shared_ptr<RegExMatch> mid_res = mid_matches[j];
+			if (mid_res->get_string().empty()()) {
 				continue; // Regex can have empty matches, which we should filter out.
 			}
 
 			int start_id = 0;
-			if (!mid_res->get_string(1).is_empty()) {
+			if (!mid_res->get_string(1).empty()()) {
 				start_id = mid_res->get_string(1).unicode_at(0) - 'A';
 			}
 
 			int end_id = start_id;
-			if (!mid_res->get_string(2).is_empty()) {
-				if (!mid_res->get_string(3).is_empty()) {
+			if (!mid_res->get_string(2).empty()()) {
+				if (!mid_res->get_string(3).empty()()) {
 					end_id = mid_res->get_string(3).unicode_at(0) - 'A';
 				} else {
 					end_id = MACRO_SIZE - 1;
@@ -256,12 +256,12 @@ String SiMMLSequencer::_on_before_compile(String p_mml) {
 			}
 
 			for (int k = start_id; k <= end_id; k++) {
-				String value = (_macro_expand_dynamic ? res->get_string(4) : _expand_macro(res->get_string(4)));
+				std::string value = (_macro_expand_dynamic ? res->get_string(4) : _expand_macro(res->get_string(4)));
 
 				if (concat) {
-					_macro_strings.write[k] += value;
+					_macro_strings[k] += value;
 				} else {
-					_macro_strings.write[k] = value;
+					_macro_strings[k] = value;
 				}
 			}
 		}
@@ -271,16 +271,16 @@ String SiMMLSequencer::_on_before_compile(String p_mml) {
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_repeat = RegEx::create_from_string("(?s)!\\[(\\d*)(.*?)(!\\|(.*?))?!\\](\\d*)");
+	std::shared_ptr<RegEx> re_repeat = RegEx::create_from_string("(?s)!\\[(\\d*)(.*?)(!\\|(.*?))?!\\](\\d*)");
 	matches = re_repeat->search_all(expanded_mml);
 	// Iterate backwards so we can do in-place replacements without disturbing indices.
 	for (int i = matches.size() - 1; i >= 0; i--) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 
 		int repeat_count = 1;
-		if (!res->get_string(1).is_empty()) {
+		if (!res->get_string(1).empty()()) {
 			repeat_count = res->get_string(1).to_int() - 1;
-		} else if (!res->get_string(5).is_empty()) {
+		} else if (!res->get_string(5).empty()()) {
 			repeat_count = res->get_string(5).to_int() - 1;
 		}
 
@@ -288,12 +288,12 @@ String SiMMLSequencer::_on_before_compile(String p_mml) {
 			repeat_count = 256;
 		}
 
-		String rep = res->get_string(2);
-		if (!res->get_string(3).is_empty()) {
+		std::string rep = res->get_string(2);
+		if (!res->get_string(3).empty()()) {
 			rep += res->get_string(4);
 		}
 
-		String replacement = rep.repeat(repeat_count) + res->get_string(2);
+		std::string replacement = rep.repeat(repeat_count) + res->get_string(2);
 
 		// Take the rest of the string (around the match) and insert the replaced substring.
 		expanded_mml = expanded_mml.substr(0, res->get_start()) + replacement + expanded_mml.substr(res->get_end() + 1);
@@ -337,24 +337,24 @@ void SiMMLSequencer::_on_beat(int p_delay_samples, int p_beat_counter) {
 	}
 }
 
-void SiMMLSequencer::_on_table_parse(MMLEvent *p_prev, String p_table) {
-	ERR_FAIL_COND_MSG(p_prev->get_id() < _envelope_event_id || p_prev->get_id() > _envelope_event_id + 10, "SiMMLSequencer : Internal table is available only for envelope commands.");
+void SiMMLSequencer::_on_table_parse(MMLEvent *p_prev, std::string p_table) {
+	////ERR_FAIL_COND_MSG(p_prev->get_id() < _envelope_event_id || p_prev->get_id() > _envelope_event_id + 10, "SiMMLSequencer : Internal table is available only for envelope commands.");
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_table = RegEx::create_from_string("(?s)\\{([^}]*)\\}(.*)");
+	std::shared_ptr<RegEx> re_table = RegEx::create_from_string("(?s)\\{([^}]*)\\}(.*)");
 
-	Ref<RegExMatch> res = re_table->search(p_table);
-	ERR_FAIL_COND_MSG(!res.is_valid(), "SiMMLSequencer: Invalid table format.");
+	std::shared_ptr<RegExMatch> res = re_table->search(p_table);
+	////ERR_FAIL_COND_MSG(!res.is_valid(), "SiMMLSequencer: Invalid table format.");
 
-	String data = res->get_string(1);
-	String postfix = res->get_string(2);
+	std::string data = res->get_string(1);
+	std::string postfix = res->get_string(2);
 
-	Ref<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
+	std::shared_ptr<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
 	env_table->parse_mml(data, postfix);
-	ERR_FAIL_COND_MSG(!env_table->get_data(), vformat("SiMMLSequencer: Invalid table parameter '%s' in the {..} command.", data));
+	////ERR_FAIL_COND_MSG(!env_table->get_data(), vformat("SiMMLSequencer: Invalid table parameter '%s' in the {..} command.", data));
 
-	Ref<SiMMLData> simml_data = mml_data;
+	std::shared_ptr<SiMMLData> simml_data = mml_data;
 	simml_data->set_envelope_table(_internal_table_index, env_table);
 
 	p_prev->set_data(_internal_table_index);
@@ -393,12 +393,12 @@ void SiMMLSequencer::process_dummy(int p_sample_count) {
 	_register_process_events();
 }
 
-bool SiMMLSequencer::prepare_compile(const Ref<MMLData> &p_data, String p_mml) {
+bool SiMMLSequencer::prepare_compile(const std::shared_ptr<MMLData> &p_data, std::string p_mml) {
 	_free_all_tracks();
 	return MMLSequencer::prepare_compile(p_data, p_mml);
 }
 
-void SiMMLSequencer::prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
+void SiMMLSequencer::prepare_process(const std::shared_ptr<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
 	_free_all_tracks();
 	_processed_sample_count = 0;
 	_bpm_change_enabled = true;
@@ -412,7 +412,7 @@ void SiMMLSequencer::prepare_process(const Ref<MMLData> &p_data, int p_sample_ra
 		while (sequence) {
 			if (sequence->is_active()) {
 				SiMMLTrack *track = nullptr;
-				if (!_free_tracks.is_empty()) {
+				if (!_free_tracks.empty()()) {
 					track = _free_tracks.back()->get();
 					_free_tracks.pop_back();
 				} else {
@@ -472,22 +472,22 @@ void SiMMLSequencer::process() {
 
 // Parser.
 
-String SiMMLSequencer::_expand_macro(String p_macro, uint32_t p_macro_flags) {
+std::string SiMMLSequencer::_expand_macro(std::string p_macro, uint32_t p_macro_flags) {
 	// Note that the original code has a broken circular call check. It never updates the flag
 	// storage, and the check is written incorrectly too. We attempt to fix it here based on the
 	// intention of the original code rather than the actual implementation.
 
-	if (p_macro.is_empty()) {
+	if (p_macro.empty()()) {
 		return "";
 	}
 
-	String expanded_macro = p_macro;
+	std::string expanded_macro = p_macro;
 
-	Ref<RegEx> re_macro = RegEx::create_from_string("([A-Z])(\\(([\\-\\d]+)\\))?");
-	TypedArray<RegExMatch> matches = re_macro->search_all(expanded_macro);
+	std::shared_ptr<RegEx> re_macro = RegEx::create_from_string("([A-Z])(\\(([\\-\\d]+)\\))?");
+	std::vector<RegExMatch> matches = re_macro->search_all(expanded_macro);
 	// Iterate backwards so we can do in-place replacements without disturbing indices.
 	for (int i = matches.size() - 1; i >= 0; i--) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 		int index = res->get_string(1).unicode_at(0) - 'A';
 
 		// Check for circular calls.
@@ -497,20 +497,20 @@ String SiMMLSequencer::_expand_macro(String p_macro, uint32_t p_macro_flags) {
 		uint32_t expanded_macro_flags = p_macro_flags;
 
 		int flag = 1 << index;
-		ERR_FAIL_COND_V_MSG(expanded_macro_flags & flag, p_macro, vformat("SiMMLSequencer: Failed to expand a macro due to a circular reference, '%s'.", res->get_string()));
+		////ERR_FAIL_COND_V_MSG(expanded_macro_flags & flag, p_macro, vformat("SiMMLSequencer: Failed to expand a macro due to a circular reference, '%s'.", res->get_string()));
 		expanded_macro_flags |= flag;
 
 		// Find the replacement string.
 
-		String replacement;
-		if (!_macro_strings[index].is_empty()) {
-			const String macro_string = _macro_strings[index];
+		std::string replacement;
+		if (!_macro_strings[index].empty()()) {
+			const std::string macro_string = _macro_strings[index];
 			replacement = (_macro_expand_dynamic ? _expand_macro(macro_string, expanded_macro_flags) : macro_string);
 
 			// Apply a note shift to the expanded macro.
-			if (!res->get_string(2).is_empty()) {
+			if (!res->get_string(2).empty()()) {
 				int note_shift = 0;
-				if (!res->get_string(3).is_empty()) {
+				if (!res->get_string(3).empty()()) {
 					note_shift = res->get_string(3).to_int();
 				}
 
@@ -519,8 +519,8 @@ String SiMMLSequencer::_expand_macro(String p_macro, uint32_t p_macro_flags) {
 		}
 
 		// Take the rest of the string (around the match) and insert the replaced substring.
-		const String prefix = expanded_macro.substr(0, res->get_start());
-		const String suffix = expanded_macro.substr(res->get_end());
+		const std::string prefix = expanded_macro.substr(0, res->get_start());
+		const std::string suffix = expanded_macro.substr(res->get_end());
 		expanded_macro = prefix + replacement + suffix;
 	}
 
@@ -540,11 +540,11 @@ void SiMMLSequencer::_reset_parser_parameters() {
 	MMLParser::get_instance()->set_key_signature("C");
 
 	for (int i = 0; i < _macro_strings.size(); i++) {
-		_macro_strings.write[i] = "";
+		_macro_strings[i] = "";
 	}
 }
 
-void SiMMLSequencer::_parse_command_init_sequence(const Ref<SiOPMChannelParams> &p_params, String p_postfix) {
+void SiMMLSequencer::_parse_command_init_sequence(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_postfix) {
 	MMLSequence *sequence = p_params->get_init_sequence();
 
 	MMLParser::get_instance()->prepare_parse(_parser_settings, p_postfix);
@@ -557,8 +557,8 @@ void SiMMLSequencer::_parse_command_init_sequence(const Ref<SiOPMChannelParams> 
 	MMLEvent *prev = sequence->get_head_event();
 	while (prev->get_next()) {
 		MMLEvent *next = prev->get_next();
-		ERR_FAIL_COND_MSG(next->get_length() != 0, vformat("SiMMLSequencer: Initializing sequence cannot contain processing events, '%s'.", p_postfix));
-		ERR_FAIL_COND_MSG(next->get_id() == MMLEvent::MOD_TYPE || next->get_id() == MMLEvent::MOD_PARAM, vformat("SiMMLSequencer: Initializing sequence cannot contain '%%' or '@', '%s'.", p_postfix));
+		////ERR_FAIL_COND_MSG(next->get_length() != 0, vformat("SiMMLSequencer: Initializing sequence cannot contain processing events, '%s'.", p_postfix));
+		////ERR_FAIL_COND_MSG(next->get_id() == MMLEvent::MOD_TYPE || next->get_id() == MMLEvent::MOD_PARAM, vformat("SiMMLSequencer: Initializing sequence cannot contain '%%' or '@', '%s'.", p_postfix));
 
 		if (next->get_id() == MMLEvent::TABLE_EVENT) {
 			// Parse table events and keep the pointer.
@@ -570,11 +570,11 @@ void SiMMLSequencer::_parse_command_init_sequence(const Ref<SiOPMChannelParams> 
 	}
 }
 
-void SiMMLSequencer::_parse_tmode_command(String p_mml) {
-	Ref<RegEx> re_tcommand = RegEx::create_from_string("(unit|timerb|fps)=?([\\d.]*)");
-	Ref<RegExMatch> res = re_tcommand->search(p_mml);
+void SiMMLSequencer::_parse_tmode_command(std::string p_mml) {
+	std::shared_ptr<RegEx> re_tcommand = RegEx::create_from_string("(unit|timerb|fps)=?([\\d.]*)");
+	std::shared_ptr<RegExMatch> res = re_tcommand->search(p_mml);
 
-	String value_string = res->get_string(2);
+	std::string value_string = res->get_string(2);
 	double value = value_string.is_valid_float() ? value_string.to_float() : 0;
 
 	if (res->get_string(1) == "unit") {
@@ -591,18 +591,18 @@ void SiMMLSequencer::_parse_tmode_command(String p_mml) {
 	}
 }
 
-void SiMMLSequencer::_parse_vmode_command(String p_mml) {
-	Ref<RegEx> re_vcommand = RegEx::create_from_string("(n88|mdx|psg|mck|tss|%[xv])(\\d*)(\\s*,?\\s*(\\d?))");
-	TypedArray<RegExMatch> matches = re_vcommand->search_all(p_mml);
+void SiMMLSequencer::_parse_vmode_command(std::string p_mml) {
+	std::shared_ptr<RegEx> re_vcommand = RegEx::create_from_string("(n88|mdx|psg|mck|tss|%[xv])(\\d*)(\\s*,?\\s*(\\d?))");
+	std::vector<RegExMatch> matches = re_vcommand->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == "%v") {
 			int mode = res->get_string(2).to_int();
 			mml_data->set_default_velocity_mode((mode >= 0 && mode < SiOPMRefTable::VM_MAX) ? mode : 0);
 
 			int shift = 4;
-			if (!res->get_string(4).is_empty()) {
+			if (!res->get_string(4).empty()()) {
 				shift = res->get_string(4).to_int();
 			}
 			mml_data->set_default_velocity_shift((shift >= 0 && shift < 8) ? shift : 0);
@@ -626,27 +626,27 @@ void SiMMLSequencer::_parse_vmode_command(String p_mml) {
 	}
 }
 
-bool SiMMLSequencer::_try_set_sampler_wave(int p_index, String p_mml) {
-	if (SiOPMRefTable::get_instance()->sound_reference.is_empty()) {
+bool SiMMLSequencer::_try_set_sampler_wave(int p_index, std::string p_mml) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
 		return false;
 	}
 
 	int bank = (p_index >> SiOPMRefTable::NOTE_BITS) & (SiOPMRefTable::SAMPLER_TABLE_MAX - 1);
 	int index = p_index & (SiOPMRefTable::NOTE_TABLE_SIZE - 1);
 
-	Ref<SiMMLData> simml_data = mml_data;
-	Ref<SiOPMWaveSamplerTable> table = simml_data->get_sampler_table(bank);
+	std::shared_ptr<SiMMLData> simml_data = mml_data;
+	std::shared_ptr<SiOPMWaveSamplerTable> table = simml_data->get_sampler_table(bank);
 	return TranslatorUtil::parse_sampler_wave(table, index, p_mml, SiOPMRefTable::get_instance()->sound_reference);
 }
 
-bool SiMMLSequencer::_try_set_pcm_wave(int p_index, String p_mml) {
-	if (SiOPMRefTable::get_instance()->sound_reference.is_empty()) {
+bool SiMMLSequencer::_try_set_pcm_wave(int p_index, std::string p_mml) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
 		return false;
 	}
 
-	Ref<SiMMLData> simml_data = mml_data;
-	Ref<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
-	Ref<SiOPMWavePCMTable> table = voice->get_wave_data();
+	std::shared_ptr<SiMMLData> simml_data = mml_data;
+	std::shared_ptr<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
+	std::shared_ptr<SiOPMWavePCMTable> table = voice->get_wave_data();
 	if (table.is_null()) {
 		return false;
 	}
@@ -654,13 +654,13 @@ bool SiMMLSequencer::_try_set_pcm_wave(int p_index, String p_mml) {
 	return TranslatorUtil::parse_pcm_wave(table, p_mml, SiOPMRefTable::get_instance()->sound_reference);
 }
 
-bool SiMMLSequencer::_try_set_pcm_voice(int p_index, String p_mml, String p_postfix) {
-	if (SiOPMRefTable::get_instance()->sound_reference.is_empty()) {
+bool SiMMLSequencer::_try_set_pcm_voice(int p_index, std::string p_mml, std::string p_postfix) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
 		return false;
 	}
 
-	Ref<SiMMLData> simml_data = mml_data;
-	Ref<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
+	std::shared_ptr<SiMMLData> simml_data = mml_data;
+	std::shared_ptr<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
 	if (voice.is_null()) {
 		return false;
 	}
@@ -668,8 +668,8 @@ bool SiMMLSequencer::_try_set_pcm_voice(int p_index, String p_mml, String p_post
 	return TranslatorUtil::parse_pcm_voice(voice, p_mml, p_postfix, simml_data->get_envelope_tables());
 }
 
-void SiMMLSequencer::_try_process_command_callback(String p_command, int p_number, String p_content, String p_postfix) {
-	Ref<MMLSystemCommand> command_obj;
+void SiMMLSequencer::_try_process_command_callback(std::string p_command, int p_number, std::string p_content, std::string p_postfix) {
+	std::shared_ptr<MMLSystemCommand> command_obj;
 	command_obj.instantiate();
 	command_obj->command = p_command;
 	command_obj->number = p_number;
@@ -677,7 +677,7 @@ void SiMMLSequencer::_try_process_command_callback(String p_command, int p_numbe
 	command_obj->postfix = p_postfix;
 
 	if (_callback_parse_system_command.is_valid()) {
-		Ref<SiMMLData> simml_data = mml_data;
+		std::shared_ptr<SiMMLData> simml_data = mml_data;
 		bool parsed = _callback_parse_system_command.call(simml_data, command_obj);
 		if (parsed) {
 			return;
@@ -688,25 +688,25 @@ void SiMMLSequencer::_try_process_command_callback(String p_command, int p_numbe
 	mml_data->add_system_command(command_obj);
 }
 
-bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_param) {
+bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::string p_param) {
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_param = RegEx::create_from_string("(?s)\\s*(\\d*)\\s*(\\{(.*?)\\})?(.*)");
-	Ref<RegExMatch> res = re_param->search(p_param);
+	std::shared_ptr<RegEx> re_param = RegEx::create_from_string("(?s)\\s*(\\d*)\\s*(\\{(.*?)\\})?(.*)");
+	std::shared_ptr<RegExMatch> res = re_param->search(p_param);
 
 	int number = res->get_string(1).to_int();
-	bool has_content = (!res->get_string(2).is_empty());
-	String content = res->get_string(3);
-	String postfix = res->get_string(4);
+	bool has_content = (!res->get_string(2).empty()());
+	std::string content = res->get_string(3);
+	std::string postfix = res->get_string(4);
 
 	// Tone settings.
 
 #define PARSE_TONE_PARAMS(m_func)                                  \
-	Ref<SiMMLData> simml_data = mml_data;                          \
-	Ref<SiMMLVoice> voice = simml_data->initialize_voice(number);  \
-	Ref<SiOPMChannelParams> params = voice->get_channel_params();  \
+	std::shared_ptr<SiMMLData> simml_data = mml_data;                          \
+	std::shared_ptr<SiMMLVoice> voice = simml_data->initialize_voice(number);  \
+	std::shared_ptr<SiOPMChannelParams> params = voice->get_channel_params();  \
 	m_func(params, content);                                       \
-	if (!postfix.is_empty()) {                                     \
+	if (!postfix.empty()()) {                                     \
 		_parse_command_init_sequence(params, postfix);             \
 	}
 
@@ -756,13 +756,13 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 		return true;
 	}
 	if (p_command == "#MACRO") {
-		String data = (has_content ? content : postfix);
+		std::string data = (has_content ? content : postfix);
 		if (data == "dynamic") {
 			_macro_expand_dynamic = true;
 		} else if (data == "static") {
 			_macro_expand_dynamic = false;
 		} else {
-			ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
+			//ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
 		}
 		return true;
 	}
@@ -782,7 +782,7 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 		return true;
 	}
 	if (p_command == "#REV") { // Reverse
-		String data = (has_content ? content : postfix);
+		std::string data = (has_content ? content : postfix);
 		if (data == "") {
 			_parser_settings->octave_polarization = -1;
 			_parser_settings->volume_polarization = -1;
@@ -791,7 +791,7 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 		} else if (data == "volume") {
 			_parser_settings->volume_polarization = -1;
 		} else {
-			ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
+			//ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
 		}
 		return true;
 	}
@@ -799,30 +799,30 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 	// Tables.
 
 	if (p_command == "#TABLE") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 254), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 254));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 254), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 254));
 
-		Ref<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
+		std::shared_ptr<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
 		env_table->parse_mml(content, postfix);
-		ERR_FAIL_COND_V_MSG(!env_table->get_data(), true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", content, p_command));
+		////ERR_FAIL_COND_V_MSG(!env_table->get_data(), true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", content, p_command));
 
-		Ref<SiMMLData> simml_data = mml_data;
+		std::shared_ptr<SiMMLData> simml_data = mml_data;
 		simml_data->set_envelope_table(number, env_table);
 		return true;
 	}
 	if (p_command == "#WAV") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
-		Ref<SiMMLData> simml_data = mml_data;
-		Vector<double> wave_data;
+		std::shared_ptr<SiMMLData> simml_data = mml_data;
+		std::vector<double> wave_data;
 		TranslatorUtil::parse_wav(content, postfix, &wave_data);
 		simml_data->set_wave_table(number, &wave_data);
 		return true;
 	}
 	if (p_command == "#WAVB") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
-		Ref<SiMMLData> simml_data = mml_data;
-		Vector<double> wave_data;
+		std::shared_ptr<SiMMLData> simml_data = mml_data;
+		std::vector<double> wave_data;
 		TranslatorUtil::parse_wavb(has_content ? content : postfix, &wave_data);
 		simml_data->set_wave_table(number, &wave_data);
 		return true;
@@ -831,7 +831,7 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 	// PCM voices.
 
 	if (p_command == "#SAMPLER") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_sampler_wave(number, content)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -839,7 +839,7 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 		return true;
 	}
 	if (p_command == "#PCMWAVE") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_pcm_wave(number, content)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -847,7 +847,7 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 		return true;
 	}
 	if (p_command == "#PCMVOICE") {
-		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_pcm_voice(number, content, postfix)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -872,18 +872,18 @@ bool SiMMLSequencer::_parse_system_command_before(String p_command, String p_par
 }
 
 MMLSequence *SiMMLSequencer::_parse_system_command_after(MMLSequenceGroup *p_seq_group, MMLSequence *p_command_seq) {
-	String command = p_command_seq->get_system_command();
+	std::string command = p_command_seq->get_system_command();
 
-	Ref<RegEx> re_command = RegEx::create_from_string("#(FM)[{ \\t\\r\\n]*([^}]*)");
-	Ref<RegExMatch> res = re_command->search(command);
+	std::shared_ptr<RegEx> re_command = RegEx::create_from_string("#(FM)[{ \\t\\r\\n]*([^}]*)");
+	std::shared_ptr<RegExMatch> res = re_command->search(command);
 
 	// Remove it from the chain to skip.
 	MMLSequence *sequence = p_command_seq->remove_from_chain();
 
 	// Parse the command.
 	if (res.is_valid()) {
-		ERR_FAIL_COND_V_MSG(res->get_string(1) != "FM", nullptr, vformat("SiMMLSequencer: Invalid system command letter, '%s'.", command));
-		ERR_FAIL_COND_V_MSG(res->get_string(2).is_empty(), nullptr, vformat("SiMMLSequencer: Invalid system command syntax, '%s'.", command));
+		////ERR_FAIL_COND_V_MSG(res->get_string(1) != "FM", nullptr, vformat("SiMMLSequencer: Invalid system command letter, '%s'.", command));
+		////ERR_FAIL_COND_V_MSG(res->get_string(2).empty()(), nullptr, vformat("SiMMLSequencer: Invalid system command syntax, '%s'.", command));
 
 		_connector->parse(res->get_string(2));
 		sequence = _connector->connect(p_seq_group, sequence);
@@ -899,7 +899,7 @@ MMLSequence *SiMMLSequencer::_parse_system_command_after(MMLSequenceGroup *p_seq
 // methods with a lot of the same boilerplate, so lesser of two evils, and all that.
 
 #define GET_EV_PARAMS(m_count)                                           \
-	Vector<int> ev_params;                                               \
+	std::vector<int> ev_params;                                               \
 	ev_params.resize_zeroed(MAX_PARAM_COUNT);                            \
 	MMLEvent *next_event = p_event->get_parameters(&ev_params, m_count);
 
@@ -1027,7 +1027,7 @@ MMLEvent *SiMMLSequencer::_on_mml_tone_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1045,7 +1045,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1063,7 +1063,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_envelope_tsscp(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1081,7 +1081,7 @@ MMLEvent *SiMMLSequencer::_on_mml_pitch_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1099,7 +1099,7 @@ MMLEvent *SiMMLSequencer::_on_mml_note_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1117,7 +1117,7 @@ MMLEvent *SiMMLSequencer::_on_mml_filter_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1135,7 +1135,7 @@ MMLEvent *SiMMLSequencer::_on_mml_tone_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1153,7 +1153,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_release_envelope(MMLEvent *p_event) 
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1171,7 +1171,7 @@ MMLEvent *SiMMLSequencer::_on_mml_pitch_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1189,7 +1189,7 @@ MMLEvent *SiMMLSequencer::_on_mml_note_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1207,7 +1207,7 @@ MMLEvent *SiMMLSequencer::_on_mml_filter_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	Ref<SiMMLEnvelopeTable> env_table;
+	std::shared_ptr<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1248,9 +1248,9 @@ MMLEvent *SiMMLSequencer::_on_mml_lf_oscillator(MMLEvent *p_event) {
 	cycle_time *= 1000/60; // Convert to ms.
 
 	if (waveform > 7 && waveform < 255) { // Custom table.
-		Ref<SiMMLEnvelopeTable> ev_table = SiMMLRefTable::get_instance()->get_envelope_table(ev_params[1]);
+		std::shared_ptr<SiMMLEnvelopeTable> ev_table = SiMMLRefTable::get_instance()->get_envelope_table(ev_params[1]);
 		if (ev_table.is_valid()) {
-			Vector<int> table_vector;
+			std::vector<int> table_vector;
 			ev_table->to_vector(256, &table_vector, 0, 255);
 			_current_track->get_channel()->initialize_lfo(-1, table_vector);
 		} else {
@@ -1710,7 +1710,7 @@ void SiMMLSequencer::_register_event_listeners() {
 }
 
 void SiMMLSequencer::_reset_initial_operator_params() {
-	Ref<SiOPMOperatorParams> op_params = _sound_chip->get_init_operator_params();
+	std::shared_ptr<SiOPMOperatorParams> op_params = _sound_chip->get_init_operator_params();
 
 	op_params->set_attack_rate(63);
 	op_params->set_decay_rate(0);
@@ -1811,7 +1811,7 @@ SiMMLSequencer::SiMMLSequencer(SiOPMSoundChip *p_chip) :
 	_sound_chip = p_chip;
 	_connector = memnew(MMLExecutorConnector);
 
-	_macro_strings.resize_zeroed(MACRO_SIZE);
+	_macro_strings.resize(MACRO_SIZE); // TODO zeroed
 
 	_register_event_listeners();
 	_reset_initial_operator_params();

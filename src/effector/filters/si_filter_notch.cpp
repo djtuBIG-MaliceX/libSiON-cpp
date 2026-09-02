@@ -24,7 +24,7 @@ void SiFilterNotch::set_params(double p_frequency, double p_band) {
 	_b2 = 1;
 }
 
-void SiFilterNotch::set_by_mml(Vector<double> p_args) {
+void SiFilterNotch::set_by_mml(std::vector<double> p_args) {
 	double frequency = _get_mml_arg(p_args, 0, 3000);
 	double band = _get_mml_arg(p_args, 1, 1);
 

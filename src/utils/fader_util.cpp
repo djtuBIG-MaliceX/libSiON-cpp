@@ -6,7 +6,7 @@
 
 #include "fader_util.h"
 
-#include <godot_cpp/variant/variant.hpp>
+//#include <godot_cpp/variant/variant.hpp>
 
 bool FaderUtil::is_active() const {
 	return _counter > 0;

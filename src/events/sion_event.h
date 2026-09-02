@@ -7,21 +7,21 @@
 #ifndef SION_EVENT_H
 #define SION_EVENT_H
 
-#include <godot_cpp/classes/ref_counted.hpp>
-#include <godot_cpp/variant/packed_vector2_array.hpp>
+//#include <godot_cpp/classes/ref_counted.hpp>
+//#include <godot_cpp/variant/packed_vector2_array.hpp>
 
-using namespace godot;
+
 
 class SiONData;
 class SiONDriver;
 
 class SiONEvent : public RefCounted {
-	GDCLASS(SiONEvent, RefCounted)
+	//GDCLASS(SiONEvent, RefCounted)
 
-	String _event_type;
+	std::string _event_type;
 
 	SiONDriver *_driver = nullptr;
-	PackedVector2Array _stream_buffer;
+	Packedstd::vector2Array _stream_buffer;
 
 protected:
 	static void _bind_methods();
@@ -71,15 +71,15 @@ public:
 
 	// Properties.
 
-	String get_event_type() const { return _event_type; }
+	std::string get_event_type() const { return _event_type; }
 
 	SiONDriver *get_driver() const { return _driver; }
-	Ref<SiONData> get_data() const;
-	PackedVector2Array get_stream_buffer() const { return _stream_buffer; }
+	std::shared_ptr<SiONData> get_data() const;
+	Packedstd::vector2Array get_stream_buffer() const { return _stream_buffer; }
 
 	//
 
-	SiONEvent(String p_type = String(), SiONDriver *p_driver = nullptr, PackedVector2Array p_stream_buffer = PackedVector2Array());
+	SiONEvent(std::string p_type = std::string(), SiONDriver *p_driver = nullptr, Packedstd::vector2Array p_stream_buffer = Packedstd::vector2Array());
 	~SiONEvent() {}
 };
 

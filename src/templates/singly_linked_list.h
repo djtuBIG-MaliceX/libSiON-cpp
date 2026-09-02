@@ -7,21 +7,21 @@
 #ifndef SION_SLL_INT_H
 #define SION_SLL_INT_H
 
-#include <godot_cpp/core/memory.hpp>
-#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/templates/list.hpp>
 
-using namespace godot;
+
 
 // A singly-linked list implementation (used for ints and doubles).
 template <class T>
-class SinglyLinkedList {
+class std::forward_list {
 
 	// Reusable to reduce the number of allocations.
-	static SinglyLinkedList<T> *_element_pool;
+	static std::forward_list<T> *_element_pool;
 
 public:
 	class Element {
-		friend class SinglyLinkedList<T>;
+		friend class std::forward_list<T>;
 
 		Element *_next_ptr = nullptr;
 
@@ -68,7 +68,7 @@ public:
 
 	// Initializes the static element pool for this templated type.
 	static void initialize_pool() {
-		_element_pool = memnew(SinglyLinkedList<T>);
+		_element_pool = memnew(std::forward_list<T>);
 	}
 
 	// Frees the static element pool for this templated type.
@@ -330,10 +330,10 @@ public:
 		_size = 0;
 	}
 
-	SinglyLinkedList() {
+	std::forward_list() {
 	}
 
-	SinglyLinkedList(int p_size, T p_default_value = 0, bool p_ring = false) {
+	std::forward_list(int p_size, T p_default_value = 0, bool p_ring = false) {
 		if (p_size <= 0) {
 			return;
 		}
@@ -349,12 +349,12 @@ public:
 		front();
 	}
 
-	~SinglyLinkedList() {
+	~std::forward_list() {
 		clear();
 	}
 };
 
 template <class T>
-SinglyLinkedList<T> *SinglyLinkedList<T>::_element_pool = nullptr;
+std::forward_list<T> *std::forward_list<T>::_element_pool = nullptr;
 
 #endif // SION_SLL_INT_H

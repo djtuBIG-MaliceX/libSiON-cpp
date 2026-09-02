@@ -7,15 +7,15 @@
 #ifndef SI_CONTROLLABLE_FILTER_HIGH_PASS_H
 #define SI_CONTROLLABLE_FILTER_HIGH_PASS_H
 
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "effector/filters/si_controllable_filter_base.h"
 
-using namespace godot;
+
 
 class SiControllableFilterHighPass : public SiControllableFilterBase {
-	GDCLASS(SiControllableFilterHighPass, SiControllableFilterBase)
+	//GDCLASS(SiControllableFilterHighPass, SiControllableFilterBase)
 
-	virtual void _process_lfo(Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual void _process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
 protected:
 	static void _bind_methods() {}

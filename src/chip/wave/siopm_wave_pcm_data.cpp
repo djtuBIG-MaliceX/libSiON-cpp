@@ -6,33 +6,33 @@
 
 #include "siopm_wave_pcm_data.h"
 
-#include <godot_cpp/core/math.hpp>
-#include <godot_cpp/classes/audio_stream.hpp>
+//#include <godot_cpp/core/math.hpp>
+//#include <godot_cpp/classes/audio_stream.hpp>
 
 #include "sion_enums.h"
 #include "chip/siopm_ref_table.h"
 #include "utils/transformer_util.h"
 
-using namespace godot;
 
-Vector<double> SiOPMWavePCMData::_sin_table;
+
+std::vector<double> SiOPMWavePCMData::_sin_table;
 
 void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel_count, int p_channel_count) {
-	int source_channels = CLAMP(p_src_channel_count, 1, 2);
-	int target_channels = (p_channel_count == 0 ? source_channels : CLAMP(p_channel_count, 1, 2));
+	int source_channels = std::clamp(p_src_channel_count, 1, 2);
+	int target_channels = (p_channel_count == 0 ? source_channels : std::clamp(p_channel_count, 1, 2));
 
 	Variant::Type data_type = p_data.get_type();
 	switch (data_type) {
 		case Variant::PACKED_INT32_ARRAY: {
-			// TODO: If someday Vector<T> and Packed*Arrays become friends, this can be simplified.
+			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
 			for (int value : (PackedInt32Array)p_data) {
 				_wavelet.append(value);
 			}
 		} break;
 
 		case Variant::PACKED_FLOAT32_ARRAY: {
-			// TODO: If someday Vector<T> and Packed*Arrays become friends, this can be simplified.
-			Vector<double> raw_data;
+			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
+			std::vector<double> raw_data;
 			for (double value : (PackedFloat32Array)p_data) {
 				raw_data.append(value);
 			}
@@ -41,9 +41,9 @@ void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel
 		} break;
 
 		case Variant::OBJECT: {
-			Ref<AudioStream> audio_stream = p_data;
+			std::shared_ptr<AudioStream> audio_stream = p_data;
 			if (audio_stream.is_valid()) {
-				Vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
+				std::vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
 				if (p_channel_count == 0) { // Update if necessary.
 					target_channels = source_channels;
 				}
@@ -52,7 +52,7 @@ void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel
 				break;
 			}
 
-			ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
+			//ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
 		} break;
 
 		case Variant::NIL: {
@@ -60,7 +60,7 @@ void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel
 		} break;
 
 		default: {
-			ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
+			//ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
 		} break;
 	}
 
@@ -171,11 +171,11 @@ void SiOPMWavePCMData::loop_tail_samples(int p_sample_count, int p_tail_margin, 
 		double delta_sin = 1.5707963267948965 / max_idx;
 
 		if (_sin_table.size() != max_idx) {
-			_sin_table.resize_zeroed(max_idx);
+			_sin_table.resize(max_idx); // TODO zeroed
 
 			double sin_value = 0;
 			for (int i = 0; i < max_idx; i++) {
-				_sin_table.write[i] = Math::sin(sin_value);
+				_sin_table[i] = Math::sin(sin_value);
 				sin_value += delta_sin;
 			}
 		}
@@ -192,7 +192,7 @@ void SiOPMWavePCMData::loop_tail_samples(int p_sample_count, int p_tail_margin, 
 			int val1 = _wavelet[idx1] + envelope_top;
 
 			int j = max_idx - 1 - i;
-			_wavelet.write[idx0] = SiOPMRefTable::calculate_log_table_index((log_table[val0] * _sin_table[j] + log_table[val1] * _sin_table[i]) * i2n);
+			_wavelet[idx0] = SiOPMRefTable::calculate_log_table_index((log_table[val0] * _sin_table[j] + log_table[val1] * _sin_table[i]) * i2n);
 		}
 	}
 }

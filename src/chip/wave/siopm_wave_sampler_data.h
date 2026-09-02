@@ -7,16 +7,16 @@
 #ifndef SIOPM_WAVE_SAMPLER_DATA_H
 #define SIOPM_WAVE_SAMPLER_DATA_H
 
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/variant.hpp>
+//#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/variant/variant.hpp>
 #include "chip/wave/siopm_wave_base.h"
 
-using namespace godot;
+
 
 class SiOPMWaveSamplerData : public SiOPMWaveBase {
-	GDCLASS(SiOPMWaveSamplerData, SiOPMWaveBase)
+	//GDCLASS(SiOPMWaveSamplerData, SiOPMWaveBase)
 
-	Vector<double> _wave_data;
+	std::vector<double> _wave_data;
 	int _channel_count = 0;
 	int _pan = 0;
 	// This flag is only available for non-loop samples.
@@ -40,7 +40,7 @@ protected:
 	static void _bind_methods() {};
 
 public:
-	Vector<double> get_wave_data() const { return _wave_data; }
+	std::vector<double> get_wave_data() const { return _wave_data; }
 	int get_channel_count() const { return _channel_count; }
 	int get_pan() const { return _pan; }
 	int get_length() const;

@@ -7,13 +7,13 @@
 #ifndef MML_SYSTEM_COMMAND_H
 #define MML_SYSTEM_COMMAND_H
 
-#include <godot_cpp/classes/ref_counted.hpp>
-#include <godot_cpp/variant/string.hpp>
+//#include <godot_cpp/classes/ref_counted.hpp>
+//#include <godot_cpp/variant/string.hpp>
 
-using namespace godot;
+
 
 class MMLSystemCommand : public RefCounted {
-	GDCLASS(MMLSystemCommand, RefCounted)
+	//GDCLASS(MMLSystemCommand, RefCounted)
 
 protected:
 	static void _bind_methods() {}
@@ -21,10 +21,10 @@ protected:
 public:
 	// For the given MML string "#ABC5{def}ghi;"...
 
-	String command; // Command name; always starts with "#", e.g. command = "#ABC"
+	std::string command; // Command name; always starts with "#", e.g. command = "#ABC"
 	int number = 0; // Number after command, e.g. number = 5
-	String content; // String inside {..}, e.g. content = "def"
-	String postfix; // String at the end of the command, e.g. postfix = "ghi"
+	std::string content; // std::string inside {..}, e.g. content = "def"
+	std::string postfix; // std::string at the end of the command, e.g. postfix = "ghi"
 
 	MMLSystemCommand() {}
 	~MMLSystemCommand() {}

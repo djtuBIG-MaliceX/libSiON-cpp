@@ -6,7 +6,7 @@
 
 #include "siopm_channel_base.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "chip/siopm_sound_chip.h"
 #include "chip/siopm_stream.h"
 #include "utils/godot_util.h"
@@ -21,8 +21,8 @@ int SiOPMChannelBase::get_master_volume() const {
 }
 
 void SiOPMChannelBase::set_master_volume(int p_value) {
-	int value = CLAMP(p_value, 0, 128);
-	_volumes.write[0] = value * 0.0078125; // 0.0078125 = 1/128
+	int value = std::clamp(p_value, 0, 128);
+	_volumes[0] = value * 0.0078125; // 0.0078125 = 1/128
 }
 
 // External value is in the -64 to 64 range (from all the way to the left,
@@ -35,7 +35,7 @@ int SiOPMChannelBase::get_pan() const {
 }
 
 void SiOPMChannelBase::set_pan(int p_value) {
-	_pan = CLAMP(p_value, -64, 64) + 64;
+	_pan = std::clamp(p_value, -64, 64) + 64;
 }
 
 //
@@ -46,10 +46,10 @@ void SiOPMChannelBase::set_filter_type(int p_type) {
 
 // Volume control.
 
-void SiOPMChannelBase::set_all_stream_send_levels(Vector<int> p_levels) {
+void SiOPMChannelBase::set_all_stream_send_levels(std::vector<int> p_levels) {
 	for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
 		int value = p_levels[i];
-		_volumes.write[i] = value != INT32_MIN ? value * 0.0078125 : 0;
+		_volumes[i] = value != INT32_MIN ? value * 0.0078125 : 0;
 	}
 
 	_has_effect_send = false;
@@ -61,11 +61,11 @@ void SiOPMChannelBase::set_all_stream_send_levels(Vector<int> p_levels) {
 }
 
 void SiOPMChannelBase::set_stream_buffer(int p_stream_num, SiOPMStream *p_stream) {
-	_streams.write[p_stream_num] = p_stream;
+	_streams[p_stream_num] = p_stream;
 }
 
 void SiOPMChannelBase::set_stream_send(int p_stream_num, double p_volume) {
-	_volumes.write[p_stream_num] = p_volume;
+	_volumes[p_stream_num] = p_volume;
 	if (p_stream_num == 0) {
 		return;
 	}
@@ -88,7 +88,7 @@ double SiOPMChannelBase::get_stream_send(int p_stream_num) {
 
 // LFO control.
 
-void SiOPMChannelBase::initialize_lfo(int p_waveform, Vector<int> p_custom_wave_table) {
+void SiOPMChannelBase::initialize_lfo(int p_waveform, std::vector<int> p_custom_wave_table) {
 	if (p_waveform == -1 && p_custom_wave_table.size() == SiOPMRefTable::LFO_TABLE_SIZE) {
 		_lfo_wave_shape = -1;
 		_lfo_wave_table = p_custom_wave_table;
@@ -113,12 +113,12 @@ void SiOPMChannelBase::set_lfo_cycle_time(double p_ms) {
 // Filter control.
 
 void SiOPMChannelBase::set_sv_filter(int p_cutoff, int p_resonance, int p_attack_rate, int p_decay_rate1, int p_decay_rate2, int p_release_rate, int p_decay_cutoff1, int p_decay_cutoff2, int p_sustain_cutoff, int p_release_cutoff) {
-	_filter_eg_cutoff[EG_ATTACK]  = CLAMP(p_cutoff, 0, 128);
-	_filter_eg_cutoff[EG_DECAY1]  = CLAMP(p_decay_cutoff1, 0, 128);
-	_filter_eg_cutoff[EG_DECAY2]  = CLAMP(p_decay_cutoff2, 0, 128);
-	_filter_eg_cutoff[EG_SUSTAIN] = CLAMP(p_sustain_cutoff, 0, 128);
+	_filter_eg_cutoff[EG_ATTACK]  = std::clamp(p_cutoff, 0, 128);
+	_filter_eg_cutoff[EG_DECAY1]  = std::clamp(p_decay_cutoff1, 0, 128);
+	_filter_eg_cutoff[EG_DECAY2]  = std::clamp(p_decay_cutoff2, 0, 128);
+	_filter_eg_cutoff[EG_SUSTAIN] = std::clamp(p_sustain_cutoff, 0, 128);
 	_filter_eg_cutoff[EG_RELEASE] = 0;
-	_filter_eg_cutoff[EG_OFF]     = CLAMP(p_release_cutoff, 0, 128);
+	_filter_eg_cutoff[EG_OFF]     = std::clamp(p_release_cutoff, 0, 128);
 
 	_filter_eg_time[EG_ATTACK]  = _table->filter_eg_rate[p_attack_rate & 63];
 	_filter_eg_time[EG_DECAY1]  = _table->filter_eg_rate[p_decay_rate1 & 63];
@@ -127,7 +127,7 @@ void SiOPMChannelBase::set_sv_filter(int p_cutoff, int p_resonance, int p_attack
 	_filter_eg_time[EG_RELEASE] = _table->filter_eg_rate[p_release_rate & 63];
 	_filter_eg_time[EG_OFF]     = INT32_MAX;
 
-	_resonance = (1 << (9 - CLAMP(p_resonance, 0, 9))) * 0.001953125; // 0.001953125 = 1/512
+	_resonance = (1 << (9 - std::clamp(p_resonance, 0, 9))) * 0.001953125; // 0.001953125 = 1/512
 	_filter_on = (p_cutoff < 128 || p_resonance > 0 || p_attack_rate > 0 || p_release_rate > 0);
 }
 
@@ -281,8 +281,8 @@ void SiOPMChannelBase::reset_channel_buffer_status() {
 	_buffer_index = 0;
 }
 
-void SiOPMChannelBase::_apply_ring_modulation(SinglyLinkedList<int>::Element *p_buffer_start, int p_length) {
-	SinglyLinkedList<int>::Element *target = p_buffer_start;
+void SiOPMChannelBase::_apply_ring_modulation(std::forward_list<int>::Element *p_buffer_start, int p_length) {
+	std::forward_list<int>::Element *target = p_buffer_start;
 
 	for (int i = 0; i < p_length; i++) {
 		target->value *= _ring_pipe->get()->value * _ringmod_level;
@@ -291,15 +291,15 @@ void SiOPMChannelBase::_apply_ring_modulation(SinglyLinkedList<int>::Element *p_
 	}
 }
 
-void SiOPMChannelBase::_apply_sv_filter(SinglyLinkedList<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]) {
-	int cutoff = CLAMP(_cutoff_frequency + _cutoff_offset, 0, 128);
+void SiOPMChannelBase::_apply_sv_filter(std::forward_list<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]) {
+	int cutoff = std::clamp(_cutoff_frequency + _cutoff_offset, 0, 128);
 	double cutoff_value = _table->filter_cutoff_table[cutoff];
 	double feedback_value = _resonance; // * _table->filter_feedback_table[out]; // This is commented out in original code.
 
 	// Previous setting.
 	int step = _filter_eg_residue;
 
-	SinglyLinkedList<int>::Element *target = p_buffer_start;
+	std::forward_list<int>::Element *target = p_buffer_start;
 	int length = p_length;
 	while (length >= step) {
 		// Process.
@@ -316,7 +316,7 @@ void SiOPMChannelBase::_apply_sv_filter(SinglyLinkedList<int>::Element *p_buffer
 		// Change cutoff and shift state.
 
 		_cutoff_frequency += _filter_eg_cutoff_inc;
-		cutoff = CLAMP(_cutoff_frequency + _cutoff_offset, 0, 128);
+		cutoff = std::clamp(_cutoff_frequency + _cutoff_offset, 0, 128);
 		cutoff_value = _table->filter_cutoff_table[cutoff];
 		feedback_value = _resonance; // * _table->filter_feedback_table[out]; // This is commented out in original code.
 
@@ -348,7 +348,7 @@ void SiOPMChannelBase::buffer(int p_length) {
 	}
 
 	// Preserve the start of the output pipe.
-	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
+	std::forward_list<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
 	if (_process_function.is_valid()) {
@@ -393,8 +393,8 @@ void SiOPMChannelBase::initialize(SiOPMChannelBase *p_prev, int p_buffer_index) 
 
 	if (p_prev && p_prev != this) {
 		for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-			_volumes.write[i] = p_prev->_volumes[i];
-			_streams.write[i] = p_prev->_streams[i];
+			_volumes[i] = p_prev->_volumes[i];
+			_streams[i] = p_prev->_streams[i];
 		}
 
 		_pan = p_prev->_pan;
@@ -403,11 +403,11 @@ void SiOPMChannelBase::initialize(SiOPMChannelBase *p_prev, int p_buffer_index) 
 		COPY_TL_TABLE(_velocity_table, p_prev->_velocity_table);
 		COPY_TL_TABLE(_expression_table, p_prev->_expression_table);
 	} else if (!p_prev) {
-		_volumes.write[0] = 0.5;
-		_streams.write[0] = nullptr;
+		_volumes[0] = 0.5;
+		_streams[0] = nullptr;
 		for (int i = 1; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-			_volumes.write[i] = 0;
-			_streams.write[i] = nullptr;
+			_volumes[i] = 0;
+			_streams[i] = nullptr;
 		}
 
 		_pan = 64;
@@ -447,8 +447,8 @@ void SiOPMChannelBase::reset() {
 	_is_idling = true;
 }
 
-String SiOPMChannelBase::_to_string() const {
-	String params = "";
+std::string SiOPMChannelBase::_to_string() const {
+	std::string params = "";
 
 	params += "feedback=" + itos(_input_level - 6) + ", ";
 	params += "vol=" + rtos(_volumes[0]) + ", ";
@@ -468,9 +468,9 @@ SiOPMChannelBase::SiOPMChannelBase(SiOPMSoundChip *p_chip) {
 	_process_function = Callable(this, "_no_process");
 
 	_streams.clear();
-	_streams.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
+	_streams.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
 	_volumes.clear();
-	_volumes.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
+	_volumes.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
 }
 
 #undef COPY_TL_TABLE

@@ -6,9 +6,9 @@
 
 #include "sion_voice.h"
 
-#include <godot_cpp/classes/reg_ex.hpp>
-#include <godot_cpp/classes/reg_ex_match.hpp>
-#include <godot_cpp/core/memory.hpp>
+////#include <godot_cpp/classes/reg_ex.hpp>
+////#include <godot_cpp/classes/reg_ex_match.hpp>
+////#include <godot_cpp/core/memory.hpp>
 
 #include "sion_enums.h"
 #include "chip/siopm_channel_params.h"
@@ -22,92 +22,92 @@
 #include "utils/godot_util.h"
 #include "utils/translator_util.h"
 
-void SiONVoice::set_params(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_siopm_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_SIOPM;
 }
 
-void SiONVoice::set_params_opl(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_opl(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_opl_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_OPL;
 }
 
-void SiONVoice::set_params_opm(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_opm(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_opm_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_OPM;
 }
 
-void SiONVoice::set_params_opn(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_opn(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_opn_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_OPN;
 }
 
-void SiONVoice::set_params_opx(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_opx(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_opx_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_OPX;
 }
 
-void SiONVoice::set_params_ma3(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_ma3(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_ma3_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_MA3;
 
 }
 
-void SiONVoice::set_params_al(TypedArray<int> p_args) {
-	Vector<int> data = make_vector_from_typed_array<int>(p_args);
+void SiONVoice::set_params_al(std::vector<int> p_args) {
+	std::vector<int> data = make_vector_from_typed_array<int>(p_args);
 	TranslatorUtil::set_al_params(channel_params, data);
 	chip_type = SiONChipType::CHIP_ANALOG_LIKE;
 
 }
 
-TypedArray<int> SiONVoice::get_params() const {
-	Vector<int> data = TranslatorUtil::get_siopm_params(channel_params);
+std::vector<int> SiONVoice::get_params() const {
+	std::vector<int> data = TranslatorUtil::get_siopm_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_opl() const {
-	Vector<int> data = TranslatorUtil::get_opl_params(channel_params);
+std::vector<int> SiONVoice::get_params_opl() const {
+	std::vector<int> data = TranslatorUtil::get_opl_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_opm() const {
-	Vector<int> data = TranslatorUtil::get_opm_params(channel_params);
+std::vector<int> SiONVoice::get_params_opm() const {
+	std::vector<int> data = TranslatorUtil::get_opm_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_opn() const {
-	Vector<int> data = TranslatorUtil::get_opn_params(channel_params);
+std::vector<int> SiONVoice::get_params_opn() const {
+	std::vector<int> data = TranslatorUtil::get_opn_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_opx() const {
-	Vector<int> data = TranslatorUtil::get_opx_params(channel_params);
+std::vector<int> SiONVoice::get_params_opx() const {
+	std::vector<int> data = TranslatorUtil::get_opx_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_ma3() const {
-	Vector<int> data = TranslatorUtil::get_ma3_params(channel_params);
+std::vector<int> SiONVoice::get_params_ma3() const {
+	std::vector<int> data = TranslatorUtil::get_ma3_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-TypedArray<int> SiONVoice::get_params_al() const {
-	Vector<int> data = TranslatorUtil::get_ma3_params(channel_params);
+std::vector<int> SiONVoice::get_params_al() const {
+	std::vector<int> data = TranslatorUtil::get_ma3_params(channel_params);
 	return make_typed_array_from_vector<int>(data);
 }
 
-String SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_postfix) const {
+std::string SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_postfix) const {
 	SiONChipType type = p_chip_type;
 	if (type == SiONChipType::CHIP_AUTO) {
 		type = chip_type;
 	}
 
-	String mml;
+	std::string mml;
 	switch (type) {
 		case SiONChipType::CHIP_SIOPM:
 			mml = "#@"    + itos(p_index) + TranslatorUtil::get_siopm_params_as_mml(channel_params, " ", "\n", _name);
@@ -131,13 +131,13 @@ String SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_p
 			mml = "#AL@"  + itos(p_index) + TranslatorUtil::get_al_params_as_mml(channel_params, " ", "\n", _name);
 			break;
 		default:
-			ERR_FAIL_V_MSG("", vformat("SiONVoice: Chip type %d is unsupported for MML strings.", type));
+			//ERR_FAIL_V_MSG("", vformat("SiONVoice: Chip type %d is unsupported for MML strings.", type));
 	}
 
 	if (p_append_postfix) {
-		Ref<SiONVoice> this_voice = const_cast<SiONVoice *>(this);
-		String postfix = TranslatorUtil::get_voice_setting_as_mml(this_voice);
-		if (!postfix.is_empty()) {
+		std::shared_ptr<SiONVoice> this_voice = const_cast<SiONVoice *>(this);
+		std::string postfix = TranslatorUtil::get_voice_setting_as_mml(this_voice);
+		if (!postfix.empty()()) {
 			mml += "\n" + postfix;
 		}
 	}
@@ -145,19 +145,19 @@ String SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_p
 	return mml + ";";
 }
 
-int SiONVoice::set_by_mml(String p_mml) {
+int SiONVoice::set_by_mml(std::string p_mml) {
 	reset();
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_command = RegEx::create_from_string("(?s)(#[A-Z]*@)\\s*(\\d+)\\s*{(.*?)}(.*?);");
-	Ref<RegExMatch> res = re_command->search(p_mml);
+	std::shared_ptr<RegEx> re_command = RegEx::create_from_string("(?s)(#[A-Z]*@)\\s*(\\d+)\\s*{(.*?)}(.*?);");
+	std::shared_ptr<RegExMatch> res = re_command->search(p_mml);
 	if (res.is_null()) {
 		return -1;
 	}
 
-	String command = res->get_string(1);
-	String data = res->get_string(3);
+	std::string command = res->get_string(1);
+	std::string data = res->get_string(3);
 
 	if (command == "#@") {
 		TranslatorUtil::parse_siopm_params(channel_params, data);
@@ -184,11 +184,11 @@ int SiONVoice::set_by_mml(String p_mml) {
 		return -1;
 	}
 
-	String postfix = res->get_string(4);
+	std::string postfix = res->get_string(4);
 	int voice_index = res->get_string(2).to_int();
 	TranslatorUtil::parse_voice_setting(this, postfix);
 
-	Ref<RegEx> re_name = RegEx::create_from_string("^.*?(//\\s*(.+?))?[\\n\\r]");
+	std::shared_ptr<RegEx> re_name = RegEx::create_from_string("^.*?(//\\s*(.+?))?[\\n\\r]");
 	res = re_name->search(data);
 	if (res.is_valid()) {
 		_name = res->get_string(2);
@@ -199,75 +199,75 @@ int SiONVoice::set_by_mml(String p_mml) {
 	return voice_index;
 }
 
-Ref<SiOPMWaveTable> SiONVoice::set_wave_table(Vector<double> *p_data) {
+std::shared_ptr<SiOPMWaveTable> SiONVoice::set_wave_table(std::vector<double> *p_data) {
 	module_type = SiONModuleType::MODULE_SCC;
 
-	Vector<int> table;
+	std::vector<int> table;
 	for (int i = 0; i < p_data->size(); i++) {
 		int table_index = SiOPMRefTable::calculate_log_table_index((*p_data)[i]);
 		table.append(table_index);
 	}
 
-	Ref<SiOPMWaveTable> wave_table = memnew(SiOPMWaveTable(table));
+	std::shared_ptr<SiOPMWaveTable> wave_table = memnew(SiOPMWaveTable(table));
 	wave_data = wave_table;
 
 	return wave_data;
 }
 
-Ref<SiOPMWavePCMData> SiONVoice::set_pcm_voice(const Variant &p_data, int p_sampling_note, int p_src_channel_count, int p_channel_count) {
+std::shared_ptr<SiOPMWavePCMData> SiONVoice::set_pcm_voice(const Variant &p_data, int p_sampling_note, int p_src_channel_count, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_PCM;
 
-	Ref<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, p_sampling_note * 64, p_src_channel_count, p_channel_count));
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, p_sampling_note * 64, p_src_channel_count, p_channel_count));
 	wave_data = pcm_data;
 
 	return wave_data;
 }
 
-Ref<SiOPMWavePCMData> SiONVoice::set_pcm_wave(int p_index, const Variant &p_data, int p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_count, int p_channel_count) {
+std::shared_ptr<SiOPMWavePCMData> SiONVoice::set_pcm_wave(int p_index, const Variant &p_data, int p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_count, int p_channel_count) {
 	if (module_type != SiONModuleType::MODULE_PCM || channel_num != p_index) {
-		wave_data = Ref<SiOPMWaveBase>();
+		wave_data = std::shared_ptr<SiOPMWaveBase>();
 	}
 
 	module_type = SiONModuleType::MODULE_PCM;
 	channel_num = p_index;
 
-	Ref<SiOPMWavePCMTable> pcm_table = wave_data;
+	std::shared_ptr<SiOPMWavePCMTable> pcm_table = wave_data;
 	if (pcm_table.is_null()) {
-		pcm_table = Ref<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
+		pcm_table = std::shared_ptr<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
 		wave_data = pcm_table;
 	}
 
-	Ref<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, int(p_sampling_note * 64), p_src_channel_count, p_channel_count));
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, int(p_sampling_note * 64), p_src_channel_count, p_channel_count));
 	pcm_table->set_key_range_data(pcm_data, p_key_range_from, p_key_range_to);
 
 	return pcm_data;
 }
 
-Ref<SiOPMWaveSamplerData> SiONVoice::set_sampler_voice(const Variant &p_data, bool p_ignore_note_off, int p_channel_count) {
+std::shared_ptr<SiOPMWaveSamplerData> SiONVoice::set_sampler_voice(const Variant &p_data, bool p_ignore_note_off, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
-	Ref<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, 0, 2, p_channel_count));
+	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, 0, 2, p_channel_count));
 	wave_data = sampler_data;
 
 	return wave_data;
 }
 
-Ref<SiOPMWaveSamplerData> SiONVoice::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
+std::shared_ptr<SiOPMWaveSamplerData> SiONVoice::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
-	Ref<SiOPMWaveSamplerTable> sampler_table = wave_data;
+	std::shared_ptr<SiOPMWaveSamplerTable> sampler_table = wave_data;
 	if (sampler_table.is_null()) {
-		sampler_table = Ref<SiOPMWaveSamplerTable>(memnew(SiOPMWaveSamplerTable));
+		sampler_table = std::shared_ptr<SiOPMWaveSamplerTable>(memnew(SiOPMWaveSamplerTable));
 		wave_data = sampler_table;
 	}
 
-	Ref<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count));
+	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count));
 	sampler_table->set_sample(sampler_data, p_index & (SiOPMRefTable::NOTE_TABLE_SIZE - 1));
 
 	return sampler_data;
 }
 
-void SiONVoice::set_sampler_table(const Ref<SiOPMWaveSamplerTable> &p_table) {
+void SiONVoice::set_sampler_table(const std::shared_ptr<SiOPMWaveSamplerTable> &p_table) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
 	wave_data = p_table;
@@ -277,7 +277,7 @@ void SiONVoice::set_pms_guitar(int p_attack_rate, int p_decay_rate, int p_total_
 	module_type = SiONModuleType::MODULE_KS;
 	channel_num = 1;
 
-	TypedArray<int> param_args = make_typed_array_from_vector<int>({ 1, 0, 0, p_wave_shape, p_attack_rate, p_decay_rate, 0, 63, 15, p_total_level, 0, 0, 1, 0, 0, 0, 0, p_fixed_pitch });
+	std::vector<int> param_args = make_typed_array_from_vector<int>({ 1, 0, 0, p_wave_shape, p_attack_rate, p_decay_rate, 0, 63, 15, p_total_level, 0, 0, 1, 0, 0, 0, 0, p_fixed_pitch });
 	set_params(param_args);
 	pms_tension = p_tension;
 	chip_type = SiONChipType::CHIP_PMS_GUITAR;
@@ -290,7 +290,7 @@ void SiONVoice::set_analog_like(int p_connection_type, int p_wave_shape1, int p_
 	channel_params->get_operator_params(0)->set_pulse_generator_type(p_wave_shape1);
 	channel_params->get_operator_params(1)->set_pulse_generator_type(p_wave_shape2);
 
-	int balance = CLAMP(p_balance, -64, 64);
+	int balance = std::clamp(p_balance, -64, 64);
 	int (&level_table)[129] = SiOPMRefTable::get_instance()->eg_linear_to_total_level_table;
 	channel_params->get_operator_params(0)->set_total_level(level_table[64 - balance]);
 	channel_params->get_operator_params(1)->set_total_level(level_table[balance + 64]);
@@ -303,7 +303,7 @@ void SiONVoice::set_analog_like(int p_connection_type, int p_wave_shape1, int p_
 
 void SiONVoice::set_envelope(int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level) {
 	for (int i = 0; i < channel_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = channel_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = channel_params->get_operator_params(i);
 		op_params->set_attack_rate(p_attack_rate);
 		op_params->set_decay_rate(p_decay_rate);
 		op_params->set_sustain_rate(p_sustain_rate);
@@ -345,8 +345,8 @@ void SiONVoice::set_pitch_modulation(int p_depth, int p_end_depth, int p_delay, 
 	pitch_modulation_term = p_term;
 }
 
-Ref<SiONVoice> SiONVoice::clone() {
-	Ref<SiONVoice> new_voice;
+std::shared_ptr<SiONVoice> SiONVoice::clone() {
+	std::shared_ptr<SiONVoice> new_voice;
 	new_voice.instantiate();
 	new_voice->copy_from(this);
 	new_voice->_name = _name;
@@ -361,7 +361,7 @@ void SiONVoice::reset() {
 	set_update_track_parameters(true);
 }
 
-Ref<SiONVoice> SiONVoice::create(SiONModuleType p_module_type, int p_channel_num, int p_attack_rate, int p_release_rate, int p_pitch_shift, int p_connection_type, int p_wave_shape2, int p_pitch_shift2) {
+std::shared_ptr<SiONVoice> SiONVoice::create(SiONModuleType p_module_type, int p_channel_num, int p_attack_rate, int p_release_rate, int p_pitch_shift, int p_connection_type, int p_wave_shape2, int p_pitch_shift2) {
 	return memnew(SiONVoice(p_module_type, p_channel_num, p_attack_rate, p_release_rate, p_pitch_shift, p_connection_type, p_wave_shape2, p_pitch_shift2));
 }
 

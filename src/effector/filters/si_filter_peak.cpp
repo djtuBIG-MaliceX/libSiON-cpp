@@ -27,7 +27,7 @@ void SiFilterPeak::set_params(double p_frequency, double p_band, double p_gain) 
 	_b2 = (1 - alpA) * ia0;
 }
 
-void SiFilterPeak::set_by_mml(Vector<double> p_args) {
+void SiFilterPeak::set_by_mml(std::vector<double> p_args) {
 	double frequency = _get_mml_arg(p_args, 0, 3000);
 	double band      = _get_mml_arg(p_args, 1, 1);
 	double gain      = _get_mml_arg(p_args, 2, 6);

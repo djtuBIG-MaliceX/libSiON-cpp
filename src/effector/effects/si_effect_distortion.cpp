@@ -41,7 +41,7 @@ int SiEffectDistortion::prepare_process() {
 	return 1;
 }
 
-int SiEffectDistortion::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectDistortion::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -51,7 +51,7 @@ int SiEffectDistortion::process(int p_channels, Vector<double> *r_buffer, int p_
 	}
 
 	for (int i = start_index; i < (start_index + length); i += 2) {
-		double value = CLAMP((*r_buffer)[i] * _pre_scale, -_limit, _limit);
+		double value = std::clamp((*r_buffer)[i] * _pre_scale, -_limit, _limit);
 
 		double output = value;
 		if (_filter_enabled) {
@@ -64,14 +64,14 @@ int SiEffectDistortion::process(int p_channels, Vector<double> *r_buffer, int p_
 			_out1 = output;
 		}
 
-		r_buffer->write[i] = output;
-		r_buffer->write[i + 1] = output;
+		r_buffer[i] = output;
+		r_buffer[i + 1] = output;
 	}
 
 	return 1;
 }
 
-void SiEffectDistortion::set_by_mml(Vector<double> p_args) {
+void SiEffectDistortion::set_by_mml(std::vector<double> p_args) {
 	double pre_gain       = _get_mml_arg(p_args, 0, -60);
 	double post_gain      = _get_mml_arg(p_args, 1, 18);
 	double lpf_frequency  = _get_mml_arg(p_args, 2, 2400);

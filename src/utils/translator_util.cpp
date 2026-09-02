@@ -6,10 +6,10 @@
 
 #include "translator_util.h"
 
-#include <godot_cpp/classes/reg_ex.hpp>
-#include <godot_cpp/classes/reg_ex_match.hpp>
-#include <godot_cpp/core/error_macros.hpp>
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/classes/reg_ex.hpp>
+//#include <godot_cpp/classes/reg_ex_match.hpp>
+//#include <godot_cpp/core/error_macros.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "chip/siopm_channel_params.h"
 #include "chip/siopm_operator_params.h"
 #include "chip/siopm_ref_table.h"
@@ -20,50 +20,52 @@
 #include "sequencer/simml_ref_table.h"
 #include "utils/godot_util.h"
 
+#include <memory>
+
 // Channel params.
 
-Vector<int> TranslatorUtil::_split_data_string(const Ref<SiOPMChannelParams> &p_params, String p_data_string, int p_channel_param_count, int p_operator_param_count, const String &p_command) {
-	if (p_data_string.is_empty()) {
+std::vector<int> TranslatorUtil::_split_data_string(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_data_string, int p_channel_param_count, int p_operator_param_count, const std::string &p_command) {
+	if (p_data_string.empty()) {
 		p_params->set_operator_count(0);
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	Ref<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
-	Ref<RegEx> re_cleanup = RegEx::create_from_string("^[^\\d\\-.]+|[^\\d\\-.]+$");
+	std::shared_ptr<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
+	std::shared_ptr<RegEx> re_cleanup = RegEx::create_from_string("^[^\\d\\-.]+|[^\\d\\-.]+$");
 
-	String sanitized_string = re_comments->sub(p_data_string, "", true);
+	std::string sanitized_string = re_comments->sub(p_data_string, "", true);
 	sanitized_string = re_cleanup->sub(sanitized_string, "", true);
-	PackedStringArray string_data = split_string_by_regex(sanitized_string, "[^\\d\\-.]+");
+	Packedstd::stringArray string_data = split_string_by_regex(sanitized_string, "[^\\d\\-.]+");
 
 	for (int i = 1; i <= SiOPMChannelParams::MAX_OPERATORS; i++) {
 		if (string_data.size() == (p_channel_param_count + p_operator_param_count * i)) {
 			p_params->set_operator_count(i);
 
-			Vector<int> data;
-			data.resize_zeroed(string_data.size());
+			std::vector<int> data;
+			data.resize(string_data.size()); // TODO zeroed
 			for (int i = 0; i < string_data.size(); i++) {
-				data.write[i] = string_data[i].to_int();
+				data[i] = string_data[i].to_int();
 			}
 			return data;
 		}
 	}
 
-	ERR_FAIL_V_MSG(Vector<int>(), vformat("Translator: Invalid parameter count in '%s' (channel: %d, each operator: %d).", p_command, p_channel_param_count, p_operator_param_count));
+	//ERR_FAIL_V_MSG(std::vector<int>(), vformat("Translator: Invalid parameter count in '%s' (channel: %d, each operator: %d).", p_command, p_channel_param_count, p_operator_param_count));
 }
 
-void TranslatorUtil::_check_operator_count(const Ref<SiOPMChannelParams> &p_params, int p_data_length, int p_channel_param_count, int p_operator_param_count, const String &p_command) {
+void TranslatorUtil::_check_operator_count(const std::shared_ptr<SiOPMChannelParams> &p_params, int p_data_length, int p_channel_param_count, int p_operator_param_count, const std::string &p_command) {
 	int op_count = (p_data_length - p_channel_param_count) / p_operator_param_count;
-	ERR_FAIL_COND_MSG(op_count > SiOPMChannelParams::MAX_OPERATORS, vformat("Translator: Invalid operator count in '%s' (parameters for: %d, max: %d).", p_command, op_count, SiOPMChannelParams::MAX_OPERATORS));
-	ERR_FAIL_COND_MSG((op_count * p_operator_param_count + p_channel_param_count) != p_data_length, vformat("Translator: Invalid parameter count in '%s' (total: %d, channel: %d, each operator: %d).", p_command, p_data_length, p_channel_param_count, p_operator_param_count));
+	////ERR_FAIL_COND_MSG(op_count > SiOPMChannelParams::MAX_OPERATORS, vformat("Translator: Invalid operator count in '%s' (parameters for: %d, max: %d).", p_command, op_count, SiOPMChannelParams::MAX_OPERATORS));
+	////ERR_FAIL_COND_MSG((op_count * p_operator_param_count + p_channel_param_count) != p_data_length, vformat("Translator: Invalid parameter count in '%s' (total: %d, channel: %d, each operator: %d).", p_command, p_data_length, p_channel_param_count, p_operator_param_count));
 
 	p_params->set_operator_count(op_count);
 }
 
-int TranslatorUtil::_sanitize_param_loop(int p_value, int p_min, int p_max, const String &p_label) {
+int TranslatorUtil::_sanitize_param_loop(int p_value, int p_min, int p_max, const std::string &p_label) {
 	if (unlikely(p_value < p_min || p_value > p_max)) {
-		ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d). Value will be looped.", p_label, p_value, p_min, p_max));
+		//ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d). Value will be looped.", p_label, p_value, p_min, p_max));
 	}
 
 	// Special case when -1 is allowed. Other negative values still loop, which is ehhh...
@@ -76,29 +78,29 @@ int TranslatorUtil::_sanitize_param_loop(int p_value, int p_min, int p_max, cons
 	return p_value & p_max;
 }
 
-int TranslatorUtil::_sanitize_param_clamp(int p_value, int p_min, int p_max, const String &p_label) {
+int TranslatorUtil::_sanitize_param_clamp(int p_value, int p_min, int p_max, const std::string &p_label) {
 	if (unlikely(p_value < p_min || p_value > p_max)) {
-		ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d). Value will be clamped.", p_label, p_value, p_min, p_max));
+		//ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d). Value will be clamped.", p_label, p_value, p_min, p_max));
 	}
 
-	return CLAMP(p_value, p_min, p_max);
+	return std::clamp(p_value, p_min, p_max);
 }
 
-int TranslatorUtil::_get_params_algorithm(int (&p_algorithms)[4][16], int p_operator_count, int p_data_value, int p_max_value, const String &p_command) {
+int TranslatorUtil::_get_params_algorithm(int (&p_algorithms)[4][16], int p_operator_count, int p_data_value, int p_max_value, const std::string &p_command) {
 	int alg_index = p_operator_count - 1;
-	ERR_FAIL_INDEX_V_MSG(alg_index, 4, -1, vformat("Translator: Invalid operator count (%d) for the algorithm in '%s'.", p_operator_count, p_command));
+	////ERR_FAIL_INDEX_V_MSG(alg_index, 4, -1, vformat("Translator: Invalid operator count (%d) for the algorithm in '%s'.", p_operator_count, p_command));
 
 	// WARN: Max value must be a bitmask, e.g. 0xFF. In other words, it's power-of-2 minus 1 (1, 3, 7, 15, 31, 63, 127, 255, 511).
 	int alg_data = _sanitize_param_loop(p_data_value, 0, p_max_value, "AL");
-	ERR_FAIL_INDEX_V_MSG(alg_data, 16, -1, vformat("Translator: Invalid algorithm parameter %d in '%s'.", p_data_value, p_command));
+	////ERR_FAIL_INDEX_V_MSG(alg_data, 16, -1, vformat("Translator: Invalid algorithm parameter %d in '%s'.", p_data_value, p_command));
 
 	int algorithm = p_algorithms[alg_index][alg_data];
-	ERR_FAIL_COND_V_MSG(algorithm == -1, -1, vformat("Translator: Unsupported algorithm parameter %d in '%s'.", p_data_value, p_command));
+	////ERR_FAIL_COND_V_MSG(algorithm == -1, -1, vformat("Translator: Unsupported algorithm parameter %d in '%s'.", p_data_value, p_command));
 
 	return algorithm;
 }
 
-void TranslatorUtil::_set_siopm_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_siopm_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -113,7 +115,7 @@ void TranslatorUtil::_set_siopm_params_by_array(const Ref<SiOPMChannelParams> &p
 
 	int data_index = 3;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		op_params->set_pulse_generator_type    (_sanitize_param_loop(p_data[data_index++], 0, 511,  "WS"));       // 1
 		op_params->attack_rate                = _sanitize_param_loop(p_data[data_index++], 0, 63,   "AR");        // 2
@@ -133,7 +135,7 @@ void TranslatorUtil::_set_siopm_params_by_array(const Ref<SiOPMChannelParams> &p
 	}
 }
 
-void TranslatorUtil::_set_opl_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_opl_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -153,7 +155,7 @@ void TranslatorUtil::_set_opl_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		int pg_type = SiONPulseGeneratorType::PULSE_MA3_SINE + _sanitize_param_loop(p_data[data_index++], 0, 31, "WS");
 		op_params->set_pulse_generator_type(pg_type);                                                                                  // 1
@@ -176,7 +178,7 @@ void TranslatorUtil::_set_opl_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 }
 
-void TranslatorUtil::_set_opm_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_opm_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -195,7 +197,7 @@ void TranslatorUtil::_set_opm_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		op_params->attack_rate               = (_sanitize_param_loop(p_data[data_index++], 0, 31, "AR") << 1);       // 1
 		op_params->decay_rate                = (_sanitize_param_loop(p_data[data_index++], 0, 31, "DR") << 1);       // 2
@@ -213,7 +215,7 @@ void TranslatorUtil::_set_opm_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 }
 
-void TranslatorUtil::_set_opn_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_opn_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -233,7 +235,7 @@ void TranslatorUtil::_set_opn_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		op_params->attack_rate                = (_sanitize_param_loop(p_data[data_index++], 0, 31, "AR") << 1);       // 1
 		op_params->decay_rate                 = (_sanitize_param_loop(p_data[data_index++], 0, 31, "DR") << 1);       // 2
@@ -248,7 +250,7 @@ void TranslatorUtil::_set_opn_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 }
 
-void TranslatorUtil::_set_opx_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_opx_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -269,7 +271,7 @@ void TranslatorUtil::_set_opx_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		// Standard supported values are in the [0-7] range. Values beyond that are supported for custom waves.
 		int wave_shape = p_data[data_index++];
@@ -295,7 +297,7 @@ void TranslatorUtil::_set_opx_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 }
 
-void TranslatorUtil::_set_ma3_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_ma3_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	if (p_params->operator_count == 0) {
 		return;
 	}
@@ -315,7 +317,7 @@ void TranslatorUtil::_set_ma3_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[op_index];
 
 		int pg_type = SiONPulseGeneratorType::PULSE_MA3_SINE + _sanitize_param_loop(p_data[data_index++], 0, 31, "WS");
 		op_params->set_pulse_generator_type(pg_type);                                                                     // 1
@@ -336,7 +338,7 @@ void TranslatorUtil::_set_ma3_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 }
 
-void TranslatorUtil::_set_al_params_by_array(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::_set_al_params_by_array(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	p_params->set_operator_count(2);
 	p_params->set_analog_like(true);
 
@@ -346,14 +348,14 @@ void TranslatorUtil::_set_al_params_by_array(const Ref<SiOPMChannelParams> &p_pa
 
 	// Can't use _sanitize_param_loop here because 2 is not a valid number for the max value. So hack something ad-hoc together instead.
 	if (unlikely(p_data[0] < 0 || p_data[0] > 2)) {
-		ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d).", "CN", p_data[0], 0, 2));
+		//ERR_PRINT(vformat("Translator: Parameter '%s' value (%d) is outside of valid range (%d : %d).", "CN", p_data[0], 0, 2));
 		p_params->algorithm = 0;
 	} else {
 		p_params->algorithm = p_data[0];
 	}
 
-	Ref<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
-	Ref<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
+	std::shared_ptr<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
+	std::shared_ptr<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
 
 	op_params0->set_pulse_generator_type(_sanitize_param_loop(p_data[1], 0, 511, "W1"));
 	op_params1->set_pulse_generator_type(_sanitize_param_loop(p_data[2], 0, 511, "W2"));
@@ -373,73 +375,73 @@ void TranslatorUtil::_set_al_params_by_array(const Ref<SiOPMChannelParams> &p_pa
 	op_params0->sustain_level = _sanitize_param_loop(p_data[7], 0, 63, "SL");
 }
 
-void TranslatorUtil::parse_siopm_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_siopm_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_siopm_params_by_array(p_params, _split_data_string(p_params, p_data_string, 3, 15, "#@"));
 }
 
-void TranslatorUtil::parse_opl_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_opl_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_opl_params_by_array(p_params, _split_data_string(p_params, p_data_string, 2, 11, "#OPL@"));
 }
 
-void TranslatorUtil::parse_opm_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_opm_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_opm_params_by_array(p_params, _split_data_string(p_params, p_data_string, 2, 11, "#OPM@"));
 }
 
-void TranslatorUtil::parse_opn_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_opn_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_opn_params_by_array(p_params, _split_data_string(p_params, p_data_string, 2, 10, "#OPN@"));
 }
 
-void TranslatorUtil::parse_opx_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_opx_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_opx_params_by_array(p_params, _split_data_string(p_params, p_data_string, 2, 12, "#OPX@"));
 }
 
-void TranslatorUtil::parse_ma3_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_ma3_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_ma3_params_by_array(p_params, _split_data_string(p_params, p_data_string, 2, 12, "#MA@"));
 }
 
-void TranslatorUtil::parse_al_params(const Ref<SiOPMChannelParams> &p_params, const String &p_data_string) {
+void TranslatorUtil::parse_al_params(const std::shared_ptr<SiOPMChannelParams> &p_params, const std::string &p_data_string) {
 	return _set_al_params_by_array(p_params, _split_data_string(p_params, p_data_string, 9, 0, "#AL@"));
 }
 
-void TranslatorUtil::set_siopm_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_siopm_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 3, 15, "#@");
 	return _set_siopm_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_opl_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_opl_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 2, 11, "#OPL@");
 	return _set_opl_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_opm_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_opm_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 2, 11, "#OPM@");
 	return _set_opm_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_opn_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_opn_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 2, 10, "#OPN@");
 	return _set_opn_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_opx_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_opx_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 2, 12, "#OPX@");
 	return _set_opx_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_ma3_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
+void TranslatorUtil::set_ma3_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
 	_check_operator_count(p_params, p_data.size(), 2, 12, "#MA@");
 	return _set_ma3_params_by_array(p_params, p_data);
 }
 
-void TranslatorUtil::set_al_params(const Ref<SiOPMChannelParams> &p_params, Vector<int> p_data) {
-	ERR_FAIL_COND_MSG(p_data.size() != 9, vformat("Translator: Invalid parameter count in '%s' (channel: %d, each operator: %d).", "#AL@", 9, 0));
+void TranslatorUtil::set_al_params(const std::shared_ptr<SiOPMChannelParams> &p_params, std::vector<int> p_data) {
+	////ERR_FAIL_COND_MSG(p_data.size() != 9, vformat("Translator: Invalid parameter count in '%s' (channel: %d, each operator: %d).", "#AL@", 9, 0));
 
 	return _set_al_params_by_array(p_params, p_data);
 }
 
-int TranslatorUtil::_get_algorithm_index(int p_operator_count, int p_algorithm, int (&p_table)[4][16], const String &p_command) {
+int TranslatorUtil::_get_algorithm_index(int p_operator_count, int p_algorithm, int (&p_table)[4][16], const std::string &p_command) {
 	int alg_index = p_operator_count - 1;
-	ERR_FAIL_INDEX_V_MSG(alg_index, 4, -1, vformat("Translator: Invalid operator count in the algorithm parameter 'opc%d/alg%d' in '%s'.", p_operator_count, p_algorithm, p_command));
+	////ERR_FAIL_INDEX_V_MSG(alg_index, 4, -1, vformat("Translator: Invalid operator count in the algorithm parameter 'opc%d/alg%d' in '%s'.", p_operator_count, p_algorithm, p_command));
 
 	for (int i = 0; i < 16; i++) {
 		if (p_algorithm == p_table[alg_index][i]) {
@@ -447,10 +449,10 @@ int TranslatorUtil::_get_algorithm_index(int p_operator_count, int p_algorithm, 
 		}
 	}
 
-	ERR_FAIL_V_MSG(-1, vformat("Translator: Invalid algorithm parameter 'opc%d/alg%d' in '%s'.", p_operator_count, p_algorithm, p_command));
+	//ERR_FAIL_V_MSG(-1, vformat("Translator: Invalid algorithm parameter 'opc%d/alg%d' in '%s'.", p_operator_count, p_algorithm, p_command));
 }
 
-int TranslatorUtil::_get_ma3_from_pg_type(int p_pulse_generator_type, const String &p_command) {
+int TranslatorUtil::_get_ma3_from_pg_type(int p_pulse_generator_type, const std::string &p_command) {
 	// Standard wave types.
 	int wave_shape = p_pulse_generator_type - SiONPulseGeneratorType::PULSE_MA3_SINE;
 	if (wave_shape >= 0 && wave_shape <= 31) {
@@ -471,7 +473,7 @@ int TranslatorUtil::_get_ma3_from_pg_type(int p_pulse_generator_type, const Stri
 		case 5: case 72:                      return 6;   // Square
 	}
 
-	ERR_FAIL_V_MSG(-1, vformat("Translator: Cannot convert pulse generator type (%d) into a wave shape in '%s'.", p_pulse_generator_type, p_command));
+	//ERR_FAIL_V_MSG(-1, vformat("Translator: Cannot convert pulse generator type (%d) into a wave shape in '%s'.", p_pulse_generator_type, p_command));
 }
 
 int TranslatorUtil::_get_nearest_dt2(int p_detune) {
@@ -507,15 +509,15 @@ int TranslatorUtil::_balance_total_levels(int p_level0, int p_level1) {
 	return 64;
 }
 
-Vector<int> TranslatorUtil::get_siopm_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_siopm_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { p_params->algorithm, p_params->feedback, p_params->feedback_connection };
+	std::vector<int> res = { p_params->algorithm, p_params->feedback, p_params->feedback_connection };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 		res.append_array({
 			op_params->pulse_generator_type,
 			op_params->attack_rate,
@@ -538,24 +540,24 @@ Vector<int> TranslatorUtil::get_siopm_params(const Ref<SiOPMChannelParams> &p_pa
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_opl_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_opl_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	int alg_index = _get_algorithm_index(p_params->operator_count, p_params->algorithm, SiMMLRefTable::get_instance()->algorithm_opl, "#OPL@");
 	if (alg_index == -1) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { alg_index, p_params->feedback };
+	std::vector<int> res = { alg_index, p_params->feedback };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#OPL@");
 		if (wave_shape == -1) {
-			return Vector<int>();
+			return std::vector<int>();
 		}
 
 		int egt = op_params->sustain_rate == 0 ? 1 : 0; // Envelope generator t?..
@@ -579,20 +581,20 @@ Vector<int> TranslatorUtil::get_opl_params(const Ref<SiOPMChannelParams> &p_para
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_opm_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_opm_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	int alg_index = _get_algorithm_index(p_params->operator_count, p_params->algorithm, SiMMLRefTable::get_instance()->algorithm_opm, "#OPM@");
 	if (alg_index == -1) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { alg_index, p_params->feedback };
+	std::vector<int> res = { alg_index, p_params->feedback };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		int	detune2 = _get_nearest_dt2(op_params->detune2);
 
@@ -614,21 +616,21 @@ Vector<int> TranslatorUtil::get_opm_params(const Ref<SiOPMChannelParams> &p_para
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_opn_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_opn_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	// Note: OPM and OPN share the algo list.
 	int alg_index = _get_algorithm_index(p_params->operator_count, p_params->algorithm, SiMMLRefTable::get_instance()->algorithm_opm, "#OPN@");
 	if (alg_index == -1) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { alg_index, p_params->feedback };
+	std::vector<int> res = { alg_index, p_params->feedback };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		res.append_array({
 			op_params->attack_rate >> 1,
@@ -647,24 +649,24 @@ Vector<int> TranslatorUtil::get_opn_params(const Ref<SiOPMChannelParams> &p_para
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_opx_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_opx_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	int alg_index = _get_algorithm_index(p_params->operator_count, p_params->algorithm, SiMMLRefTable::get_instance()->algorithm_opx, "#OPX@");
 	if (alg_index == -1) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { alg_index, p_params->feedback };
+	std::vector<int> res = { alg_index, p_params->feedback };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#OPX@");
 		if (wave_shape == -1) {
-			return Vector<int>();
+			return std::vector<int>();
 		}
 
 		res.append_array({
@@ -686,24 +688,24 @@ Vector<int> TranslatorUtil::get_opx_params(const Ref<SiOPMChannelParams> &p_para
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_ma3_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_ma3_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count == 0) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
 	int alg_index = _get_algorithm_index(p_params->operator_count, p_params->algorithm, SiMMLRefTable::get_instance()->algorithm_ma3, "#MA@");
 	if (alg_index == -1) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Vector<int> res = { alg_index, p_params->feedback };
+	std::vector<int> res = { alg_index, p_params->feedback };
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#MA@");
 		if (wave_shape == -1) {
-			return Vector<int>();
+			return std::vector<int>();
 		}
 
 		int total_level = op_params->total_level < 63 ? op_params->total_level : 63;
@@ -727,17 +729,17 @@ Vector<int> TranslatorUtil::get_ma3_params(const Ref<SiOPMChannelParams> &p_para
 	return res;
 }
 
-Vector<int> TranslatorUtil::get_al_params(const Ref<SiOPMChannelParams> &p_params) {
+std::vector<int> TranslatorUtil::get_al_params(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	if (p_params->operator_count != 5) {
-		return Vector<int>();
+		return std::vector<int>();
 	}
 
-	Ref<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
-	Ref<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
+	std::shared_ptr<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
+	std::shared_ptr<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
 
 	int level_balance = _balance_total_levels(op_params0->total_level, op_params1->total_level);
 
-	Vector<int> res = {
+	std::vector<int> res = {
 		p_params->algorithm,
 		op_params0->pulse_generator_type,
 		op_params1->pulse_generator_type,
@@ -752,8 +754,8 @@ Vector<int> TranslatorUtil::get_al_params(const Ref<SiOPMChannelParams> &p_param
 	return res;
 }
 
-String TranslatorUtil::_format_mml_comment(const String &p_comment, const String &p_line_end) {
-	if (p_comment.is_empty()) {
+std::string TranslatorUtil::_format_mml_comment(const std::string &p_comment, const std::string &p_line_end) {
+	if (p_comment.empty()()) {
 		return "";
 	}
 
@@ -764,7 +766,7 @@ String TranslatorUtil::_format_mml_comment(const String &p_comment, const String
 	}
 }
 
-String TranslatorUtil::_format_mml_digit(int p_value, int p_padded) {
+std::string TranslatorUtil::_format_mml_digit(int p_value, int p_padded) {
 	if (p_padded <= 0) {
 		return itos(p_value);
 	}
@@ -777,19 +779,19 @@ String TranslatorUtil::_format_mml_digit(int p_value, int p_padded) {
 	return itos(p_value).pad_zeros(padded_length);
 }
 
-TranslatorUtil::OperatorParamsSizes TranslatorUtil::_get_operator_params_sizes(const Ref<SiOPMChannelParams> &p_params) {
+TranslatorUtil::OperatorParamsSizes TranslatorUtil::_get_operator_params_sizes(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	OperatorParamsSizes sizes;
 
 #define MAX_PARAM_SIZE(m_key, m_value)              \
 	{                                               \
-		String value_string = itos(m_value);        \
+		std::string value_string = itos(m_value);        \
 		if (value_string.length() > sizes.m_key) {  \
 			sizes.m_key = value_string.length();    \
 		}                                           \
 	}
 
 	for (int i = 0; i < p_params->operator_count; i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
 		MAX_PARAM_SIZE(pg_type,     op_params->pulse_generator_type)
 		MAX_PARAM_SIZE(total_level, op_params->total_level)
@@ -803,13 +805,13 @@ TranslatorUtil::OperatorParamsSizes TranslatorUtil::_get_operator_params_sizes(c
 	return sizes;
 }
 
-String TranslatorUtil::get_siopm_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_siopm_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -826,7 +828,7 @@ String TranslatorUtil::get_siopm_params_as_mml(const Ref<SiOPMChannelParams> &p_
 	OperatorParamsSizes sizes = _get_operator_params_sizes(p_params);
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		mml += p_line_end;
 
@@ -853,7 +855,7 @@ String TranslatorUtil::get_siopm_params_as_mml(const Ref<SiOPMChannelParams> &p_
 	return mml;
 }
 
-String TranslatorUtil::get_opl_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_opl_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
@@ -864,7 +866,7 @@ String TranslatorUtil::get_opl_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -879,7 +881,7 @@ String TranslatorUtil::get_opl_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	// Operator parameters.
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#OPL@");
 		if (wave_shape == -1) {
@@ -909,7 +911,7 @@ String TranslatorUtil::get_opl_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	return mml;
 }
 
-String TranslatorUtil::get_opm_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_opm_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
@@ -920,7 +922,7 @@ String TranslatorUtil::get_opm_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -937,7 +939,7 @@ String TranslatorUtil::get_opm_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	OperatorParamsSizes sizes = _get_operator_params_sizes(p_params);
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		mml += p_line_end;
 
@@ -962,7 +964,7 @@ String TranslatorUtil::get_opm_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	return mml;
 }
 
-String TranslatorUtil::get_opn_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_opn_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
@@ -974,7 +976,7 @@ String TranslatorUtil::get_opn_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -990,7 +992,7 @@ String TranslatorUtil::get_opn_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	OperatorParamsSizes sizes = _get_operator_params_sizes(p_params);
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		mml += p_line_end;
 
@@ -1012,7 +1014,7 @@ String TranslatorUtil::get_opn_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	return mml;
 }
 
-String TranslatorUtil::get_opx_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_opx_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
@@ -1023,7 +1025,7 @@ String TranslatorUtil::get_opx_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -1039,7 +1041,7 @@ String TranslatorUtil::get_opx_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	OperatorParamsSizes sizes = _get_operator_params_sizes(p_params);
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#OPX@");
 		if (wave_shape == -1) {
@@ -1068,7 +1070,7 @@ String TranslatorUtil::get_opx_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	return mml;
 }
 
-String TranslatorUtil::get_ma3_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_ma3_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() == 0) {
 		return "";
 	}
@@ -1079,7 +1081,7 @@ String TranslatorUtil::get_ma3_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	}
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Channel parameters.
 
@@ -1093,7 +1095,7 @@ String TranslatorUtil::get_ma3_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	// Operator parameters.
 
 	for (int i = 0; i < p_params->get_operator_count(); i++) {
-		Ref<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
+		std::shared_ptr<SiOPMOperatorParams> op_params = p_params->get_operator_params(i);
 
 		int wave_shape = _get_ma3_from_pg_type(op_params->pulse_generator_type, "#MA@");
 		if (wave_shape == -1) {
@@ -1124,16 +1126,16 @@ String TranslatorUtil::get_ma3_params_as_mml(const Ref<SiOPMChannelParams> &p_pa
 	return mml;
 }
 
-String TranslatorUtil::get_al_params_as_mml(const Ref<SiOPMChannelParams> &p_params, String p_separator, String p_line_end, String p_comment) {
+std::string TranslatorUtil::get_al_params_as_mml(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_separator, std::string p_line_end, std::string p_comment) {
 	if (p_params->get_operator_count() != 5) {
 		return "";
 	}
 
-	Ref<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
-	Ref<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
+	std::shared_ptr<SiOPMOperatorParams> op_params0 = p_params->operator_params[0];
+	std::shared_ptr<SiOPMOperatorParams> op_params1 = p_params->operator_params[1];
 
 	// Open MML string.
-	String mml = "{";
+	std::string mml = "{";
 
 	// Leading parameters.
 
@@ -1164,30 +1166,30 @@ String TranslatorUtil::get_al_params_as_mml(const Ref<SiOPMChannelParams> &p_par
 	return mml;
 }
 
-void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, String p_mml, Vector<Ref<SiMMLEnvelopeTable>> p_envelopes) {
-	Ref<SiOPMChannelParams> params = p_voice->channel_params;
+void TranslatorUtil::parse_voice_setting(const std::shared_ptr<SiMMLVoice> &p_voice, std::string p_mml, std::vector<std::shared_ptr<SiMMLEnvelopeTable>> p_envelopes) {
+	std::shared_ptr<SiOPMChannelParams> params = p_voice->channel_params;
 
-	String base_re_exp = "(%[fvx]|@[fpqv]|@er|@lfo|kt?|m[ap]|_?@@|_?n[aptf]|po|p|q|s|x|v)";
-	String args_re_exp = "(-?\\d*)" + String("(\\s*,\\s*(-?\\d*))?").repeat(10); // One mandatory and 10 optional arguments supported.
+	std::string base_re_exp = "(%[fvx]|@[fpqv]|@er|@lfo|kt?|m[ap]|_?@@|_?n[aptf]|po|p|q|s|x|v)";
+	std::string args_re_exp = "(-?\\d*)" + std::string("(\\s*,\\s*(-?\\d*))?").repeat(10); // One mandatory and 10 optional arguments supported.
 
-	Ref<RegEx> re_setting = RegEx::create_from_string(base_re_exp + args_re_exp);
-	TypedArray<RegExMatch> settings = re_setting->search_all(p_mml);
+	std::shared_ptr<RegEx> re_setting = RegEx::create_from_string(base_re_exp + args_re_exp);
+	std::vector<RegExMatch> settings = re_setting->search_all(p_mml);
 
 	// For convenience macros take the ordered index of the argument, and convert it to the index of a capture group.
 	// Capture group indices for arguments start at 2 and then continue with every even number up to 22 (11 arguments).
 
 #define EXTRACT_ARGUMENT(m_index, m_default)                                                                                     \
-	(!parsed_setting->get_string(2 + m_index * 2).is_empty() ? parsed_setting->get_string(2 + m_index * 2).to_int() : m_default)
+	(!parsed_setting->get_string(2 + m_index * 2).empty()() ? parsed_setting->get_string(2 + m_index * 2).to_int() : m_default)
 
 #define EXTRACT_ARGUMENT_MOD(m_index, m_mod, m_default)                                                                                  \
-	(!parsed_setting->get_string(2 + m_index * 2).is_empty() ? parsed_setting->get_string(2 + m_index * 2).to_int() * m_mod : m_default)
+	(!parsed_setting->get_string(2 + m_index * 2).empty()() ? parsed_setting->get_string(2 + m_index * 2).to_int() * m_mod : m_default)
 
 #define EXTRACT_ARGUMENT_POS(m_index, m_default)                                                                                  \
 	(parsed_setting->get_string(2 + m_index * 2).to_int() > 0 ? parsed_setting->get_string(2 + m_index * 2).to_int() : m_default)
 
 	for (int i = 0; i < settings.size(); i++) {
-		Ref<RegExMatch> parsed_setting = settings[i];
-		const String command = parsed_setting->get_string(1);
+		std::shared_ptr<RegExMatch> parsed_setting = settings[i];
+		const std::string command = parsed_setting->get_string(1);
 
 		if (command == "@f") {
 			params->filter_cutoff         = EXTRACT_ARGUMENT(0, 128);
@@ -1246,14 +1248,14 @@ void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, String 
 			p_voice->note_shift = EXTRACT_ARGUMENT(0, 0);
 
 		} else if (command == "@v") {
-			params->master_volumes.write[0] = EXTRACT_ARGUMENT_MOD(0, 0.0078125, 0.5);
-			params->master_volumes.write[1] = EXTRACT_ARGUMENT_MOD(1, 0.0078125, 0);
-			params->master_volumes.write[2] = EXTRACT_ARGUMENT_MOD(2, 0.0078125, 0);
-			params->master_volumes.write[3] = EXTRACT_ARGUMENT_MOD(3, 0.0078125, 0);
-			params->master_volumes.write[4] = EXTRACT_ARGUMENT_MOD(4, 0.0078125, 0);
-			params->master_volumes.write[5] = EXTRACT_ARGUMENT_MOD(5, 0.0078125, 0);
-			params->master_volumes.write[6] = EXTRACT_ARGUMENT_MOD(6, 0.0078125, 0);
-			params->master_volumes.write[7] = EXTRACT_ARGUMENT_MOD(7, 0.0078125, 0);
+			params->master_volumes[0] = EXTRACT_ARGUMENT_MOD(0, 0.0078125, 0.5);
+			params->master_volumes[1] = EXTRACT_ARGUMENT_MOD(1, 0.0078125, 0);
+			params->master_volumes[2] = EXTRACT_ARGUMENT_MOD(2, 0.0078125, 0);
+			params->master_volumes[3] = EXTRACT_ARGUMENT_MOD(3, 0.0078125, 0);
+			params->master_volumes[4] = EXTRACT_ARGUMENT_MOD(4, 0.0078125, 0);
+			params->master_volumes[5] = EXTRACT_ARGUMENT_MOD(5, 0.0078125, 0);
+			params->master_volumes[6] = EXTRACT_ARGUMENT_MOD(6, 0.0078125, 0);
+			params->master_volumes[7] = EXTRACT_ARGUMENT_MOD(7, 0.0078125, 0);
 
 		} else if (command == "p") {
 			params->pan = EXTRACT_ARGUMENT_MOD(0, 16, 64);
@@ -1262,7 +1264,7 @@ void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, String 
 			params->pan = EXTRACT_ARGUMENT(0, 64);
 
 		} else if (command == "v") {
-			if (!parsed_setting->get_string(2).is_empty()) {
+			if (!parsed_setting->get_string(2).empty()()) {
 				p_voice->velocity = parsed_setting->get_string(2).to_int() << p_voice->velocity_shift;
 			} else {
 				p_voice->velocity = 256;
@@ -1284,70 +1286,70 @@ void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, String 
 
 		} else if (command == "@@") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_on_tone_envelope = p_envelopes[i];
 				p_voice->note_on_tone_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "na") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_on_amplitude_envelope = p_envelopes[i];
 				p_voice->note_on_amplitude_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "np") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_on_pitch_envelope = p_envelopes[i];
 				p_voice->note_on_pitch_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "nt") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_on_note_envelope = p_envelopes[i];
 				p_voice->note_on_note_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "nf") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_on_filter_envelope = p_envelopes[i];
 				p_voice->note_on_filter_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "_@@") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_off_tone_envelope = p_envelopes[i];
 				p_voice->note_off_tone_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "_na") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_off_amplitude_envelope = p_envelopes[i];
 				p_voice->note_off_amplitude_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "_np") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_off_pitch_envelope = p_envelopes[i];
 				p_voice->note_off_pitch_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "_nt") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_off_note_envelope = p_envelopes[i];
 				p_voice->note_off_note_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
 
 		} else if (command == "_nf") {
 			int value = EXTRACT_ARGUMENT(0, 0);
-			if (!p_envelopes.is_empty() && value >= 0 && value < 255) {
+			if (!p_envelopes.empty()() && value >= 0 && value < 255) {
 				p_voice->note_off_filter_envelope = p_envelopes[i];
 				p_voice->note_off_filter_envelope_step = EXTRACT_ARGUMENT_POS(1, 1);
 			}
@@ -1359,9 +1361,9 @@ void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, String 
 #undef EXTRACT_ARGUMENT_POS
 }
 
-String TranslatorUtil::get_voice_setting_as_mml(const Ref<SiMMLVoice> &p_voice) {
-	Ref<SiOPMChannelParams> params = p_voice->channel_params;
-	String mml;
+std::string TranslatorUtil::get_voice_setting_as_mml(const std::shared_ptr<SiMMLVoice> &p_voice) {
+	std::shared_ptr<SiOPMChannelParams> params = p_voice->channel_params;
+	std::string mml;
 
 	if (params->filter_type > 0) {
 		mml += "%f" + itos(params->filter_type);
@@ -1490,50 +1492,50 @@ String TranslatorUtil::get_voice_setting_as_mml(const Ref<SiMMLVoice> &p_voice) 
 
 //
 
-TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(String p_table_numbers, String p_postfix, int p_max_index) {
+TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(std::string p_table_numbers, std::string p_postfix, int p_max_index) {
 	MMLTableNumbers parsed_table;
-	parsed_table.data = memnew(SinglyLinkedList<int>);
+	parsed_table.data = memnew(std::forward_list<int>);
 
 	// Magnification.
-	Ref<RegEx> re_postfix = RegEx::create_from_string("(\\d+)?(\\*(-?[\\d.]+))?([+-][\\d.]+)?");
-	Ref<RegExMatch> res = re_postfix->search(p_postfix);
-	ERR_FAIL_COND_V(res.is_null(), parsed_table);
+	std::shared_ptr<RegEx> re_postfix = RegEx::create_from_string("(\\d+)?(\\*(-?[\\d.]+))?([+-][\\d.]+)?");
+	std::shared_ptr<RegExMatch> res = re_postfix->search(p_postfix);
+	////ERR_FAIL_COND_V(res.is_null(), parsed_table);
 
 	int postfix_size = 1;
 	double postfix_coef = 1;
 	double postfix_offset = 0;
 
-	if (!res->get_string(1).is_empty()) {
+	if (!res->get_string(1).empty()()) {
 		postfix_size = res->get_string(1).to_int();
 	}
-	if (!res->get_string(2).is_empty()) {
+	if (!res->get_string(2).empty()()) {
 		postfix_coef = res->get_string(3).to_float();
 	}
-	if (!res->get_string(4).is_empty()) {
+	if (!res->get_string(4).empty()()) {
 		postfix_offset = res->get_string(4).to_float();
 	}
 
 	// match[1];(n..),m {match[2];n.., match[3];m} / match[4];n / match[5];|[] / match[6]; ]n
-	Ref<RegEx> re_table = RegEx::create_from_string("(\\(\\s*([,\\-\\d\\s]+)\\)[,\\s]*(\\d+))|(-?\\d+)|(\\||\\[|\\](\\d*))");
-	TypedArray<RegExMatch> numbers = re_table->search_all(p_table_numbers);
+	std::shared_ptr<RegEx> re_table = RegEx::create_from_string("(\\(\\s*([,\\-\\d\\s]+)\\)[,\\s]*(\\d+))|(-?\\d+)|(\\||\\[|\\](\\d*))");
+	std::vector<RegExMatch> numbers = re_table->search_all(p_table_numbers);
 
-	SinglyLinkedList<int>::Element *repeat = nullptr;
-	List<SinglyLinkedList<int>::Element *> loop_stack;
+	std::forward_list<int>::Element *repeat = nullptr;
+	List<std::forward_list<int>::Element *> loop_stack;
 
 	int index = 0;
 	for (int n = 0; n < numbers.size() && index < p_max_index; n++) {
-		Ref<RegExMatch> parsed_number = numbers[n];
+		std::shared_ptr<RegExMatch> parsed_number = numbers[n];
 
 		// Interpolation: "(match[2]..),match[3]"
-		if (!parsed_number->get_string(1).is_empty()) {
-			PackedStringArray arr = split_string_by_regex(parsed_number->get_string(2), "[,\\s]+");
+		if (!parsed_number->get_string(1).empty()()) {
+			Packedstd::stringArray arr = split_string_by_regex(parsed_number->get_string(2), "[,\\s]+");
 			int inter_size = parsed_number->get_string(3).to_int();
-			ERR_FAIL_COND_V_MSG((inter_size < 2 || arr.size() < 1), parsed_table, "Translator: Failed to parse provided MML table, interpolation data is invalid.");
+			////ERR_FAIL_COND_V_MSG((inter_size < 2 || arr.size() < 1), parsed_table, "Translator: Failed to parse provided MML table, interpolation data is invalid.");
 
-			Vector<int> inter_data;
-			inter_data.resize_zeroed(arr.size());
+			std::vector<int> inter_data;
+			inter_data.resize(arr.size()); // TODO zeroed
 			for (int i = 0; i < inter_data.size(); i++) {
-				inter_data.write[i] = arr[i].to_int();
+				inter_data[i] = arr[i].to_int();
 			}
 
 			if (inter_data.size() > 1) {
@@ -1567,7 +1569,7 @@ TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(String p_tab
 			}
 
 		// Single number.
-		} else if (!parsed_number->get_string(4).is_empty()) {
+		} else if (!parsed_number->get_string(4).empty()()) {
 			int value = parsed_number->get_string(4).to_int();
 			value = (int)(value * postfix_coef + postfix_offset + 0.5);
 
@@ -1577,8 +1579,8 @@ TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(String p_tab
 			index++;
 
 		// Loop control characters.
-		} else if (!parsed_number->get_string(5).is_empty()) {
-			const String token = parsed_number->get_string(5);
+		} else if (!parsed_number->get_string(5).empty()()) {
+			const std::string token = parsed_number->get_string(5);
 
 			// Loop repeat point.
 			if (token == "|") {
@@ -1590,26 +1592,26 @@ TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(String p_tab
 
 			// Loop end.
 			} else {
-				ERR_FAIL_COND_V_MSG(loop_stack.is_empty(), parsed_table, "Translator: Failed to parse provided MML table, loop data is invalid.");
+				////ERR_FAIL_COND_V_MSG(loop_stack.empty()(), parsed_table, "Translator: Failed to parse provided MML table, loop data is invalid.");
 
-				SinglyLinkedList<int>::Element *loop_tail = parsed_table.data->get();
-				SinglyLinkedList<int>::Element *loop_head = (loop_stack.back()->get())->next();
+				std::forward_list<int>::Element *loop_tail = parsed_table.data->get();
+				std::forward_list<int>::Element *loop_head = (loop_stack.back()->get())->next();
 				loop_stack.pop_back();
-				ERR_FAIL_COND_V_MSG(!loop_head, parsed_table, "Translator: Failed to parse provided MML table, loop data is invalid.");
+				////ERR_FAIL_COND_V_MSG(!loop_head, parsed_table, "Translator: Failed to parse provided MML table, loop data is invalid.");
 
 				int loop_count = 2;
-				if (!parsed_number->get_string(6).is_empty()) {
+				if (!parsed_number->get_string(6).empty()()) {
 					loop_count = parsed_number->get_string(6).to_int();
 				}
 
 				for (int j = loop_count; j > 0; j--) {
-					for (SinglyLinkedList<int>::Element *l = loop_head; l != loop_tail->next(); l = l->next()) {
+					for (std::forward_list<int>::Element *l = loop_head; l != loop_tail->next(); l = l->next()) {
 						parsed_table.data->append(l->value);
 					}
 				}
 			}
 		} else {
-			ERR_FAIL_V_MSG(parsed_table, "Translator: Failed to parse provided MML table, structure is invalid.");
+			//ERR_FAIL_V_MSG(parsed_table, "Translator: Failed to parse provided MML table, structure is invalid.");
 		}
 	}
 
@@ -1622,54 +1624,54 @@ TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(String p_tab
 	return parsed_table;
 }
 
-void TranslatorUtil::parse_wav(String p_table_numbers, String p_postfix, Vector<double> *r_data) {
+void TranslatorUtil::parse_wav(std::string p_table_numbers, std::string p_postfix, std::vector<double> *r_data) {
 	MMLTableNumbers table = parse_table_numbers(p_table_numbers, p_postfix, 1024);
 
 	int data_length = 2;
 	while (data_length < 1024 && data_length < table.length) {
 		data_length <<= 1;
 	}
-	r_data->resize_zeroed(data_length);
+	r_data->resize(data_length); // TODO zeroed
 
 	int i = 0;
 	table.data->front();
 	for (; i < data_length && table.data->get(); i++) {
 		double value = (table.data->get()->value + 0.5) * 0.0078125;
-		r_data->write[i] = CLAMP(value, -1, 1);
+		r_data[i] = std::clamp(value, -1, 1);
 
 		table.data->next();
 	}
 
 	for (; i < data_length; i++) {
-		r_data->write[i] = 0;
+		r_data[i] = 0;
 	}
 }
 
-void TranslatorUtil::parse_wavb(String p_hex, Vector<double> *r_data) {
-	Ref<RegEx> re_spaces = RegEx::create_from_string("\\s+");
-	String hex = re_spaces->sub(p_hex, "", true);
+void TranslatorUtil::parse_wavb(std::string p_hex, std::vector<double> *r_data) {
+	std::shared_ptr<RegEx> re_spaces = RegEx::create_from_string("\\s+");
+	std::string hex = re_spaces->sub(p_hex, "", true);
 
 	int data_length = hex.length() >> 1;
-	r_data->resize_zeroed(data_length);
+	r_data->resize(data_length); // TODO zeroed
 
 	for (int i = 0; i < data_length; i++) {
 		int value = hex.substr(i << 1, 2).hex_to_int();
 		if (value < 128) {
-			r_data->write[i] = value * 0.0078125;
+			r_data[i] = value * 0.0078125;
 		} else {
-			r_data->write[i] = (value - 256) * 0.0078125;
+			r_data[i] = (value - 256) * 0.0078125;
 		}
 	}
 }
 
 #define PARSE_ARGUMENT(m_index, m_default)                                                     \
-	((m_index < args.size() && !args[m_index].is_empty()) ? args[m_index].to_int() : m_default)
+	((m_index < args.size() && !args[m_index].empty()()) ? args[m_index].to_int() : m_default)
 
-bool TranslatorUtil::parse_sampler_wave(const Ref<SiOPMWaveSamplerTable> &p_table, int p_note_number, String p_mml, HashMap<String, Variant> p_sound_ref_table) {
-	PackedStringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
-	ERR_FAIL_COND_V(args.size() == 0, false);
+bool TranslatorUtil::parse_sampler_wave(const std::shared_ptr<SiOPMWaveSamplerTable> &p_table, int p_note_number, std::string p_mml, HashMap<std::string, Variant> p_sound_ref_table) {
+	Packedstd::stringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
+	////ERR_FAIL_COND_V(args.size() == 0, false);
 
-	String wave_id = args[0];
+	std::string wave_id = args[0];
 	if (!p_sound_ref_table.has(wave_id)) {
 		return false;
 	}
@@ -1681,18 +1683,18 @@ bool TranslatorUtil::parse_sampler_wave(const Ref<SiOPMWaveSamplerTable> &p_tabl
 	int end_point        = PARSE_ARGUMENT(5, -1);
 	int loop_point       = PARSE_ARGUMENT(6, -1);
 
-	Ref<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_sound_ref_table[wave_id], ignore_note_off, pan, 2, channel_count));
+	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_sound_ref_table[wave_id], ignore_note_off, pan, 2, channel_count));
 	sampler_data->slice(start_point, end_point, loop_point);
 	p_table->set_sample(sampler_data, p_note_number);
 
 	return true;
 }
 
-bool TranslatorUtil::parse_pcm_wave(const Ref<SiOPMWavePCMTable> &p_table, String p_mml, HashMap<String, Variant> p_sound_ref_table) {
-	PackedStringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
-	ERR_FAIL_COND_V(args.size() == 0, false);
+bool TranslatorUtil::parse_pcm_wave(const std::shared_ptr<SiOPMWavePCMTable> &p_table, std::string p_mml, HashMap<std::string, Variant> p_sound_ref_table) {
+	Packedstd::stringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
+	////ERR_FAIL_COND_V(args.size() == 0, false);
 
-	String wave_id = args[0];
+	std::string wave_id = args[0];
 	if (!p_sound_ref_table.has(wave_id)) {
 		return false;
 	}
@@ -1705,20 +1707,20 @@ bool TranslatorUtil::parse_pcm_wave(const Ref<SiOPMWavePCMTable> &p_table, Strin
 	int end_point      = PARSE_ARGUMENT(6, -1);
 	int loop_point     = PARSE_ARGUMENT(7, -1);
 
-	Ref<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_sound_ref_table[wave_id], sampling_pitch, 2, channel_count));
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_sound_ref_table[wave_id], sampling_pitch, 2, channel_count));
 	pcm_data->slice(start_point, end_point, loop_point);
 	p_table->set_key_range_data(pcm_data, key_range_from, key_range_to);
 
 	return true;
 }
 
-bool TranslatorUtil::parse_pcm_voice(const Ref<SiMMLVoice> &p_voice, String p_mml, String p_postfix, Vector<Ref<SiMMLEnvelopeTable>> p_envelopes) {
-	Ref<SiOPMWavePCMTable> table = p_voice->get_wave_data();
+bool TranslatorUtil::parse_pcm_voice(const std::shared_ptr<SiMMLVoice> &p_voice, std::string p_mml, std::string p_postfix, std::vector<std::shared_ptr<SiMMLEnvelopeTable>> p_envelopes) {
+	std::shared_ptr<SiOPMWavePCMTable> table = p_voice->get_wave_data();
 	if (table.is_null()) {
 		return false;
 	}
 
-	PackedStringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
+	Packedstd::stringArray args = split_string_by_regex(p_mml, "\\s*,\\s*");
 
 	int volume_note_number = PARSE_ARGUMENT(0, 64);
 	int volume_key_range   = PARSE_ARGUMENT(1, 0);
@@ -1732,7 +1734,7 @@ bool TranslatorUtil::parse_pcm_voice(const Ref<SiMMLVoice> &p_voice, String p_mm
 	int release_rate       = PARSE_ARGUMENT(9, 63);
 	int sustain_level      = PARSE_ARGUMENT(10, 0);
 
-	Ref<SiOPMOperatorParams> op_params = p_voice->get_channel_params()->operator_params[0];
+	std::shared_ptr<SiOPMOperatorParams> op_params = p_voice->get_channel_params()->operator_params[0];
 	op_params->attack_rate = attack_rate;
 	op_params->decay_rate = decay_rate;
 	op_params->sustain_rate = sustain_rate;

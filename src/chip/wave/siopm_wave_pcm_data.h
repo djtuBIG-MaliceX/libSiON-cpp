@@ -7,18 +7,18 @@
 #ifndef SIOPM_WAVE_PCM_DATA_H
 #define SIOPM_WAVE_PCM_DATA_H
 
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/variant.hpp>
+//#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/variant/variant.hpp>
 #include "chip/wave/siopm_wave_base.h"
 
-using namespace godot;
+
 
 class SiOPMWavePCMData : public SiOPMWaveBase {
-	GDCLASS(SiOPMWavePCMData, SiOPMWaveBase)
+	//GDCLASS(SiOPMWavePCMData, SiOPMWaveBase)
 
-	static Vector<double> _sin_table;
+	static std::vector<double> _sin_table;
 
-	Vector<int> _wavelet;
+	std::vector<int> _wavelet;
 	int _channel_count = 0;
 	int _sampling_pitch = 0;
 
@@ -40,7 +40,7 @@ protected:
 	static void _bind_methods() {}
 
 public:
-	Vector<int> get_wavelet() const { return _wavelet; }
+	std::vector<int> get_wavelet() const { return _wavelet; }
 	int get_channel_count() const { return _channel_count; }
 	int get_sampling_pitch() const { return _sampling_pitch; }
 

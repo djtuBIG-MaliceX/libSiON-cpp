@@ -55,11 +55,11 @@ void SiFilterVowel::Formant::initialize() {
 
 int SiFilterVowel::Formant::calculate_freq_index(double p_frequency) {
 	int freq_index = (Math::log(p_frequency) * 1.4426950408889633 - 5.643856189774724) * 32; // * 1/loge(2) - log2(50)
-	return CLAMP(freq_index, 0, 1023);
+	return std::clamp(freq_index, 0, 1023);
 }
 
 void SiFilterVowel::Formant::update(int p_freq_index, int p_gain, int p_band_index) {
-	int gain_index = CLAMP(p_gain + 32, 0, 127);
+	int gain_index = std::clamp(p_gain + 32, 0, 127);
 	double alpha = _alpha_table[p_band_index][p_freq_index];
 	double gain = _gain_table[gain_index];
 
@@ -82,10 +82,10 @@ void SiFilterVowel::set_vowel_formants(double p_output_level, double p_frequency
 }
 
 void SiFilterVowel::_set_formant_band(int p_index, double p_frequency,  int p_gain, int p_band_index) {
-	ERR_FAIL_INDEX(p_index, _formants.size());
+	////ERR_FAIL_INDEX(p_index, _formants.size());
 
 	int freq_index = Formant::calculate_freq_index(p_frequency);
-	_formants.write[p_index].update(freq_index, p_gain, p_band_index);
+	_formants[p_index].update(freq_index, p_gain, p_band_index);
 }
 
 // Event chain.
@@ -119,7 +119,7 @@ SiFilterVowel::FormantEvent *SiFilterVowel::FormantEvent::insert_to(FormantEvent
 }
 
 int SiFilterVowel::FormantEvent::update_time(int p_delta) {
-	int delta = MIN(p_delta, time);
+	int delta = std::min(p_delta, time);
 
 	for (FormantEvent *event = this; event; event = event->next) {
 		event->time -= delta;
@@ -140,8 +140,8 @@ SiFilterVowel::FormantEvent::FormantEvent(int p_time, double p_output_level, int
 
 int SiFilterVowel::_update_event(int p_time) {
 	while (_event_queue && _event_queue->time == 0) {
-		_formants.write[0].update(_event_queue->frequency1, _event_queue->gain1, 3);
-		_formants.write[1].update(_event_queue->frequency2, _event_queue->gain2, 2);
+		_formants[0].update(_event_queue->frequency1, _event_queue->gain1, 3);
+		_formants[1].update(_event_queue->frequency2, _event_queue->gain2, 2);
 
 		_output_level = _event_queue->output_level;
 
@@ -182,7 +182,7 @@ double SiFilterVowel::_process_lfo_formant(Formant p_formant, FormantTap p_tap, 
 	return output;
 }
 
-void SiFilterVowel::_process_lfo(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiFilterVowel::_process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -196,14 +196,14 @@ void SiFilterVowel::_process_lfo(Vector<double> *r_buffer, int p_start_index, in
 		_process_lfo_formant(_formants[4], _tap4, &input);
 
 		double output = _process_lfo_formant(_formants[5], _tap5, &input);
-		output = CLAMP(output * _output_level, -1, 1);
+		output = std::clamp(output * _output_level, -1, 1);
 
-		r_buffer->write[i] = output;
-		r_buffer->write[i + 1] = output;
+		r_buffer[i] = output;
+		r_buffer[i + 1] = output;
 	}
 }
 
-int SiFilterVowel::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiFilterVowel::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int length = p_length;
 	for (int i = p_start_index; i < (p_start_index + p_length); ) {
 		int step = _update_event(length);
@@ -216,7 +216,7 @@ int SiFilterVowel::process(int p_channels, Vector<double> *r_buffer, int p_start
 	return 1;
 }
 
-void SiFilterVowel::set_by_mml(Vector<double> p_args) {
+void SiFilterVowel::set_by_mml(std::vector<double> p_args) {
 	_output_level = _get_mml_arg(p_args, 0, 100) / 100.0;
 
 	double frequency1 = _get_mml_arg(p_args, 1, 800);
@@ -259,10 +259,10 @@ SiFilterVowel::SiFilterVowel() :
 		SiEffectBase() {
 	Formant::initialize();
 
-	_formants.resize_zeroed(FORMANT_COUNT);
+	_formants.resize(FORMANT_COUNT); // TODO zeroed
 	for (int i = 0; i < _formants.size(); i++) {
 		Formant formant;
-		_formants.write[i] = formant;
+		_formants[i] = formant;
 	}
 
 	set_formant_band1();

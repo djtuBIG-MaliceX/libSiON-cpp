@@ -39,32 +39,32 @@ int SiEffectAutopan::prepare_process() {
 	return _stereo ? 2 : 1;
 }
 
-void SiEffectAutopan::_process_lfo_mono(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiEffectAutopan::_process_lfo_mono(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value = (*r_buffer)[i];
 
-		r_buffer->write[i] = value * _p_left->get()->value;
-		r_buffer->write[i + 1] = value * _p_right->get()->value;
+		r_buffer[i] = value * _p_left->get()->value;
+		r_buffer[i + 1] = value * _p_right->get()->value;
 	}
 
 	_p_left->next();
 	_p_right->next();
 }
 
-void SiEffectAutopan::_process_lfo_stereo(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiEffectAutopan::_process_lfo_stereo(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value_left = (*r_buffer)[i];
 		double value_right = (*r_buffer)[i + 1];
 
-		r_buffer->write[i] = value_left * _p_left->get()->value - value_right * _p_right->get()->value;
-		r_buffer->write[i + 1] = value_left * _p_right->get()->value + value_right * _p_left->get()->value;
+		r_buffer[i] = value_left * _p_left->get()->value - value_right * _p_right->get()->value;
+		r_buffer[i + 1] = value_left * _p_right->get()->value + value_right * _p_left->get()->value;
 	}
 
 	_p_left->next();
 	_p_right->next();
 }
 
-int SiEffectAutopan::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectAutopan::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -93,7 +93,7 @@ int SiEffectAutopan::process(int p_channels, Vector<double> *r_buffer, int p_sta
 	return 2;
 }
 
-void SiEffectAutopan::set_by_mml(Vector<double> p_args) {
+void SiEffectAutopan::set_by_mml(std::vector<double> p_args) {
 	double frequency = _get_mml_arg(p_args, 0, 1);
 	double stereo_width = _get_mml_arg(p_args, 1, 100) / 100.0;
 
@@ -111,8 +111,8 @@ void SiEffectAutopan::_bind_methods() {
 
 SiEffectAutopan::SiEffectAutopan(double p_frequency, double p_stereo_width) :
 		SiEffectBase() {
-	_p_left = memnew(SinglyLinkedList<double>(BUFFER_SIZE, 0.0, true));
-	_p_right = memnew(SinglyLinkedList<double>(BUFFER_SIZE, 0.0, true));
+	_p_left = memnew(std::forward_list<double>(BUFFER_SIZE, 0.0, true));
+	_p_right = memnew(std::forward_list<double>(BUFFER_SIZE, 0.0, true));
 
 	set_params(p_frequency, p_stereo_width);
 }

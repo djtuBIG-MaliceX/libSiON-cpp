@@ -12,7 +12,7 @@
 void SiControllableFilterBase::set_params(int p_cutoff, int p_resonance, double p_fps) {
 	_cutoff_ptr = nullptr;
 	if (p_cutoff >= 0 && p_cutoff < 255) {
-		Ref<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_cutoff);
+		std::shared_ptr<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_cutoff);
 		if (table.is_valid()) {
 			_cutoff_ptr = table->get_head();
 		}
@@ -20,7 +20,7 @@ void SiControllableFilterBase::set_params(int p_cutoff, int p_resonance, double 
 
 	_resonance_ptr = nullptr;
 	if (p_resonance >= 0 && p_resonance < 255) {
-		Ref<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_resonance);
+		std::shared_ptr<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_resonance);
 		if (table.is_valid()) {
 			_resonance_ptr = table->get_head();
 		}
@@ -50,11 +50,11 @@ double SiControllableFilterBase::get_cutoff() const {
 }
 
 void SiControllableFilterBase::set_cutoff(double p_value) {
-	_cutoff_index = CLAMP(p_value * 128, 0, 128);
+	_cutoff_index = std::clamp(p_value * 128, 0, 128);
 }
 
 void SiControllableFilterBase::set_resonance(double p_value) {
-	_resonance = CLAMP(p_value, 0, 1);
+	_resonance = std::clamp(p_value, 0, 1);
 }
 
 //
@@ -69,7 +69,7 @@ int SiControllableFilterBase::prepare_process() {
 	return 2;
 }
 
-int SiControllableFilterBase::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiControllableFilterBase::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -99,7 +99,7 @@ int SiControllableFilterBase::process(int p_channels, Vector<double> *r_buffer, 
 	return p_channels;
 }
 
-void SiControllableFilterBase::set_by_mml(Vector<double> p_args) {
+void SiControllableFilterBase::set_by_mml(std::vector<double> p_args) {
 	int cutoff    = _get_mml_arg(p_args, 0, 255);
 	int resonance = _get_mml_arg(p_args, 1, 255);
 	double fps    = _get_mml_arg(p_args, 2, 20);

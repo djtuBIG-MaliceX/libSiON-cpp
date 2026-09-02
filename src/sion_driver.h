@@ -7,15 +7,15 @@
 #ifndef SION_DRIVER_H
 #define SION_DRIVER_H
 
-#include <godot_cpp/classes/audio_stream.hpp>
-#include <godot_cpp/classes/audio_stream_generator.hpp>
-#include <godot_cpp/classes/audio_stream_generator_playback.hpp>
-#include <godot_cpp/classes/audio_stream_player.hpp>
-#include <godot_cpp/classes/node.hpp>
-#include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/templates/list.hpp>
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/typed_array.hpp>
+// //#include <godot_cpp/classes/audio_stream.hpp>
+// //#include <godot_cpp/classes/audio_stream_generator.hpp>
+// //#include <godot_cpp/classes/audio_stream_generator_playback.hpp>
+// //#include <godot_cpp/classes/audio_stream_player.hpp>
+// //#include <godot_cpp/classes/node.hpp>
+// //#include <godot_cpp/templates/hash_map.hpp>
+// //#include <godot_cpp/templates/list.hpp>
+// //#include <godot_cpp/templates/vector.hpp>
+// //#include <godot_cpp/variant/typed_array.hpp>
 
 #include "sion_voice.h"
 #include "chip/wave/siopm_wave_sampler_data.h"
@@ -23,9 +23,10 @@
 #include "events/sion_track_event.h"
 #include "sequencer/base/mml_data.h"
 #include "sequencer/base/mml_system_command.h"
-#include "templates/singly_linked_list.h"
+#include <vector>
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class FaderUtil;
 class MIDIModule;
@@ -45,8 +46,8 @@ class SiOPMWaveSamplerTable;
 // SiONDriver class provides the driver of SiON's digital signal processor emulator. All SiON's basic operations are
 // provided as driver's properties, methods, and signals. Only one instance must exist at a time.
 // TODO: Mostly implemented, aside from MIDI support, audio stream sampling, and background sound. Refer to FIXMEs and TODOs.
-class SiONDriver : public Node {
-	GDCLASS(SiONDriver, Node)
+class SiONDriver {
+	////GDCLASS(SiONDriver, Node)
 
 public:
 	static const char *VERSION;
@@ -80,25 +81,25 @@ private:
 
 	// Data.
 
-	Ref<SiONData> _data;
+	std::shared_ptr<SiONData> _data;
 	// MML string from previous compilation.
-	String _mml_string;
+	std::string _mml_string;
 
 	// Main playback.
 
 	AudioStreamPlayer *_audio_player = nullptr;
-	Ref<AudioStreamGenerator> _audio_stream;
-	Ref<AudioStreamGeneratorPlayback> _audio_playback;
+	std::shared_ptr<AudioStreamGenerator> _audio_stream;
+	std::shared_ptr<AudioStreamGeneratorPlayback> _audio_playback;
 
 	FaderUtil *_fader = nullptr;
 
 	// Background sound.
 
-	Ref<AudioStream> _background_sample;
-	Ref<SiOPMWaveSamplerData> _background_sample_data;
+	std::shared_ptr<AudioStream> _background_sample;
+	std::shared_ptr<SiOPMWaveSamplerData> _background_sample_data;
 	double _background_loop_point = -1; // In seconds.
 
-	Ref<SiONVoice> _background_voice;
+	std::shared_ptr<SiONVoice> _background_voice;
 	SiMMLTrack *_background_track = nullptr;
 	SiMMLTrack *_background_fade_out_track = nullptr;
 
@@ -109,7 +110,7 @@ private:
 
 	FaderUtil *_background_fader = nullptr;
 
-	void _set_background_sample(const Ref<AudioStream> &p_sound);
+	void _set_background_sample(const std::shared_ptr<AudioStream> &p_sound);
 	void _start_background_sample();
 	void _fade_background_callback(double p_value);
 
@@ -137,18 +138,18 @@ private:
 	bool _suspend_streaming = false;
 	// Suspend starting steam while loading.
 	bool _suspend_while_loading = true;
-	Vector<Variant> _loading_sound_list;
+	std::vector<Variant> _loading_sound_list;
 	// If true, FINISH_SEQUENCE event has already been dispatched.
 	bool _is_finish_sequence_dispatched = false;
 
-	Vector<double> _render_buffer;
+	std::vector<double> _render_buffer;
 	int _render_buffer_channel_num = 0;
 	int _render_buffer_index = 0;
 	int _render_buffer_size_max = 0;
 
-	bool _parse_system_command(const List<Ref<MMLSystemCommand>> &p_system_commands);
+	bool _parse_system_command(const List<std::shared_ptr<MMLSystemCommand>> &p_system_commands);
 
-	void _prepare_compile(String p_mml, const Ref<SiONData> &p_data);
+	void _prepare_compile(std::string p_mml, const std::shared_ptr<SiONData> &p_data);
 	void _prepare_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector);
 	void _prepare_stream(const Variant &p_data, bool p_reset_effector);
 	bool _rendering();
@@ -194,9 +195,9 @@ private:
 
 	struct SiONDriverJob {
 		JobType type = JobType::NO_JOB;
-		Ref<SiONData> data;
+		std::shared_ptr<SiONData> data;
 
-		String mml_string;
+		std::string mml_string;
 		int buffer_size = 0;
 		int channel_num = 0;
 		bool reset_effector = false;
@@ -207,7 +208,7 @@ private:
 	double _job_progress = 0;
 	JobType _current_job_type = JobType::NO_JOB;
 	List<SiONDriverJob> _job_queue;
-	List<Ref<SiONTrackEvent>> _track_event_queue;
+	List<std::shared_ptr<SiONTrackEvent>> _track_event_queue;
 
 	bool _prepare_next_job();
 	void _cancel_all_jobs();
@@ -216,11 +217,11 @@ private:
 
 	double _convert_event_length(double p_length) const;
 
-	void _dispatch_event(const Ref<SiONEvent> &p_event);
+	void _dispatch_event(const std::shared_ptr<SiONEvent> &p_event);
 
 	void _note_on_callback(SiMMLTrack *p_track);
 	void _note_off_callback(SiMMLTrack *p_track);
-	void _publish_note_event(SiMMLTrack *p_track, int p_type, String p_frame_event, String p_stream_event);
+	void _publish_note_event(SiMMLTrack *p_track, int p_type, std::string p_frame_event, std::string p_stream_event);
 
 	void _tempo_changed_callback(int p_buffer_index, bool p_dummy);
 	void _beat_callback(int p_buffer_index, int p_beat_counter);
@@ -237,7 +238,7 @@ private:
 	SiONDataConverterSMF *_midi_converter = nullptr;
 
 	int _check_midi_event_listeners();
-	void _dispatch_midi_event(String p_type, SiMMLTrack *p_track, int p_channel_number, int p_note, int p_data);
+	void _dispatch_midi_event(std::string p_type, SiMMLTrack *p_track, int p_channel_number, int p_note, int p_data);
 
 	// Benchmarking and stats.
 	struct {
@@ -250,7 +251,7 @@ private:
 		// Total processing time in last 8 bufferings.
 		int total_processing_time = 0;
 		// Processing time data of last 8 bufferings.
-		SinglyLinkedList<int> *processing_time_data = nullptr;
+		std::forward_list<int> *processing_time_data = nullptr;
 		// Number for averaging _total_processing_time.
 		double total_processing_time_ratio = 0;
 		// Previous streaming time.
@@ -277,8 +278,8 @@ protected:
 	void _notification(int p_what);
 
 public:
-	static String get_version() { return VERSION; }
-	static String get_version_flavor() { return VERSION_FLAVOR; }
+	static std::string get_version() { return VERSION; }
+	static std::string get_version_flavor() { return VERSION_FLAVOR; }
 
 	// The singleton instance.
 	static SiONDriver *get_mutex() { return _mutex; }
@@ -298,17 +299,17 @@ public:
 	// Data.
 
 	// Compiling only.
-	String get_mml_string() const { return _mml_string; }
-	Ref<SiONData> get_data() const { return _data; }
-	void clear_data() { _data = Ref<SiONData>(); }
+	std::string get_mml_string() const { return _mml_string; }
+	std::shared_ptr<SiONData> get_data() const { return _data; }
+	void clear_data() { _data = std::shared_ptr<SiONData>(); }
 
-	Ref<SiOPMWaveTable> set_wave_table(int p_index, Vector<double> p_table);
-	Ref<SiOPMWavePCMData> set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note = 69, int p_key_range_from = 0, int p_key_range_to = 127, int p_src_channel_num = 2, int p_channel_num = 0);
-	Ref<SiOPMWaveSamplerData> set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_num = 2, int p_channel_num = 0);
-	void set_pcm_voice(int p_index, const Ref<SiONVoice> &p_voice);
-	void set_sampler_table(int p_bank, const Ref<SiOPMWaveSamplerTable> &p_table);
-	void set_envelope_table(int p_index, Vector<int> p_table, int p_loop_point = -1);
-	void set_voice(int p_index, const Ref<SiONVoice> &p_voice);
+	std::shared_ptr<SiOPMWaveTable> set_wave_table(int p_index, std::vector<double> p_table);
+	std::shared_ptr<SiOPMWavePCMData> set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note = 69, int p_key_range_from = 0, int p_key_range_to = 127, int p_src_channel_num = 2, int p_channel_num = 0);
+	std::shared_ptr<SiOPMWaveSamplerData> set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_num = 2, int p_channel_num = 0);
+	void set_pcm_voice(int p_index, const std::shared_ptr<SiONVoice> &p_voice);
+	void set_sampler_table(int p_bank, const std::shared_ptr<SiOPMWaveSamplerTable> &p_table);
+	void set_envelope_table(int p_index, std::vector<int> p_table, int p_loop_point = -1);
+	void set_voice(int p_index, const std::shared_ptr<SiONVoice> &p_voice);
 	void clear_all_user_tables();
 
 	SiMMLTrack *create_user_controllable_track(int p_track_id = 0);
@@ -317,16 +318,16 @@ public:
 	// Main sound.
 
 	AudioStreamPlayer *get_audio_player() const { return _audio_player; }
-	Ref<AudioStreamGenerator> get_audio_stream() const { return _audio_stream; }
-	Ref<AudioStreamGeneratorPlayback> get_audio_playback() const { return _audio_playback; }
+	std::shared_ptr<AudioStreamGenerator> get_audio_stream() const { return _audio_stream; }
+	std::shared_ptr<AudioStreamGeneratorPlayback> get_audio_playback() const { return _audio_playback; }
 	FaderUtil *get_fader() const { return _fader; }
 
 	// Background sound.
 
-	Ref<AudioStream> get_background_sample() const { return _background_sample; }
-	void set_background_sample(const Ref<AudioStream> &p_sound, double p_mix_level = 0.5, double p_loop_point = -1);
+	std::shared_ptr<AudioStream> get_background_sample() const { return _background_sample; }
+	void set_background_sample(const std::shared_ptr<AudioStream> &p_sound, double p_mix_level = 0.5, double p_loop_point = -1);
 	void clear_background_sample();
-	Ref<SiOPMWaveSamplerData> get_background_sample_data() const { return _background_sample_data; }
+	std::shared_ptr<SiOPMWaveSamplerData> get_background_sample_data() const { return _background_sample_data; }
 	SiMMLTrack *get_background_sample_track() const { return _background_track; }
 
 	double get_background_sample_fade_out_time() const;
@@ -376,8 +377,8 @@ public:
 	void set_stream_event_enabled(bool p_enabled) { _stream_event_enabled = p_enabled; }
 	void set_fading_event_enabled(bool p_enabled) { _fading_event_enabled = p_enabled; }
 
-	Ref<SiONData> compile(String p_mml);
-	int queue_compile(String p_mml);
+	std::shared_ptr<SiONData> compile(std::string p_mml);
+	int queue_compile(std::string p_mml);
 
 	PackedFloat64Array render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = true);
 	int queue_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = false);
@@ -395,12 +396,12 @@ public:
 	bool is_paused() const { return _is_paused; }
 
 	SiMMLTrack *sample_on(int p_sample_number, double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
-	SiMMLTrack *note_on(int p_note, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
-	SiMMLTrack *note_on_with_bend(int p_note, int p_note_to, double p_bend_length, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
-	TypedArray<SiMMLTrack> note_off(int p_note, int p_track_id = 0, double p_delay = 0, double p_quant = 0, bool p_stop_immediately = false);
+	SiMMLTrack *note_on(int p_note, const std::shared_ptr<SiONVoice> &p_voice = std::shared_ptr<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
+	SiMMLTrack *note_on_with_bend(int p_note, int p_note_to, double p_bend_length, const std::shared_ptr<SiONVoice> &p_voice = std::shared_ptr<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
+	std::vector<SiMMLTrack> note_off(int p_note, int p_track_id = 0, double p_delay = 0, double p_quant = 0, bool p_stop_immediately = false);
 
-	TypedArray<SiMMLTrack> sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 1, int p_track_id = 0, bool p_disposable = true);
-	TypedArray<SiMMLTrack> sequence_off(int p_track_id, double p_delay = 0, double p_quant = 1, bool p_stop_with_reset = false);
+	std::vector<SiMMLTrack> sequence_on(const std::shared_ptr<SiONData> &p_data, const std::shared_ptr<SiONVoice> &p_voice = std::shared_ptr<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 1, int p_track_id = 0, bool p_disposable = true);
+	std::vector<SiMMLTrack> sequence_off(int p_track_id, double p_delay = 0, double p_quant = 1, bool p_stop_with_reset = false);
 
 	void fade_in(double p_time);
 	void fade_out(double p_time);

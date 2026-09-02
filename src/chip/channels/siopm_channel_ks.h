@@ -7,18 +7,18 @@
 #ifndef SIOPM_CHANNEL_KS_H
 #define SIOPM_CHANNEL_KS_H
 
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "chip/channels/siopm_channel_fm.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 enum SiONPitchTableType : unsigned int;
 class SiOPMSoundChip;
 
 // Karplus-Strong algorithm with FM synth.
 class SiOPMChannelKS : public SiOPMChannelFM {
-	GDCLASS(SiOPMChannelKS, SiOPMChannelFM)
+	//GDCLASS(SiOPMChannelKS, SiOPMChannelFM)
 
 	static const int KS_BUFFER_SIZE = 5400; // 5394 = sampling count of MIDI note number=0
 
@@ -31,7 +31,7 @@ class SiOPMChannelKS : public SiOPMChannelFM {
 	KSSeedType _ks_seed_type = KS_SEED_DEFAULT;
 	int _ks_seed_index = 0;
 
-	Vector<int> _ks_delay_buffer;
+	std::vector<int> _ks_delay_buffer;
 	double _ks_delay_buffer_index = 0;
 	int _ks_pitch_index = 0;
 
@@ -51,17 +51,17 @@ class SiOPMChannelKS : public SiOPMChannelFM {
 
 	// Processing.
 
-	void _apply_karplus_strong(SinglyLinkedList<int>::Element *p_buffer_start, int p_length);
+	void _apply_karplus_strong(std::forward_list<int>::Element *p_buffer_start, int p_length);
 
 protected:
 	static void _bind_methods() {}
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 public:
 	void set_karplus_strong_params(int p_attack_rate = 48, int p_decay_rate = 48, int p_total_level = 0, int p_fixed_pitch = 0, int p_wave_shape = -1, int p_tension = 8);
 
-	virtual void set_parameters(Vector<int> p_params) override;
+	virtual void set_parameters(std::vector<int> p_params) override;
 	virtual void set_types(int p_pg_type, SiONPitchTableType p_pt_type) override;
 	virtual void set_all_attack_rate(int p_value) override;
 	virtual void set_all_release_rate(int p_value) override;

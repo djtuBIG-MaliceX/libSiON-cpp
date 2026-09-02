@@ -14,21 +14,24 @@
 #include "chip/wave/siopm_wave_sampler_data.h"
 #include "chip/wave/siopm_wave_sampler_table.h"
 
-void SiOPMChannelSampler::get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {
+#include <memory>
+#include <algorithm>
+
+void SiOPMChannelSampler::get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {
 	for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
 		p_params->set_master_volume(i, _volumes[i]);
 	}
 	p_params->set_pan(_pan);
 }
 
-void SiOPMChannelSampler::set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
+void SiOPMChannelSampler::set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
 	if (p_params->get_operator_count() == 0) {
 		return;
 	}
 
 	if (p_with_volume) {
 		for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-			_volumes.write[i] = p_params->get_master_volume(i);
+			_volumes[i] = p_params->get_master_volume(i);
 		}
 
 		_has_effect_send = false;
@@ -43,7 +46,7 @@ void SiOPMChannelSampler::set_channel_params(const Ref<SiOPMChannelParams> &p_pa
 	}
 }
 
-void SiOPMChannelSampler::set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {
+void SiOPMChannelSampler::set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {
 	_sampler_table = p_wave_data;
 	_sample_data = p_wave_data;
 }
@@ -82,7 +85,7 @@ void SiOPMChannelSampler::note_on() {
 	}
 	if (_sample_data.is_valid() && _sample_start_phase != 255) {
 		_sample_index = _sample_data->get_initial_sample_index(_sample_start_phase * 0.00390625); // 1/256
-		_sample_pan = CLAMP(_pan + _sample_data->get_pan(), 0, 128);
+		_sample_pan = std::clamp(_pan + _sample_data->get_pan(), 0, 128);
 	}
 
 	_is_idling = (_sample_data == nullptr);
@@ -98,7 +101,7 @@ void SiOPMChannelSampler::note_off() {
 	_is_idling = true;
 
 	if (_sampler_table.is_valid()) {
-		_sample_data = Ref<SiOPMWaveSamplerData>();
+		_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
 	}
 }
 
@@ -112,7 +115,7 @@ void SiOPMChannelSampler::buffer(int p_length) {
 	int residue = p_length;
 	while (residue > 0) {
 		int remaining = _sample_data->get_end_point() - _sample_index;
-		int processed = MIN(residue, remaining);
+		int processed = std::min(residue, remaining);
 
 		if (_has_effect_send) {
 			for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
@@ -120,7 +123,7 @@ void SiOPMChannelSampler::buffer(int p_length) {
 					SiOPMStream *stream = _streams[i] ? _streams[i] : _sound_chip->get_stream_slot(i);
 					if (stream) {
 						double volume = _volumes[i] * _expression * _sound_chip->get_sampler_volume();
-						Vector<double> wave_data = _sample_data->get_wave_data();
+						std::vector<double> wave_data = _sample_data->get_wave_data();
 						stream->write_from_vector(&wave_data, _sample_index, _buffer_index, processed, volume, _sample_pan, _sample_data->get_channel_count());
 					}
 				}
@@ -129,7 +132,7 @@ void SiOPMChannelSampler::buffer(int p_length) {
 			SiOPMStream *stream = _streams[0] ? _streams[0] : _sound_chip->get_output_stream();
 
 			double volume = _volumes[0] * _expression * _sound_chip->get_sampler_volume();
-			Vector<double> wave_data = _sample_data->get_wave_data();
+			std::vector<double> wave_data = _sample_data->get_wave_data();
 			stream->write_from_vector(&wave_data, _sample_index, _buffer_index, processed, volume, _sample_pan, _sample_data->get_channel_count());
 		}
 
@@ -147,7 +150,7 @@ void SiOPMChannelSampler::buffer(int p_length) {
 			} else {
 				_is_idling = true;
 				if (_sampler_table.is_valid()) {
-					_sample_data = Ref<SiOPMWaveSamplerData>();
+					_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
 				}
 				break;
 			}
@@ -177,15 +180,15 @@ void SiOPMChannelSampler::reset() {
 	_expression = 1;
 
 	_sampler_table = _table->sampler_tables[0];
-	_sample_data = Ref<SiOPMWaveSamplerData>();
+	_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
 
 	_sample_start_phase = 0;
 	_sample_index = 0;
 	_sample_pan = 0;
 }
 
-String SiOPMChannelSampler::_to_string() const {
-	String params = "";
+std::string SiOPMChannelSampler::_to_string() const {
+	std::string params = "";
 
 	params += "vol=" + rtos(_volumes[0] * _expression) + ", ";
 	params += "pan=" + itos(_pan - 64) + "";

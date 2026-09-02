@@ -6,7 +6,7 @@
 
 #include "si_effector.h"
 
-#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/core/memory.hpp>
 #include "chip/siopm_sound_chip.h"
 #include "chip/siopm_stream.h"
 #include "effector/si_effect_stream.h"
@@ -35,14 +35,14 @@
 #include "effector/filters/si_filter_peak.h"
 #include "effector/filters/si_filter_vowel.h"
 
-HashMap<String, List<Ref<SiEffectBase>>> SiEffector::_effect_instances;
+HashMap<std::string, List<std::shared_ptr<SiEffectBase>>> SiEffector::_effect_instances;
 
 SiEffectStream *SiEffector::_get_global_stream(int p_slot) {
-	ERR_FAIL_INDEX_V(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, nullptr);
+	////ERR_FAIL_INDEX_V(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, nullptr);
 
 	if (_global_effects[p_slot] == nullptr) {
 		SiEffectStream *stream = _alloc_stream(0);
-		_global_effects.write[p_slot] = stream;
+		_global_effects[p_slot] = stream;
 		_sound_chip->set_stream_slot(p_slot, stream->get_stream());
 		_global_effect_count++;
 	}
@@ -52,7 +52,7 @@ SiEffectStream *SiEffector::_get_global_stream(int p_slot) {
 
 SiEffectStream *SiEffector::_alloc_stream(int p_depth) {
 	SiEffectStream *effect = nullptr;
-	if (!_free_effect_streams.is_empty()) {
+	if (!_free_effect_streams.empty()()) {
 		effect = _free_effect_streams.front()->get();
 		_free_effect_streams.pop_front();
 	} else {
@@ -66,22 +66,22 @@ SiEffectStream *SiEffector::_alloc_stream(int p_depth) {
 // Effects.
 
 template <class T>
-void SiEffector::register_effect(const String &p_name) {
+void SiEffector::register_effect(const std::string &p_name) {
 	derived_from<T, SiEffectBase>(); // Compile-time check: Only accept SiEffectBase derivatives.
 
 	// We don't actually use the type here, as that would make it incompatible with the collection.
-	_effect_instances[p_name] = List<Ref<SiEffectBase>>();
+	_effect_instances[p_name] = List<std::shared_ptr<SiEffectBase>>();
 }
 
-Ref<SiEffectBase> SiEffector::get_effect_instance(const String &p_name) {
-	ERR_FAIL_COND_V_MSG(!_effect_instances.has(p_name), Ref<SiEffectBase>(), vformat("SiEffector: Effect called '%s' does not exist.", p_name));
+std::shared_ptr<SiEffectBase> SiEffector::get_effect_instance(const std::string &p_name) {
+	////ERR_FAIL_COND_V_MSG(!_effect_instances.has(p_name), std::shared_ptr<SiEffectBase>(), vformat("SiEffector: Effect called '%s' does not exist.", p_name));
 
-	List<Ref<SiEffectBase>> instances = _effect_instances[p_name];
+	List<std::shared_ptr<SiEffectBase>> instances = _effect_instances[p_name];
 
 	// Check if we have free instances to reuse first.
 	for (int i = 0; i < instances.size(); i++) {
 		if (instances[i]->is_free()) {
-			Ref<SiEffectBase> effect = instances[i];
+			std::shared_ptr<SiEffectBase> effect = instances[i];
 
 			effect->set_free(false);
 			effect->reset();
@@ -94,7 +94,7 @@ Ref<SiEffectBase> SiEffector::get_effect_instance(const String &p_name) {
 
 #define CREATE_EFFECT(m_type, m_name)                                 \
 	if (p_name == m_name) {                                           \
-		Ref<SiEffectBase> effect = create_effect_instance<m_type>();  \
+		std::shared_ptr<SiEffectBase> effect = create_effect_instance<m_type>();  \
 		instances.push_back(effect);                                  \
 		return effect;                                                \
 	}
@@ -127,12 +127,12 @@ Ref<SiEffectBase> SiEffector::get_effect_instance(const String &p_name) {
 #undef CREATE_EFFECT
 
 	// This should only be possible if custom effects are registered outside of the class.
-	return Ref<SiEffectBase>();
+	return std::shared_ptr<SiEffectBase>();
 }
 
 template <class T>
-Ref<T> SiEffector::create_effect_instance() {
-	Ref<T> effect;
+std::shared_ptr<T> SiEffector::create_effect_instance() {
+	std::shared_ptr<T> effect;
 	effect.instantiate();
 
 	effect->set_free(false);
@@ -142,37 +142,37 @@ Ref<T> SiEffector::create_effect_instance() {
 
 // Slots and connections.
 
-TypedArray<SiEffectBase> SiEffector::get_slot_effects(int p_slot) const {
-	ERR_FAIL_INDEX_V_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, TypedArray<SiEffectBase>(), "SiEffector: Invalid effect slot index.");
+std::vector<SiEffectBase> SiEffector::get_slot_effects(int p_slot) const {
+	////ERR_FAIL_INDEX_V_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, std::vector<SiEffectBase>(), "SiEffector: Invalid effect slot index.");
 
 	if (!_global_effects[p_slot]) {
-		return TypedArray<SiEffectBase>();
+		return std::vector<SiEffectBase>();
 	}
 
-	List<Ref<SiEffectBase>> chained_effects = _global_effects[p_slot]->get_chain();
+	List<std::shared_ptr<SiEffectBase>> chained_effects = _global_effects[p_slot]->get_chain();
 
-	TypedArray<SiEffectBase> effects;
-	for (const Ref<SiEffectBase> &effect : chained_effects) {
+	std::vector<SiEffectBase> effects;
+	for (const std::shared_ptr<SiEffectBase> &effect : chained_effects) {
 		effects.push_back(effect);
 	}
 
 	return effects;
 }
 
-void SiEffector::add_slot_effect(int p_slot, const Ref<SiEffectBase> &p_effect) {
-	ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
+void SiEffector::add_slot_effect(int p_slot, const std::shared_ptr<SiEffectBase> &p_effect) {
+	////ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
 
 	SiEffectStream *stream = _get_global_stream(p_slot);
 	stream->add_to_chain(p_effect);
 	p_effect->prepare_process();
 }
 
-void SiEffector::set_slot_effects(int p_slot, const TypedArray<SiEffectBase> &p_effects) {
-	ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
+void SiEffector::set_slot_effects(int p_slot, const std::vector<SiEffectBase> &p_effects) {
+	////ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
 
-	List<Ref<SiEffectBase>> chained_effects;
+	List<std::shared_ptr<SiEffectBase>> chained_effects;
 	for (int i = 0; i < p_effects.size(); i++) {
-		Ref<SiEffectBase> effect = p_effects[i];
+		std::shared_ptr<SiEffectBase> effect = p_effects[i];
 		chained_effects.push_back(effect);
 	}
 
@@ -182,7 +182,7 @@ void SiEffector::set_slot_effects(int p_slot, const TypedArray<SiEffectBase> &p_
 }
 
 void SiEffector::clear_slot_effects(int p_slot) {
-	ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
+	////ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
 
 	if (p_slot == 0) {
 		_master_effect->initialize(0);
@@ -190,12 +190,12 @@ void SiEffector::clear_slot_effects(int p_slot) {
 		if (_global_effects[p_slot] != nullptr) {
 			_global_effects[p_slot]->free();
 			_free_effect_streams.push_back(_global_effects[p_slot]);
-			_global_effects.write[p_slot] = nullptr;
+			_global_effects[p_slot] = nullptr;
 		}
 	}
 }
 
-SiEffectStream *SiEffector::create_local_effect(int p_depth, List<Ref<SiEffectBase>> p_effects) {
+SiEffectStream *SiEffector::create_local_effect(int p_depth, List<std::shared_ptr<SiEffectBase>> p_effects) {
 	SiEffectStream *effect = _alloc_stream(p_depth);
 	effect->set_chain(p_effects);
 	effect->prepare_process();
@@ -222,8 +222,8 @@ void SiEffector::delete_local_effect(SiEffectStream *p_effect) {
 	_free_effect_streams.push_back(p_effect);
 }
 
-void SiEffector::parse_global_effect_mml(int p_slot, String p_mml, String p_postfix) {
-	ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
+void SiEffector::parse_global_effect_mml(int p_slot, std::string p_mml, std::string p_postfix) {
+	////ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
 
 	SiEffectStream *stream = _get_global_stream(p_slot);
 	stream->parse_mml(p_slot, p_mml, p_postfix);
@@ -276,10 +276,10 @@ void SiEffector::end_process() {
 			if (effect->is_outputting_directly()) {
 				effect->process(0, _sound_chip->get_buffer_length(), false);
 
-				Vector<double> *buffer = effect->get_stream()->get_buffer_ptr();
-				Vector<double> *output = _sound_chip->get_output_stream()->get_buffer_ptr();
+				std::vector<double> *buffer = effect->get_stream()->get_buffer_ptr();
+				std::vector<double> *output = _sound_chip->get_output_stream()->get_buffer_ptr();
 				for (int j = 0; j < output->size(); j++) {
-					output->write[j] += (*buffer)[j];
+					output[j] += (*buffer)[j];
 				}
 			} else {
 				effect->process(0, _sound_chip->get_buffer_length(), true);
@@ -302,7 +302,7 @@ void SiEffector::reset() {
 	}
 
 	_master_effect->reset();
-	_global_effects.write[0] = _master_effect;
+	_global_effects[0] = _master_effect;
 }
 
 //
@@ -321,13 +321,13 @@ void SiEffector::initialize() {
 		if (_global_effects[i] != nullptr) {
 			_global_effects[i]->free();
 			_free_effect_streams.push_back(_global_effects[i]);
-			_global_effects.write[i] = nullptr;
+			_global_effects[i] = nullptr;
 		}
 	}
 	_global_effect_count = 0;
 
 	_master_effect->initialize(0);
-	_global_effects.write[0] = _master_effect;
+	_global_effects[0] = _master_effect;
 }
 
 void SiEffector::_bind_methods() {
@@ -341,8 +341,8 @@ SiEffector::SiEffector(SiOPMSoundChip *p_chip) {
 	_sound_chip = p_chip;
 
 	_master_effect = memnew(SiEffectStream(_sound_chip, _sound_chip->get_output_stream()));
-	_global_effects.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
-	_global_effects.write[0] = _master_effect;
+	_global_effects.resize(SiOPMSoundChip::STREAM_SEND_SIZE);  // TODO zeroed elements?
+	_global_effects[0] = _master_effect;
 
 	// Register default effect instances.
 

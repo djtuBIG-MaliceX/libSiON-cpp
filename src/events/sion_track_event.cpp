@@ -35,7 +35,7 @@ void SiONTrackEvent::_bind_methods() {
 	ClassDB::bind_method(D_METHOD("get_frame_trigger_delay"), &SiONTrackEvent::get_frame_trigger_delay);
 }
 
-SiONTrackEvent::SiONTrackEvent(String p_type, SiONDriver *p_driver, SiMMLTrack *p_track, int p_buffer_index, int p_note, int p_event_trigger_id) :
+SiONTrackEvent::SiONTrackEvent(std::string p_type, SiONDriver *p_driver, SiMMLTrack *p_track, int p_buffer_index, int p_note, int p_event_trigger_id) :
 		SiONEvent(p_type, p_driver) {
 	_track = p_track;
 

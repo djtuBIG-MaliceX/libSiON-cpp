@@ -6,7 +6,7 @@
 
 #include "siopm_channel_manager.h"
 
-#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/core/memory.hpp>
 #include "chip/channels/siopm_channel_base.h"
 #include "chip/channels/siopm_channel_fm.h"
 #include "chip/channels/siopm_channel_ks.h"
@@ -14,7 +14,7 @@
 #include "chip/channels/siopm_channel_sampler.h"
 #include "chip/siopm_sound_chip.h"
 
-using namespace godot;
+
 
 SiOPMSoundChip *SiOPMChannelManager::_sound_chip = nullptr;
 HashMap<SiOPMChannelManager::ChannelType, SiOPMChannelManager *> SiOPMChannelManager::_channel_managers;
@@ -88,7 +88,7 @@ SiOPMChannelBase *SiOPMChannelManager::_create_channel(SiOPMChannelBase *p_prev,
 			default: break; // Silences enum warnings.
 		}
 
-		ERR_FAIL_NULL_V(new_channel, nullptr);
+		//ERR_FAIL_NULL_V(new_channel, nullptr);
 		new_channel->_channel_type = _channel_type;
 		_length++;
 	}

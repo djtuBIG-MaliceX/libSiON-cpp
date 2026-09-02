@@ -10,7 +10,7 @@
 #include "effector/filters/si_filter_base.h"
 
 class SiFilterBandPass : public SiFilterBase {
-	GDCLASS(SiFilterBandPass, SiFilterBase)
+	//GDCLASS(SiFilterBandPass, SiFilterBase)
 
 protected:
 	static void _bind_methods();
@@ -18,7 +18,7 @@ protected:
 public:
 	void set_params(double p_frequency = 3000, double p_band = 1);
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 	virtual void reset() override;
 
 	SiFilterBandPass(double p_frequency = 3000, double p_band = 1);

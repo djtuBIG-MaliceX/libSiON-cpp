@@ -5,6 +5,8 @@
 /***************************************************/
 
 #include "si_effect_stereo_expander.h"
+#include <cmath>
+#include <vector>
 
 void SiEffectStereoExpander::set_params(double p_stereo_width, double p_rotation, bool p_phase_invert) {
 	_monoralize = (p_stereo_width == 0 && p_rotation == 0 && !p_phase_invert);
@@ -15,14 +17,14 @@ void SiEffectStereoExpander::set_params(double p_stereo_width, double p_rotation
 	double right_angle  = center_angle + half_width;
 	double invert = (p_phase_invert ? -1 : 1);
 
-	_left_to_left   = Math::cos(left_angle);
-	_right_to_left  = Math::sin(left_angle);
-	_left_to_right  = Math::cos(right_angle) * invert;
-	_right_to_right = Math::sin(right_angle) * invert;
+	_left_to_left   = std::cos(left_angle);
+	_right_to_left  = std::sin(left_angle);
+	_left_to_right  = std::cos(right_angle) * invert;
+	_right_to_right = std::sin(right_angle) * invert;
 
 	double x = _left_to_left + _left_to_right;
 	double y = _right_to_left + _right_to_right;
-	double l = Math::sqrt(x * x + y * y);
+	double l = std::sqrt(x * x + y * y);
 	if (l > 0.01) {
 		l = 1 / l;
 		_left_to_left   *= l;
@@ -36,7 +38,7 @@ int SiEffectStereoExpander::prepare_process() {
 	return 2;
 }
 
-int SiEffectStereoExpander::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectStereoExpander::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -45,8 +47,8 @@ int SiEffectStereoExpander::process(int p_channels, Vector<double> *r_buffer, in
 			double value = (*r_buffer)[i] + (*r_buffer)[i + 1];
 			value *= 0.7071067811865476;
 
-			r_buffer->write[i] = value;
-			r_buffer->write[i + 1] = value;
+			(*r_buffer)[i] = value;
+			(*r_buffer)[i + 1] = value;
 		}
 
 		return 1;
@@ -56,14 +58,14 @@ int SiEffectStereoExpander::process(int p_channels, Vector<double> *r_buffer, in
 		double value_left = (*r_buffer)[i];
 		double value_right = (*r_buffer)[i + 1];
 
-		r_buffer->write[i]     = value_left * _left_to_left + value_right * _right_to_left;
-		r_buffer->write[i + 1] = value_left * _left_to_right + value_right * _right_to_right;
+		(*r_buffer)[i]     = value_left * _left_to_left + value_right * _right_to_left;
+		(*r_buffer)[i + 1] = value_left * _left_to_right + value_right * _right_to_right;
 	}
 
 	return 2;
 }
 
-void SiEffectStereoExpander::set_by_mml(Vector<double> p_args) {
+void SiEffectStereoExpander::set_by_mml(std::vector<double> p_args) {
 	double stereo_width = _get_mml_arg(p_args, 0, 140) / 100.0;
 	double rotation     = _get_mml_arg(p_args, 1, 0) / 100.0;
 	int phase_invert    = _get_mml_arg(p_args, 2, 0);

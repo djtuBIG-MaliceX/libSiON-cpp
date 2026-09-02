@@ -6,13 +6,13 @@
 
 #include "siopm_wave_table.h"
 
-#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/core/memory.hpp>
 #include "sion_enums.h"
 #include "chip/siopm_ref_table.h"
 
-using namespace godot;
 
-void SiOPMWaveTable::initialize(Vector<int> p_wavelet, SiONPitchTableType p_default_pitch_table_type) {
+
+void SiOPMWaveTable::initialize(std::vector<int> p_wavelet, SiONPitchTableType p_default_pitch_table_type) {
 	_wavelet = p_wavelet;
 	_default_pitch_table_type = p_default_pitch_table_type;
 
@@ -23,7 +23,7 @@ void SiOPMWaveTable::initialize(Vector<int> p_wavelet, SiONPitchTableType p_defa
 	_fixed_bits = SiOPMRefTable::PHASE_BITS - bits;
 }
 
-void SiOPMWaveTable::copy_from(const Ref<SiOPMWaveTable> &p_source) {
+void SiOPMWaveTable::copy_from(const std::shared_ptr<SiOPMWaveTable> &p_source) {
 	_fixed_bits = p_source->_fixed_bits;
 	_default_pitch_table_type = p_source->_default_pitch_table_type;
 	_wavelet.clear();
@@ -34,7 +34,7 @@ void SiOPMWaveTable::copy_from(const Ref<SiOPMWaveTable> &p_source) {
 	}
 }
 
-SiOPMWaveTable::SiOPMWaveTable(Vector<int> p_wavelet, SiONPitchTableType p_default_pitch_table_type) :
+SiOPMWaveTable::SiOPMWaveTable(std::vector<int> p_wavelet, SiONPitchTableType p_default_pitch_table_type) :
 		SiOPMWaveBase(SiONModuleType::MODULE_SCC) {
 	initialize(p_wavelet, p_default_pitch_table_type);
 }

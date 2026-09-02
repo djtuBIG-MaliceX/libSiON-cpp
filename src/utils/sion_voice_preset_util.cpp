@@ -6,7 +6,7 @@
 
 #include "sion_voice_preset_util.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "sion_enums.h"
 #include "sion_voice.h"
 #include "chip/siopm_channel_params.h"
@@ -141,7 +141,7 @@ void SiONVoicePresetUtil::_generate_valsound_voices() {
 	_create_opn_voice("valsound.bell18", "Twin Marinba 1 (g&c)",     { 4,2, 31,10, 5, 0,12,30,1, 8,3,0, 31,16, 6, 9, 9, 0,1, 4,3,0, 31,10, 5, 0,12,30,1, 6,7,0, 31,16, 6, 9, 9, 0,1, 3,7,0 });
 
 	_begin_category("valsound.brass");
-	_create_opn_voice("valsound.brass1",  "Brass Strings",          { 5,7, 20, 0, 0, 0, 0,27,0, 1,0,0, 15, 3, 0, 6, 1, 5,0, 2,1,0, 14, 4, 0, 6, 1, 5,0, 1,2,0, 15, 4, 0, 6, 1, 5,0, 1,3,0 });
+	_create_opn_voice("valsound.brass1",  "Brass std::strings",          { 5,7, 20, 0, 0, 0, 0,27,0, 1,0,0, 15, 3, 0, 6, 1, 5,0, 2,1,0, 14, 4, 0, 6, 1, 5,0, 1,2,0, 15, 4, 0, 6, 1, 5,0, 1,3,0 });
 	_create_opn_voice("valsound.brass2",  "E.Trumpet (mute)",       { 2,7, 13, 6, 0, 8, 1,26,2, 2,3,0, 15, 8, 0, 8, 1,32,1, 2,7,0, 21,15, 0, 8,11,20,0, 2,3,0, 18, 4, 0, 8, 2, 0,1, 8,0,0 });
 	_create_opn_voice("valsound.brass3",  "Horn 2",                 { 4,7, 15,11, 2, 0, 2,23,0, 2,3,0, 13,12, 2,15, 2, 0,0, 2,3,0, 15,13, 5, 0, 1,27,0, 2,7,0, 13,11, 2,15, 2, 0,0, 2,7,0 });
 	_create_opn_voice("valsound.brass4",  "Alpine Horn #3",         { 5,7, 15,10, 0, 6, 5,35,0, 1,0,0, 15, 5, 0, 8, 2, 6,0, 2,2,0, 15, 5, 0, 8, 2, 6,0, 1,5,0, 15, 5, 0, 8, 2, 6,0, 1,0,0 });
@@ -179,7 +179,7 @@ void SiONVoicePresetUtil::_generate_valsound_voices() {
 	_create_opn_voice("valsound.guitar14", "New Dis. Guitar 2",          { 0,5, 31, 5, 0, 0, 0,20,0, 3,3,0, 18, 5, 4, 7, 1,20,1, 7,3,0, 31, 6, 5, 0, 0,22,0, 1,7,0, 31,12, 0, 8, 1, 0,0, 1,7,0 });
 	_create_opn_voice("valsound.guitar15", "New Dis. Guitar 3",          { 3,5, 31, 5, 0, 0,10, 8,0, 3,0,0, 31, 1, 0, 8, 0,20,0,15,0,0, 31, 4, 0,15, 0,22,0, 1,3,0, 31,12, 0, 8, 1, 0,0, 1,7,0 });
 	_create_opn_voice("valsound.guitar16", "Overdriven Guitar (AL=013)", { 1,7, 31, 5, 0, 0, 1,30,0, 3,0,0, 18, 5, 0, 8, 1,21,0, 2,2,0, 31, 5, 4, 0, 1,29,0, 1,6,0, 31,11, 0, 8, 1, 0,0, 1,2,0 });
-	_create_opn_voice("valsound.guitar17", "Metal Strings",              { 3,7, 26,16, 7, 4, 8,24,2, 8,7,0, 22,15, 6, 4, 9,22,2,12,2,0, 26, 9, 2, 7, 8,43,1, 3,0,0, 30, 8, 2, 8, 8, 0,2, 4,0,0 });
+	_create_opn_voice("valsound.guitar17", "Metal std::strings",              { 3,7, 26,16, 7, 4, 8,24,2, 8,7,0, 22,15, 6, 4, 9,22,2,12,2,0, 26, 9, 2, 7, 8,43,1, 3,0,0, 30, 8, 2, 8, 8, 0,2, 4,0,0 });
 	_create_opn_voice("valsound.guitar18", "Soft Dis. Guitar",           { 0,7, 16,15, 1, 9, 3,26,0, 6,3,0, 19,15, 1, 0, 0,27,0, 3,0,0, 26,15, 2, 0, 2,26,0, 1,5,0, 21,31, 0, 7, 0, 0,0, 1,0,0 });
 
 	_begin_category("valsound.lead");
@@ -307,18 +307,18 @@ void SiONVoicePresetUtil::_generate_valsound_voices() {
 	_create_opn_voice("valsound.strpad4",  "Chorus #2 (voice)",        { 4,6, 21, 0, 1,11, 0,40,1, 4,3,0, 14, 8, 0,13, 1, 0,0, 4,3,0, 21, 0, 1,10, 0,37,1, 4,7,0, 14, 8, 1,13, 1, 0,0, 4,7,0 });
 	_create_opn_voice("valsound.strpad5",  "Chorus #3",                { 4,4, 21, 0, 0, 2, 0,42,0, 4,3,0, 18, 4, 0, 9, 1, 0,0, 8,3,0, 21, 0, 0, 2, 0,45,0, 4,7,0, 18, 4, 0, 9, 1, 0,0, 4,7,0 });
 	_create_opn_voice("valsound.strpad6",  "Chorus #4",                { 6,3, 21, 0, 0, 2, 0,39,0, 4,0,0, 18, 4, 0, 9, 1, 0,0, 4,1,0, 18,10, 0, 9, 1, 0,0, 4,3,0, 18, 8, 0, 9, 2, 0,0, 2,7,0 });
-	_create_opn_voice("valsound.strpad7",  "Fretless Strings 1",       { 2,7, 25,10, 0, 5, 1,29,1, 1,1,0, 25,11, 0, 8, 5,15,1, 5,1,0, 28,13, 0, 6, 2,45,1, 1,0,0, 14, 4, 0, 6, 0, 0,1, 1,0,0 });
-	_create_opn_voice("valsound.strpad8",  "Fretless Strings 2",       { 2,0, 21, 7, 0, 7, 3,37,1, 1,3,0, 20,11, 0,12, 3,15,1, 5,7,0, 16, 8, 0,12, 3,45,1, 1,0,0, 14, 5, 0,12, 1, 0,1, 1,0,0 });
-	_create_opn_voice("valsound.strpad9",  "Fretless Strings 3",       { 2,7, 25,10, 0, 5, 1,35,1, 1,3,0, 25,11, 0, 8, 5,13,1, 5,0,0, 28,13, 0, 6, 2,45,1, 1,7,0, 14, 4, 0, 6, 1, 0,1, 1,0,0 });
-	_create_opn_voice("valsound.strpad10", "Fretless Strings 4 (low)", { 2,7, 25,10, 0, 5, 1,29,1, 0,3,0, 25,11, 0, 8, 5,20,1, 4,0,0, 28,13, 0, 6, 2,38,1, 1,7,0, 14, 4, 0, 6, 1, 0,1, 1,0,0 });
+	_create_opn_voice("valsound.strpad7",  "Fretless std::strings 1",       { 2,7, 25,10, 0, 5, 1,29,1, 1,1,0, 25,11, 0, 8, 5,15,1, 5,1,0, 28,13, 0, 6, 2,45,1, 1,0,0, 14, 4, 0, 6, 0, 0,1, 1,0,0 });
+	_create_opn_voice("valsound.strpad8",  "Fretless std::strings 2",       { 2,0, 21, 7, 0, 7, 3,37,1, 1,3,0, 20,11, 0,12, 3,15,1, 5,7,0, 16, 8, 0,12, 3,45,1, 1,0,0, 14, 5, 0,12, 1, 0,1, 1,0,0 });
+	_create_opn_voice("valsound.strpad9",  "Fretless std::strings 3",       { 2,7, 25,10, 0, 5, 1,35,1, 1,3,0, 25,11, 0, 8, 5,13,1, 5,0,0, 28,13, 0, 6, 2,45,1, 1,7,0, 14, 4, 0, 6, 1, 0,1, 1,0,0 });
+	_create_opn_voice("valsound.strpad10", "Fretless std::strings 4 (low)", { 2,7, 25,10, 0, 5, 1,29,1, 0,3,0, 25,11, 0, 8, 5,20,1, 4,0,0, 28,13, 0, 6, 2,38,1, 1,7,0, 14, 4, 0, 6, 1, 0,1, 1,0,0 });
 	_create_opn_voice("valsound.strpad11", "Pizzicato #1 (Koto 2)",    { 0,6, 31, 7, 8, 1, 2,30,3, 3,7,0, 31, 5, 9, 1, 1,30,3, 2,0,0, 31, 5, 8, 3, 2,35,3, 1,0,0, 31,11, 7, 5, 5, 0,2, 1,3,0 });
 	_create_opn_voice("valsound.strpad12", "Soundtrack (Modoki)",      { 4,7, 31, 0, 0, 0, 0,30,1, 2,3,0, 18,13, 4, 7, 1, 0,1, 2,3,0, 31, 0, 0, 0, 0,22,1, 3,7,0, 21,13, 4, 7, 1, 0,1, 3,7,0 });
-	_create_opn_voice("valsound.strpad13", "Strings",                  { 2,7, 15, 9, 0, 5, 1,27,2, 2,3,0, 15, 0, 0, 5,15,31,2, 2,0,0, 15, 0, 0, 5, 0,27,1, 2,0,0, 13, 3, 0, 8, 0, 0,1, 2,7,0 });
+	_create_opn_voice("valsound.strpad13", "std::strings",                  { 2,7, 15, 9, 0, 5, 1,27,2, 2,3,0, 15, 0, 0, 5,15,31,2, 2,0,0, 15, 0, 0, 5, 0,27,1, 2,0,0, 13, 3, 0, 8, 0, 0,1, 2,7,0 });
 	_create_opn_voice("valsound.strpad14", "Synth Accordion",          { 4,7, 18, 0, 0,11, 0,21,1, 2,3,0, 15, 9, 0,13, 2, 0,1, 8,3,0, 18, 0, 0,11, 0,20,1, 2,7,0, 14, 9, 0,13, 2, 0,1, 4,7,0 });
 	_create_opn_voice("valsound.strpad15", "Phaser Synth",             { 0,7, 27,31, 5, 5, 5, 8,0, 1,4,0, 26,31, 4, 5, 4,18,0, 1,5,0, 19,31, 0, 5, 2,18,0, 1,6,0, 16,15, 0, 6, 2, 0,0, 3,4,0 });
 	_create_opn_voice("valsound.strpad16", "FB Synth",                 { 3,7, 31, 6, 0, 0, 4,22,0, 2,0,0, 18, 0, 0, 8, 0,28,0, 4,6,0, 20, 5, 0, 8, 2,28,0, 2,1,0, 20, 4, 0, 8, 1, 0,0, 2,2,0 });
-	_create_opn_voice("valsound.strpad17", "Synth Strings (MB)",       { 3,7, 21, 0, 0, 0, 0,30,0, 1,1,0, 14, 7, 7, 6, 3,25,0, 2,6,0, 15, 0, 0, 5, 0,38,0, 5,6,0, 18, 0, 0, 6, 0, 0,0, 2,0,0 });
-	_create_opn_voice("valsound.strpad18", "Synth Strings #2",         { 2,7, 20, 1, 0, 8, 1,32,0, 2,7,0, 15, 4, 0, 8, 1,28,0, 2,0,0, 22, 1, 0, 8, 1,34,0, 2,3,0, 14, 2, 0, 9, 1, 0,0, 2,0,0 });
+	_create_opn_voice("valsound.strpad17", "Synth std::strings (MB)",       { 3,7, 21, 0, 0, 0, 0,30,0, 1,1,0, 14, 7, 7, 6, 3,25,0, 2,6,0, 15, 0, 0, 5, 0,38,0, 5,6,0, 18, 0, 0, 6, 0, 0,0, 2,0,0 });
+	_create_opn_voice("valsound.strpad18", "Synth std::strings #2",         { 2,7, 20, 1, 0, 8, 1,32,0, 2,7,0, 15, 4, 0, 8, 1,28,0, 2,0,0, 22, 1, 0, 8, 1,34,0, 2,3,0, 14, 2, 0, 9, 1, 0,0, 2,0,0 });
 	_create_opn_voice("valsound.strpad19", "Synth Sweep Pad #1",       { 5,6, 31, 7, 0, 9, 5,18,0, 4,0,0, 31,15, 0,14, 1, 5,0, 8,0,0, 31,16, 0,15, 2, 5,0, 4,0,0, 31,26, 0,14, 2, 5,0, 8,1,0 });
 	_create_opn_voice("valsound.strpad20", "Twin Synth #1 (calm)",     { 4,2, 16, 3, 0, 0, 2,25,0, 4,3,0, 19,12, 0, 6, 1, 0,0, 4,3,0, 16, 3, 0, 0, 2,20,0, 3,7,0, 19,12, 0, 6, 1, 0,0, 3,7,0 });
 	_create_opn_voice("valsound.strpad21", "Twin Synth #2 (FB)",       { 4,6, 16, 3, 0, 0, 2,20,0, 4,7,0, 19,12, 0, 6, 1, 0,0, 8,3,0, 16, 3, 0, 0, 2, 6,0, 3,3,0, 19,12, 0, 6, 1, 8,0, 6,7,0 });
@@ -405,8 +405,8 @@ void SiONVoicePresetUtil::_generate_midi_voices() {
 	_create_ma3_voice("midi.strings7", "Harp",      { 3,6,  0,15, 8, 5, 8, 4,41,0,0, 2,0,0,  0,11, 8, 7, 9, 4,33,0,0, 5,0,0,  0,11, 7, 3, 2, 4,33,0,2, 1,0,0,  0,15, 4, 2, 2, 1, 4,1,0, 1,0,2 });
 	_create_ma3_voice("midi.strings8", "Timpani",   { 3,3,  0,15, 8, 4, 3, 3, 4,1,1, 1,0,2,  0,15, 2, 2, 2,15,33,1,0, 0,7,2,  0,15, 7, 3, 3, 0,28,1,2, 1,0,2,  8,15, 4, 3, 3,15, 0,1,0, 0,0,2 });
 
-	_create_ma3_voice("midi.ensemble1", "Strings1",  { 7,2,  7, 5,10, 0, 6, 0,11,0,2, 1,1,1,  4,12, 6, 0, 6, 1,24,0,0, 2,0,0,  0, 6, 6, 0, 6, 1, 7,0,2, 1,5,0, 12, 6, 5, 0, 6, 1, 5,0,0, 2,3,1 });
-	_create_ma3_voice("midi.ensemble2", "Strings2",  { 7,3,  9, 6,10, 0, 5, 0, 0,0,0, 1,3,0,  2,12, 6, 0, 5, 1,23,0,0, 1,0,1,  1, 5, 6, 0, 6, 0, 0,0,2, 1,5,0, 27, 5, 5, 0, 6, 1, 7,0,0, 1,7,0 });
+	_create_ma3_voice("midi.ensemble1", "std::strings1",  { 7,2,  7, 5,10, 0, 6, 0,11,0,2, 1,1,1,  4,12, 6, 0, 6, 1,24,0,0, 2,0,0,  0, 6, 6, 0, 6, 1, 7,0,2, 1,5,0, 12, 6, 5, 0, 6, 1, 5,0,0, 2,3,1 });
+	_create_ma3_voice("midi.ensemble2", "std::strings2",  { 7,3,  9, 6,10, 0, 5, 0, 0,0,0, 1,3,0,  2,12, 6, 0, 5, 1,23,0,0, 1,0,1,  1, 5, 6, 0, 6, 0, 0,0,2, 1,5,0, 27, 5, 5, 0, 6, 1, 7,0,0, 1,7,0 });
 	_create_ma3_voice("midi.ensemble3", "Syn.Str1",  { 5,0,  0, 9, 8, 0, 2, 1,27,0,0, 1,6,0,  0, 7,15, 0, 5, 0, 7,0,0, 1,3,0,  4, 9,11, 0, 2, 0,20,1,0, 1,3,0,  0, 6,15, 0, 4, 0, 0,0,1, 1,7,0 });
 	_create_ma3_voice("midi.ensemble4", "Syn.Str2",  { 5,5,  9, 9, 8, 0, 2, 1,19,0,0, 1,0,0,  0, 6, 6, 0, 5, 0, 6,0,0, 1,0,0, 27, 8, 8, 0, 2, 0,10,0,0, 1,0,0,  0, 5, 7, 0, 4, 3, 0,0,1, 1,0,0 });
 	_create_ma3_voice("midi.ensemble5", "ChoirAah",  { 5,5,  7,12, 0, 0, 0,15,19,0,0, 6,0,0,  0, 6, 3, 0, 5, 6,23,0,2, 4,0,0,  8, 7,15, 0, 3, 0,30,0,1, 1,0,0,  0, 5,15, 0, 5, 0, 0,0,0, 2,0,0 });
@@ -664,8 +664,8 @@ void SiONVoicePresetUtil::_generate_wave_table_voices() {
 	_create_wave_table_voice("svmidi.strings7", "SV.Harp",      8,40,36,24,24,6,4);
 	_create_wave_table_voice("svmidi.strings8", "SV.Timpani",   8,40,36,24,24,6,4,0);
 
-	_create_wave_table_voice("svmidi.ensemble1", "SV.Strings1",  2,36,1,1,32,15,7);
-	_create_wave_table_voice("svmidi.ensemble2", "SV.Strings2", 23,24,1,1,32,15,6);
+	_create_wave_table_voice("svmidi.ensemble1", "SV.std::strings1",  2,36,1,1,32,15,7);
+	_create_wave_table_voice("svmidi.ensemble2", "SV.std::strings2", 23,24,1,1,32,15,6);
 	_create_wave_table_voice("svmidi.ensemble3", "SV.Syn.Str1",  2,36,1,1,32,15,7);
 	_create_wave_table_voice("svmidi.ensemble4", "SV.Syn.Str2", 23,24,1,1,32,15,6);
 	_create_wave_table_voice("svmidi.ensemble5", "SV.ChoirAah", 21,36,3,3,32,15,6);
@@ -822,22 +822,22 @@ void SiONVoicePresetUtil::_generate_single_drum_voices() {
 	_create_single_drum_voice("svmidi.drum84",  "Bell Tree",       18,63,38,16,16, 6,4,0,4.5);
 }
 
-void SiONVoicePresetUtil::_create_basic_voice(const String &p_key, const String &p_name, int p_channel_num) {
-	Ref<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_channel_num));
+void SiONVoicePresetUtil::_create_basic_voice(const std::string &p_key, const std::string &p_name, int p_channel_num) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_channel_num));
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_percussive_voice(const String &p_key, const String &p_name, int p_wave_shape, int p_attack_rate, int p_release_rate, int p_release_sweep, int p_cutoff, int p_resonance) {
-	Ref<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape, p_attack_rate, p_release_rate));
+void SiONVoicePresetUtil::_create_percussive_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_release_rate, int p_release_sweep, int p_cutoff, int p_resonance) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape, p_attack_rate, p_release_rate));
 
 	if (p_attack_rate == 63) {
 		// gate time = 0
 		voice->set_default_gate_time(0);
 	} else {
 		// gate time != 0
-		Ref<SiOPMOperatorParams> op_params = voice->get_channel_params()->get_operator_params(0);
+		std::shared_ptr<SiOPMOperatorParams> op_params = voice->get_channel_params()->get_operator_params(0);
 		op_params->set_decay_rate(p_release_rate);
 		op_params->set_sustain_rate(p_release_rate);
 		op_params->set_release_rate(p_release_rate);
@@ -851,34 +851,34 @@ void SiONVoicePresetUtil::_create_percussive_voice(const String &p_key, const St
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_analog_voice(const String &p_key, const String &p_name, int p_connection_type, int p_wave_shape1, int p_wave_shape2, int p_balance, int p_pitch_diff) {
-	Ref<SiONVoice> voice = memnew(SiONVoice);
+void SiONVoicePresetUtil::_create_analog_voice(const std::string &p_key, const std::string &p_name, int p_connection_type, int p_wave_shape1, int p_wave_shape2, int p_balance, int p_pitch_diff) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
 	voice->set_analog_like(p_connection_type, p_wave_shape1, p_wave_shape2, p_balance, p_pitch_diff);
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_opn_voice(const String &p_key, const String &p_name, Vector<int> p_params) {
-	Ref<SiONVoice> voice = memnew(SiONVoice);
-	TypedArray<int> params = make_typed_array_from_vector<int>(p_params);
+void SiONVoicePresetUtil::_create_opn_voice(const std::string &p_key, const std::string &p_name, std::vector<int> p_params) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
+	std::vector<int> params = make_typed_array_from_vector<int>(p_params);
 	voice->set_params_opn(params);
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_ma3_voice(const String &p_key, const String &p_name, Vector<int> p_params) {
-	Ref<SiONVoice> voice = memnew(SiONVoice);
-	TypedArray<int> params = make_typed_array_from_vector<int>(p_params);
+void SiONVoicePresetUtil::_create_ma3_voice(const std::string &p_key, const std::string &p_name, std::vector<int> p_params) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
+	std::vector<int> params = make_typed_array_from_vector<int>(p_params);
 	voice->set_params_ma3(params);
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_wave_table_voice(const String &p_key, const String &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_multiple) {
-	Ref<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_SCC, p_wave_shape));
+void SiONVoicePresetUtil::_create_wave_table_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_multiple) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_SCC, p_wave_shape));
 	voice->set_wave_data(_wave_tables[p_wave_shape]);
 	voice->set_envelope(p_attack_rate, p_decay_rate, p_sustain_rate, p_release_rate, p_sustain_level, p_total_level + 4);
 	voice->get_channel_params()->get_operator_params(0)->set_multiple(p_multiple);
@@ -887,8 +887,8 @@ void SiONVoicePresetUtil::_create_wave_table_voice(const String &p_key, const St
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_single_drum_voice(const String &p_key, const String &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_release_sweep, double p_fine_multiple) {
-	Ref<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape));
+void SiONVoicePresetUtil::_create_single_drum_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_release_sweep, double p_fine_multiple) {
+	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape));
 	voice->set_envelope(p_attack_rate, p_decay_rate, p_sustain_rate, p_release_rate, p_sustain_level, p_total_level);
 	voice->get_channel_params()->get_operator_params(0)->set_fine_multiple((int)(p_fine_multiple * 128));
 	voice->set_release_sweep(p_release_sweep);
@@ -901,22 +901,22 @@ void SiONVoicePresetUtil::_create_single_drum_voice(const String &p_key, const S
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_begin_category(const String &p_key) {
-	ERR_FAIL_COND(_category_map.has(p_key));
+void SiONVoicePresetUtil::_begin_category(const std::string &p_key) {
+	////ERR_FAIL_COND(_category_map.has(p_key));
 
-	List<Ref<SiONVoice>> category;
+	List<std::shared_ptr<SiONVoice>> category;
 	_current_category = category;
 	_category_map[p_key] = category;
 }
 
-void SiONVoicePresetUtil::_register_voice(const String &p_key, const Ref<SiONVoice> &p_voice) {
-	ERR_FAIL_COND(_voice_map.has(p_key));
+void SiONVoicePresetUtil::_register_voice(const std::string &p_key, const std::shared_ptr<SiONVoice> &p_voice) {
+	////ERR_FAIL_COND(_voice_map.has(p_key));
 
 	_current_category.push_back(p_voice);
 	_voice_map[p_key] = p_voice;
 }
 
-void SiONVoicePresetUtil::_register_wave_table(Vector<int> p_wavelet) {
+void SiONVoicePresetUtil::_register_wave_table(std::vector<int> p_wavelet) {
 	_wave_tables.push_back(memnew(SiOPMWaveTable(p_wavelet)));
 }
 
@@ -928,18 +928,18 @@ SiONVoicePresetUtil *SiONVoicePresetUtil::generate_voices(uint32_t p_flags) {
 	return instance;
 }
 
-PackedStringArray SiONVoicePresetUtil::get_voice_preset_keys() const {
-	PackedStringArray keys;
+Packedstd::stringArray SiONVoicePresetUtil::get_voice_preset_keys() const {
+	Packedstd::stringArray keys;
 
-	for (const KeyValue<String, Ref<SiONVoice>> &E : _voice_map) {
+	for (const KeyValue<std::string, std::shared_ptr<SiONVoice>> &E : _voice_map) {
 		keys.push_back(E.key);
 	}
 
 	return keys;
 }
 
-Ref<SiONVoice> SiONVoicePresetUtil::get_voice_preset(const String &p_key) const {
-	ERR_FAIL_COND_V_MSG(!_voice_map.has(p_key), nullptr, vformat("SiONVoicePresetUtil: Nonexistent voice preset '%s'.", p_key));
+std::shared_ptr<SiONVoice> SiONVoicePresetUtil::get_voice_preset(const std::string &p_key) const {
+	////ERR_FAIL_COND_V_MSG(!_voice_map.has(p_key), nullptr, vformat("SiONVoicePresetUtil: Nonexistent voice preset '%s'.", p_key));
 
 	return _voice_map[p_key];
 }

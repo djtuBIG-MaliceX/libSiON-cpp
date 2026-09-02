@@ -7,11 +7,11 @@
 #ifndef SIMML_SEQUENCER_H
 #define SIMML_SEQUENCER_H
 
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/callable.hpp>
+////#include <godot_cpp/templates/vector.hpp>
+////#include <godot_cpp/variant/callable.hpp>
 #include "sequencer/base/mml_sequencer.h"
 
-using namespace godot;
+
 
 class MMLExecutorConnector;
 class MMLSequenceGroup;
@@ -23,7 +23,7 @@ class SiOPMSoundChip;
 // The SiMMLSequencer operates SiOPMSoundChip by MML.
 // SiMMLSequencer -> SiMMLTrack -> SiOPMChannelFM -> SiOPMOperator. (-> means "operates")
 class SiMMLSequencer : public MMLSequencer {
-	GDCLASS(SiMMLSequencer, MMLSequencer)
+	////GDCLASS(SiMMLSequencer, MMLSequencer)
 
 	static const int MAX_PARAM_COUNT = 16;
 	static const int MACRO_SIZE = 26;
@@ -32,14 +32,14 @@ class SiMMLSequencer : public MMLSequencer {
 	SiOPMSoundChip *_sound_chip = nullptr;
 	MMLExecutorConnector *_connector = nullptr;
 
-	String _title;
+	std::string _title;
 
 	// Tracks.
 
 	List<SiMMLTrack *> _free_tracks;
 
 	int _max_track_count = DEFAULT_MAX_TRACK_COUNT;
-	Vector<SiMMLTrack *> _tracks;
+	std::vector<SiMMLTrack *> _tracks;
 	SiMMLTrack *_current_track = nullptr;
 
 	int _processed_sample_count = 0;
@@ -54,34 +54,34 @@ class SiMMLSequencer : public MMLSequencer {
 	bool _dummy_process = false;
 	bool _bpm_change_enabled = false;
 
-	virtual String _on_before_compile(String p_mml) override;
+	virtual std::string _on_before_compile(std::string p_mml) override;
 	virtual void _on_after_compile(MMLSequenceGroup *p_group) override;
 	virtual void _on_process(int p_length, MMLEvent *p_event) override;
 	virtual void _on_timer_interruption() override;
 	virtual void _on_beat(int p_delay_samples, int p_beat_counter) override;
-	virtual void _on_table_parse(MMLEvent *p_prev, String p_table) override;
+	virtual void _on_table_parse(MMLEvent *p_prev, std::string p_table) override;
 	virtual void _on_tempo_changed(double p_tempo_ratio) override;
 
 	// Parser.
 
-	Vector<String> _macro_strings;
+	std::vector<std::string> _macro_strings;
 	bool _macro_expand_dynamic = false;
 
-	String _expand_macro(String p_macro, uint32_t p_macro_flags = 0);
+	std::string _expand_macro(std::string p_macro, uint32_t p_macro_flags = 0);
 
 	int _internal_table_index = 0;
 
 	void _reset_parser_parameters();
 
-	void _parse_command_init_sequence(const Ref<SiOPMChannelParams> &p_params, String p_postfix);
-	void _parse_tmode_command(String p_mml);
-	void _parse_vmode_command(String p_mml);
-	bool _try_set_sampler_wave(int p_index, String p_mml);
-	bool _try_set_pcm_wave(int p_index, String p_mml);
-	bool _try_set_pcm_voice(int p_index, String p_mml, String p_postfix);
-	void _try_process_command_callback(String p_command, int p_number, String p_content, String p_postfix);
+	void _parse_command_init_sequence(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_postfix);
+	void _parse_tmode_command(std::string p_mml);
+	void _parse_vmode_command(std::string p_mml);
+	bool _try_set_sampler_wave(int p_index, std::string p_mml);
+	bool _try_set_pcm_wave(int p_index, std::string p_mml);
+	bool _try_set_pcm_voice(int p_index, std::string p_mml, std::string p_postfix);
+	void _try_process_command_callback(std::string p_command, int p_number, std::string p_content, std::string p_postfix);
 
-	bool _parse_system_command_before(String p_command, String p_param);
+	bool _parse_system_command_before(std::string p_command, std::string p_param);
 	MMLSequence *_parse_system_command_after(MMLSequenceGroup *p_seq_group, MMLSequence *p_command_seq);
 
 	// Internal callbacks.
@@ -170,7 +170,7 @@ class SiMMLSequencer : public MMLSequencer {
 	Callable _callback_tempo_changed;
 	Callable _callback_timer;
 	Callable _callback_beat;
-	// The function signature is bool (const Ref<SiMMLData> &, const Variant &). Return false to append the command to SiONData.system_commands.
+	// The function signature is bool (const std::shared_ptr<SiMMLData> &, const Variant &). Return false to append the command to SiONData.system_commands.
 	Callable _callback_parse_system_command;
 
 	//
@@ -188,7 +188,7 @@ protected:
 	static void _bind_methods();
 
 public:
-	String get_title() const { return _title; }
+	std::string get_title() const { return _title; }
 
 	double get_effective_bpm() const;
 	void set_effective_bpm(double p_value);
@@ -198,7 +198,7 @@ public:
 	int get_max_track_count() const { return _max_track_count; }
 	void set_max_track_count(int p_value) { _max_track_count = p_value; }
 
-	Vector<SiMMLTrack *> get_tracks() const { return _tracks; }
+	std::vector<SiMMLTrack *> get_tracks() const { return _tracks; }
 	SiMMLTrack *get_current_track() const { return _current_track; }
 	void reset_all_tracks();
 
@@ -217,8 +217,8 @@ public:
 	bool is_dummy_process() const { return _dummy_process; }
 	void process_dummy(int p_sample_count);
 
-	virtual bool prepare_compile(const Ref<MMLData> &p_data, String p_mml) override;
-	virtual void prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length) override;
+	virtual bool prepare_compile(const std::shared_ptr<MMLData> &p_data, std::string p_mml) override;
+	virtual void prepare_process(const std::shared_ptr<MMLData> &p_data, int p_sample_rate, int p_buffer_length) override;
 	virtual void process() override;
 
 	// Current writing position in the streaming buffer, always less than length of the buffer.

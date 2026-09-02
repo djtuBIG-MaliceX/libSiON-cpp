@@ -6,8 +6,8 @@
 
 #include "simml_ref_table.h"
 
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/memory.hpp>
+////#include <godot_cpp/core/class_db.hpp>
+////#include <godot_cpp/core/memory.hpp>
 #include "sion_enums.h"
 #include "sion_voice.h"
 #include "chip/channels/siopm_channel_manager.h"
@@ -18,7 +18,7 @@
 #include "sequencer/simml_envelope_table.h"
 #include "sequencer/simml_voice.h"
 
-using namespace godot;
+
 
 SiMMLRefTable *SiMMLRefTable::_instance = nullptr;
 
@@ -43,27 +43,27 @@ void SiMMLRefTable::finalize() {
 void SiMMLRefTable::reset_all_user_tables() {
 	for (int i = 0; i < ENVELOPE_TABLE_MAX; i++) {
 		if (_master_envelopes[i].is_valid()) {
-			_master_envelopes.write[i] = Ref<SiMMLEnvelopeTable>();
+			_master_envelopes[i] = std::shared_ptr<SiMMLEnvelopeTable>();
 		}
 	}
 
 	for (int i = 0; i < VOICE_MAX; i++) {
-		_master_voices.write[i] = Ref<SiMMLVoice>();
+		_master_voices[i] = std::shared_ptr<SiMMLVoice>();
 	}
 }
 
-void SiMMLRefTable::register_master_envelope_table(int p_index, const Ref<SiMMLEnvelopeTable> &p_table) {
-	ERR_FAIL_INDEX(p_index, ENVELOPE_TABLE_MAX);
-	_master_envelopes.write[p_index] = p_table;
+void SiMMLRefTable::register_master_envelope_table(int p_index, const std::shared_ptr<SiMMLEnvelopeTable> &p_table) {
+	////ERR_FAIL_INDEX(p_index, ENVELOPE_TABLE_MAX);
+	_master_envelopes[p_index] = p_table;
 }
 
-void SiMMLRefTable::register_master_voice(int p_index, const Ref<SiMMLVoice> &p_voice) {
-	ERR_FAIL_INDEX(p_index, VOICE_MAX);
-	_master_voices.write[p_index] = p_voice;
+void SiMMLRefTable::register_master_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_voice) {
+	////ERR_FAIL_INDEX(p_index, VOICE_MAX);
+	_master_voices[p_index] = p_voice;
 }
 
-Ref<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
-	ERR_FAIL_INDEX_V(p_index, ENVELOPE_TABLE_MAX, nullptr);
+std::shared_ptr<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
+	////ERR_FAIL_INDEX_V(p_index, ENVELOPE_TABLE_MAX, nullptr);
 
 	if (p_index < _stencil_envelopes.size() && _stencil_envelopes[p_index].is_valid()) {
 		return _stencil_envelopes[p_index];
@@ -71,8 +71,8 @@ Ref<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
 	return _master_envelopes[p_index];
 }
 
-Ref<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
-	ERR_FAIL_INDEX_V(p_index, VOICE_MAX, nullptr);
+std::shared_ptr<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
+	////ERR_FAIL_INDEX_V(p_index, VOICE_MAX, nullptr);
 
 	if (p_index < _stencil_voices.size() && _stencil_voices[p_index].is_valid()) {
 		return _stencil_voices[p_index];
@@ -82,7 +82,7 @@ Ref<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
 
 int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_channel_num, int p_tone_num) {
 	SiMMLChannelSettings *channel_settings = channel_settings_map[p_module_type];
-	ERR_FAIL_COND_V(!channel_settings, -1);
+	////ERR_FAIL_COND_V(!channel_settings, -1);
 
 	if (!channel_settings->is_select_tone_type(SiMMLChannelSettings::SELECT_TONE_NORMAL)) {
 		return -1;
@@ -90,12 +90,12 @@ int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_
 
 	int tone_num = p_tone_num;
 
-	Vector<int> voice_index_table = channel_settings->get_voice_index_table();
+	std::vector<int> voice_index_table = channel_settings->get_voice_index_table();
 	if (tone_num == -1 && p_channel_num >= 0 && p_channel_num < voice_index_table.size()) {
 		tone_num = voice_index_table[p_channel_num];
 	}
 
-	Vector<int> pg_type_list = channel_settings->get_pg_type_list();
+	std::vector<int> pg_type_list = channel_settings->get_pg_type_list();
 	if (tone_num < 0 || tone_num >= pg_type_list.size()) {
 		tone_num = channel_settings->get_initial_voice_index();
 	}
@@ -105,14 +105,14 @@ int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_
 
 bool SiMMLRefTable::is_suitable_for_fm_voice(SiONModuleType p_module_type) {
 	SiMMLChannelSettings *channel_settings = channel_settings_map[p_module_type];
-	ERR_FAIL_COND_V(!channel_settings, false);
+	////ERR_FAIL_COND_V(!channel_settings, false);
 
 	return channel_settings->is_suitable_for_fm_voice();
 }
 
 //
 
-void SiMMLRefTable::_fill_tss_log_table(String (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255) {
+void SiMMLRefTable::_fill_tss_log_table(std::string (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255) {
 	int value = p_start << 16;
 	int step = p_step << 16;
 
@@ -131,22 +131,22 @@ void SiMMLRefTable::_fill_tss_log_table(String (&r_table)[256], int p_start, int
 }
 
 template <size_t S>
-Vector<Ref<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_voices(uint32_t (&p_register_map)[S]) {
-	Vector<Ref<SiMMLVoice>> voices;
-	voices.resize_zeroed(S >> 1);
+std::vector<std::shared_ptr<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_voices(uint32_t (&p_register_map)[S]) {
+	std::vector<std::shared_ptr<SiMMLVoice>> voices;
+	voices.resize(S >> 1); // TODO zeroed
 
 	for (int i = 0, j = 0; i < voices.size(); i++, j += 2) {
-		Ref<SiMMLVoice> voice;
+		std::shared_ptr<SiMMLVoice> voice;
 		voice.instantiate();
 		_dump_ym2413_register(voice, p_register_map[j], p_register_map[j + 1]);
-		voices.write[i] = voice;
+		voices[i] = voice;
 	}
 
 	return voices;
 }
 
-void SiMMLRefTable::_dump_ym2413_register(const Ref<SiMMLVoice> &p_voice, uint32_t p_u0, uint32_t p_u1) {
-	Ref<SiOPMChannelParams> channel_params = p_voice->get_channel_params();
+void SiMMLRefTable::_dump_ym2413_register(const std::shared_ptr<SiMMLVoice> &p_voice, uint32_t p_u0, uint32_t p_u1) {
+	std::shared_ptr<SiOPMChannelParams> channel_params = p_voice->get_channel_params();
 
 	p_voice->set_module_type(SiONModuleType::MODULE_FM);
 	p_voice->set_channel_num(0);
@@ -157,8 +157,8 @@ void SiMMLRefTable::_dump_ym2413_register(const Ref<SiMMLVoice> &p_voice, uint32
 	channel_params->set_operator_count(2);
 	channel_params->set_algorithm(0);
 
-	Ref<SiOPMOperatorParams> op_params0 = channel_params->get_operator_params(0);
-	Ref<SiOPMOperatorParams> op_params1 = channel_params->get_operator_params(1);
+	std::shared_ptr<SiOPMOperatorParams> op_params0 = channel_params->get_operator_params(0);
+	std::shared_ptr<SiOPMOperatorParams> op_params1 = channel_params->get_operator_params(1);
 
 	op_params0->set_amplitude_modulation_shift(((p_u0 >> 31) & 1) << 1);
 	op_params1->set_amplitude_modulation_shift(((p_u0 >> 23) & 1) << 1);
@@ -345,9 +345,9 @@ SiMMLRefTable::SiMMLRefTable() {
 
 	// Master tables.
 	{
-		_master_envelopes.resize_zeroed(ENVELOPE_TABLE_MAX);
+		_master_envelopes.resize(ENVELOPE_TABLE_MAX); // TODO zeroed
 		_master_envelopes.fill(nullptr);
-		_master_voices.resize_zeroed(VOICE_MAX);
+		_master_voices.resize(VOICE_MAX); // TODO zeroed
 		_master_voices.fill(nullptr);
 	}
 

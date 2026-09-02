@@ -32,15 +32,15 @@ int SiEffectStereoDelay::prepare_process() {
 	return 2;
 }
 
-void SiEffectStereoDelay::_process_channel(Vector<double> *r_buffer, int p_buffer_index, Vector<double> *p_read_buffer, Vector<double> *r_write_buffer) {
+void SiEffectStereoDelay::_process_channel(std::vector<double> *r_buffer, int p_buffer_index, std::vector<double> *p_read_buffer, std::vector<double> *r_write_buffer) {
 	double value = (*p_read_buffer)[_pointer_read];
-	r_write_buffer->write[_pointer_write] = (*r_buffer)[p_buffer_index] - value * _feedback;
+	r_write_buffer[_pointer_write] = (*r_buffer)[p_buffer_index] - value * _feedback;
 
-	r_buffer->write[p_buffer_index] *= 1 - _wet;
-	r_buffer->write[p_buffer_index] += value * _wet;
+	r_buffer[p_buffer_index] *= 1 - _wet;
+	r_buffer[p_buffer_index] += value * _wet;
 }
 
-int SiEffectStereoDelay::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectStereoDelay::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -55,7 +55,7 @@ int SiEffectStereoDelay::process(int p_channels, Vector<double> *r_buffer, int p
 	return p_channels;
 }
 
-void SiEffectStereoDelay::set_by_mml(Vector<double> p_args) {
+void SiEffectStereoDelay::set_by_mml(std::vector<double> p_args) {
 	double delay_time = _get_mml_arg(p_args, 0, 250);
 	double feedback   = _get_mml_arg(p_args, 1, 25) / 100.0;
 	int cross         = _get_mml_arg(p_args, 2, 0);
@@ -74,8 +74,8 @@ void SiEffectStereoDelay::_bind_methods() {
 
 SiEffectStereoDelay::SiEffectStereoDelay(double p_delay_time, double p_feedback, bool p_cross, double p_wet) :
 		SiEffectBase() {
-	_delay_buffer_left.resize_zeroed(1 << DELAY_BUFFER_BITS);
-	_delay_buffer_right.resize_zeroed(1 << DELAY_BUFFER_BITS);
+	_delay_buffer_left.resize(1 << DELAY_BUFFER_BITS); // TODO zeroed
+	_delay_buffer_right.resize(1 << DELAY_BUFFER_BITS); // TODO zeroed
 
 	set_params(p_delay_time, p_feedback, p_cross, p_wet);
 }

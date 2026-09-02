@@ -12,7 +12,7 @@
 class SiMMLTrack;
 
 class SiONTrackEvent : public SiONEvent {
-	GDCLASS(SiONTrackEvent, SiONEvent)
+	//GDCLASS(SiONTrackEvent, SiONEvent)
 
 	SiMMLTrack *_track = nullptr;
 	int _event_trigger_id = 0;
@@ -66,7 +66,7 @@ public:
 
 	//
 
-	SiONTrackEvent(String p_type = String(), SiONDriver *p_driver = nullptr, SiMMLTrack *p_track = nullptr, int p_buffer_index = 0, int p_note = 0, int p_event_trigger_id = 0);
+	SiONTrackEvent(std::string p_type = std::string(), SiONDriver *p_driver = nullptr, SiMMLTrack *p_track = nullptr, int p_buffer_index = 0, int p_note = 0, int p_event_trigger_id = 0);
 	~SiONTrackEvent() {}
 };
 

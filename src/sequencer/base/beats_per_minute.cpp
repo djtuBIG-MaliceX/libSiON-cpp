@@ -6,14 +6,14 @@
 
 #include "beats_per_minute.h"
 
-#include <godot_cpp/core/math.hpp>
+//#include <godot_cpp/core/math.hpp>
 
 #include "sequencer/base/mml_sequencer.h"
 
-using namespace godot;
+
 
 bool BeatsPerMinute::update(double p_bpm, int p_sample_rate) {
-	double bpm = CLAMP(p_bpm, 1, 511);
+	double bpm = std::clamp(p_bpm, 1, 511);
 
 	if (bpm == _bpm && p_sample_rate == _sample_rate) {
 		return false;

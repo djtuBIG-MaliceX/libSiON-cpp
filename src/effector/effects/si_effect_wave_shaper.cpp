@@ -5,6 +5,7 @@
 /***************************************************/
 
 #include "si_effect_wave_shaper.h"
+#include <vector>
 
 void SiEffectWaveShaper::set_params(double p_distortion, double p_output_level) {
 	double distortion = p_distortion;
@@ -20,7 +21,7 @@ int SiEffectWaveShaper::prepare_process() {
 	return 2;
 }
 
-int SiEffectWaveShaper::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectWaveShaper::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -29,17 +30,17 @@ int SiEffectWaveShaper::process(int p_channels, Vector<double> *r_buffer, int p_
 	if (p_channels == 2) {
 		for (int i = start_index; i < (start_index + length); i++) {
 			double value = (*r_buffer)[i];
-			value = coef * value / (1 + _coefficient * ABS(value));
+			value = coef * value / (1 + _coefficient * std::abs(value));
 
-			r_buffer->write[i] = value;
+			r_buffer[i] = value;
 		}
 	} else {
 		for (int i = start_index; i < (start_index + length); i += 2) {
 			double value = (*r_buffer)[i];
-			value = coef * value / (1 + _coefficient * ABS(value));
+			value = coef * value / (1 + _coefficient * std::abs(value));
 
-			r_buffer->write[i] = value;
-			r_buffer->write[i + 1] = value;
+			(*r_buffer)[i] = value;
+			(*r_buffer)[i + 1] = value;
 
 		}
 	}
@@ -47,7 +48,7 @@ int SiEffectWaveShaper::process(int p_channels, Vector<double> *r_buffer, int p_
 	return p_channels;
 }
 
-void SiEffectWaveShaper::set_by_mml(Vector<double> p_args) {
+void SiEffectWaveShaper::set_by_mml(std::vector<double> p_args) {
 	double distortion   = _get_mml_arg(p_args, 0, 50) / 100.0;
 	double output_level = _get_mml_arg(p_args, 1, 100) / 100.0;
 

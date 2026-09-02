@@ -6,7 +6,7 @@
 
 #include "mml_sequence.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "sequencer/base/mml_event.h"
 #include "sequencer/base/mml_executor.h"
 #include "sequencer/base/mml_parser.h"
@@ -75,7 +75,7 @@ bool MMLSequence::is_system_command() const {
 	return _head_event->get_next()->get_id() == MMLEvent::SYSTEM_EVENT;
 }
 
-String MMLSequence::get_system_command() const {
+std::string MMLSequence::get_system_command() const {
 	return MMLParser::get_instance()->get_system_event_string(_head_event->get_next());
 }
 
@@ -299,13 +299,13 @@ void MMLSequence::clear() {
 	_mml_string = "";
 }
 
-String MMLSequence::_to_string() const {
+std::string MMLSequence::_to_string() const {
 	if (_is_terminal) {
 		return "MMLSequence: terminator";
 	}
 
 	MMLEvent *event = _head_event->get_next();
-	String str;
+	std::string str;
 
 	// Print first 32 events in the sequence.
 	for (int i = 0; i < 32 && event; i++) {

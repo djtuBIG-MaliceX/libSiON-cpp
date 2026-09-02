@@ -10,7 +10,7 @@
 #include "effector/si_effect_base.h"
 
 class SiEffectStereoExpander : public SiEffectBase {
-	GDCLASS(SiEffectStereoExpander, SiEffectBase)
+	//GDCLASS(SiEffectStereoExpander, SiEffectBase)
 
 	double _left_to_left = 0;
 	double _right_to_left = 0;
@@ -28,9 +28,9 @@ public:
 	//
 
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 	virtual void reset() override;
 
 	SiEffectStereoExpander(double p_stereo_width = 1.4, double p_rotation = 0, bool p_phase_invert = false);

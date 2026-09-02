@@ -7,14 +7,15 @@
 #ifndef MML_EVENT_H
 #define MML_EVENT_H
 
-#include <godot_cpp/core/binder_common.hpp>
-#include <godot_cpp/core/object.hpp>
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/core/binder_common.hpp>
+//#include <godot_cpp/core/object.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 
-using namespace godot;
+#include <string>
+#include <vector>
 
-class MMLEvent : public Object {
-	GDCLASS(MMLEvent, Object)
+class MMLEvent {
+	//GDCLASS(MMLEvent, Object)
 
 public:
 	enum EventID {
@@ -77,10 +78,10 @@ private:
 protected:
 	static void _bind_methods();
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 public:
-	static int get_id_from_mml(String p_mml);
+	static int get_id_from_mml(std::string p_mml);
 
 	int get_id() const { return id; }
 	void set_id(int p_value) { id = p_value; }
@@ -94,15 +95,15 @@ public:
 	MMLEvent *get_jump() const { return jump; }
 	void set_jump(MMLEvent *p_event) { jump = p_event; }
 
-	MMLEvent *get_parameters(Vector<int> *r_params, int p_length) const;
+	MMLEvent *get_parameters(std::vector<int> *r_params, int p_length) const;
 
 	void initialize(int p_id, int p_data, int p_length);
-	String as_text() const;
+	std::string as_text() const;
 
 	MMLEvent(int p_id = 0, int p_data = 0, int p_length = 0);
 	~MMLEvent();
 };
 
-VARIANT_ENUM_CAST(MMLEvent::EventID);
+//VARIANT_ENUM_CAST(MMLEvent::EventID);
 
 #endif // MML_EVENT_H

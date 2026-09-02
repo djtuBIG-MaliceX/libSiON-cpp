@@ -6,17 +6,17 @@
 
 #include "mml_sequence_group.h"
 
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/memory.hpp>
 #include "sequencer/base/mml_data.h"
 #include "sequencer/base/mml_event.h"
 #include "sequencer/base/mml_sequence.h"
 
-using namespace godot;
+
 
 MMLSequence *MMLSequenceGroup::create_new_sequence() {
 	MMLSequence *sequence = nullptr;
-	if (!_free_list.is_empty()) {
+	if (!_free_list.empty()()) {
 		sequence = _free_list.front()->get();
 		_free_list.pop_front();
 	} else {
@@ -37,7 +37,7 @@ MMLSequence *MMLSequenceGroup::append_new_sequence() {
 MMLEvent *MMLSequenceGroup::populate_sequences(MMLEvent *p_head_event) {
 	MMLEvent *event = p_head_event;
 	while (event && event->get_jump()) {
-		ERR_FAIL_COND_V_MSG(event->get_id() != MMLEvent::SEQUENCE_HEAD, event, vformat("MMLSequenceGroup: Invalid event in the head event sequence (%s).", event->as_text()));
+		////ERR_FAIL_COND_V_MSG(event->get_id() != MMLEvent::SEQUENCE_HEAD, event, vformat("MMLSequenceGroup: Invalid event in the head event sequence (%s).", event->as_text()));
 
 		MMLSequence *sequence = append_new_sequence();
 		event = sequence->cutout(event);
@@ -48,8 +48,8 @@ MMLEvent *MMLSequenceGroup::populate_sequences(MMLEvent *p_head_event) {
 	if (event) {
 		// This can happen normally, as we always add an extra head after finishing previous sequence. But anything else
 		// is a problem with data or a bug.
-		ERR_FAIL_COND_V_MSG(event->get_id() != MMLEvent::SEQUENCE_HEAD, event, vformat("MMLSequenceGroup: Invalid events at the end of the sequence (starting with %s).", event->as_text()));
-		ERR_FAIL_COND_V_MSG(event->get_next(), event, vformat("MMLSequenceGroup: Invalid events at the end of the sequence (starting with %s).", event->get_next()->as_text()));
+		////ERR_FAIL_COND_V_MSG(event->get_id() != MMLEvent::SEQUENCE_HEAD, event, vformat("MMLSequenceGroup: Invalid events at the end of the sequence (starting with %s).", event->as_text()));
+		////ERR_FAIL_COND_V_MSG(event->get_next(), event, vformat("MMLSequenceGroup: Invalid events at the end of the sequence (starting with %s).", event->get_next()->as_text()));
 	}
 
 	// Return the remainder, if any, so the caller can decide what to do with it.
@@ -61,7 +61,7 @@ MMLSequence *MMLSequenceGroup::get_head_sequence() const {
 }
 
 MMLSequence *MMLSequenceGroup::get_sequence(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, _sequences.size(), nullptr);
+	////ERR_FAIL_INDEX_V(p_index, _sequences.size(), nullptr);
 
 	return _sequences[p_index];
 }

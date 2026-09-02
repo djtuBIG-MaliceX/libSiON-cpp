@@ -7,16 +7,16 @@
 #ifndef SIMML_TRACK_H
 #define SIMML_TRACK_H
 
-#include <godot_cpp/core/object.hpp>
-#include <godot_cpp/variant/callable.hpp>
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/core/object.hpp>
+//#include <godot_cpp/variant/callable.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "sion_enums.h"
 #include "sequencer/base/beats_per_minute.h"
 #include "sequencer/simml_data.h"
 #include "sequencer/simml_ref_table.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class MMLExecutor;
 class MMLSequence;
@@ -24,8 +24,8 @@ class SiMMLChannelSettings;
 class SiMMLEnvelopeTable;
 class SiOPMChannelBase;
 
-class SiMMLTrack : public Object {
-	GDCLASS(SiMMLTrack, Object)
+class SiMMLTrack {
+	//GDCLASS(SiMMLTrack, Object)
 
 public:
 	// Mask bits for event_mask and @mask command.
@@ -59,7 +59,7 @@ private:
 	static const int FIXED_BITS = 16;
 	static const int SWEEP_MAX = 8192 << FIXED_BITS;
 
-	static SinglyLinkedList<int> *_envelope_zero_table;
+	static std::forward_list<int> *_envelope_zero_table;
 
 	// Properties and data.
 
@@ -68,7 +68,7 @@ private:
 	MMLExecutor *_executor = nullptr;
 	SiMMLChannelSettings *_channel_settings = nullptr;
 
-	Ref<SiMMLData> _mml_data;
+	std::shared_ptr<SiMMLData> _mml_data;
 
 	// This value is specified by user and contains the track starter.
 	int _internal_track_id = 0;
@@ -106,11 +106,11 @@ private:
 	int _setting_process_mode[2] = {};
 
 	// Keeping element pointers because this references external data, so we want to have our own iterators.
-	Vector<SinglyLinkedList<int>::Element *> _setting_envelope_exp;
-	Vector<SinglyLinkedList<int>::Element *> _setting_envelope_voice;
-	Vector<SinglyLinkedList<int>::Element *> _setting_envelope_note;
-	Vector<SinglyLinkedList<int>::Element *> _setting_envelope_pitch;
-	Vector<SinglyLinkedList<int>::Element *> _setting_envelope_filter;
+	std::vector<std::forward_list<int>::Element *> _setting_envelope_exp;
+	std::vector<std::forward_list<int>::Element *> _setting_envelope_voice;
+	std::vector<std::forward_list<int>::Element *> _setting_envelope_note;
+	std::vector<std::forward_list<int>::Element *> _setting_envelope_pitch;
+	std::vector<std::forward_list<int>::Element *> _setting_envelope_filter;
 
 	bool _setting_exp_offset[2] = {};
 	// PNS (pitch, note, sweep)
@@ -122,8 +122,8 @@ private:
 	int _setting_counter_pitch[2] = {};
 	int _setting_counter_filter[2] = {};
 
-	Vector<SinglyLinkedList<int> *> _table_envelope_mod_amp;
-	Vector<SinglyLinkedList<int> *> _table_envelope_mod_pitch;
+	std::vector<std::forward_list<int> *> _table_envelope_mod_amp;
+	std::vector<std::forward_list<int> *> _table_envelope_mod_pitch;
 	int _setting_sweep_step[2] = {};
 	int _setting_sweep_end[2] = {};
 	int _envelope_interval = 0;
@@ -131,11 +131,11 @@ private:
 	// Envelopes.
 
 	// Keeping element pointers because this references external data, so we want to have our own iterators.
-	SinglyLinkedList<int>::Element *_envelope_exp = nullptr;
-	SinglyLinkedList<int>::Element *_envelope_voice = nullptr;
-	SinglyLinkedList<int>::Element *_envelope_note = nullptr;
-	SinglyLinkedList<int>::Element *_envelope_pitch = nullptr;
-	SinglyLinkedList<int>::Element *_envelope_filter = nullptr;
+	std::forward_list<int>::Element *_envelope_exp = nullptr;
+	std::forward_list<int>::Element *_envelope_voice = nullptr;
+	std::forward_list<int>::Element *_envelope_note = nullptr;
+	std::forward_list<int>::Element *_envelope_pitch = nullptr;
+	std::forward_list<int>::Element *_envelope_filter = nullptr;
 
 	int _counter_exp = 0;
 	int _max_counter_exp = 0;
@@ -148,8 +148,8 @@ private:
 	int _counter_filter = 0;
 	int _max_counter_filter = 0;
 
-	SinglyLinkedList<int> *_envelope_mod_amp = nullptr;
-	SinglyLinkedList<int> *_envelope_mod_pitch = nullptr;
+	std::forward_list<int> *_envelope_mod_amp = nullptr;
+	std::forward_list<int> *_envelope_mod_pitch = nullptr;
 	int _sweep_step = 0;
 	int _sweep_end = 0;
 	int _sweep_pitch = 0;
@@ -159,7 +159,7 @@ private:
 	// Residue of the previous envelope process
 	int _residue = 0;
 
-	SinglyLinkedList<int> *_make_modulation_table(int p_depth, int p_end_depth, int p_delay, int p_term);
+	std::forward_list<int> *_make_modulation_table(int p_depth, int p_end_depth, int p_delay, int p_term);
 
 	// Events.
 
@@ -223,7 +223,7 @@ public:
 	SiOPMChannelBase *get_channel() const { return _channel; }
 	void set_channel(SiOPMChannelBase *p_channel) { _channel = p_channel; }
 	MMLExecutor *get_executor() const { return _executor; }
-	MMLSequence *set_channel_parameters(Vector<int> p_params);
+	MMLSequence *set_channel_parameters(std::vector<int> p_params);
 
 	int get_track_number() const { return _track_number; }
 	void set_track_number(int p_number) { _track_number = p_number; }
@@ -233,8 +233,8 @@ public:
 	int get_track_type_id() const;
 
 	// This value only is available in the track playing an MML sequence.
-	Ref<SiMMLData> get_mml_data() const { return _mml_data; }
-	Ref<BeatsPerMinute> get_bpm_settings() const;
+	std::shared_ptr<SiMMLData> get_mml_data() const { return _mml_data; }
+	std::shared_ptr<BeatsPerMinute> get_bpm_settings() const;
 
 	// Channel number, set by 2nd argument of % command. Usually same as voice index / program number (except for APU).
 	int get_channel_number() const { return _channel_number; }
@@ -325,11 +325,11 @@ public:
 	void set_envelope_fps(int p_fps);
 	void set_release_sweep(int p_sweep);
 	void set_modulation_envelope(bool p_is_pitch_mod, int p_depth, int p_end_depth, int p_delay, int p_term);
-	void set_tone_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step);
-	void set_amplitude_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step, bool p_offset = false);
-	void set_filter_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step);
-	void set_pitch_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step);
-	void set_note_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step);
+	void set_tone_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step);
+	void set_amplitude_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step, bool p_offset = false);
+	void set_filter_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step);
+	void set_pitch_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step);
+	void set_note_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step);
 
 	// Events.
 
@@ -375,7 +375,7 @@ public:
 	void key_off(int p_sample_delay = 0, bool p_with_reset = false);
 	void bend_note(int p_to_note, int p_tick_length);
 
-	void sequence_on(const Ref<SiMMLData> &p_data, MMLSequence *p_sequence, int p_sample_length = 0, int p_sample_delay = 0);
+	void sequence_on(const std::shared_ptr<SiMMLData> &p_data, MMLSequence *p_sequence, int p_sample_length = 0, int p_sample_delay = 0);
 	void sequence_off(int p_sample_delay = 0, bool p_with_reset = false);
 
 	void limit_key_length(int p_stop_delay);
@@ -385,7 +385,7 @@ public:
 	//
 
 	void reset(int p_buffer_index);
-	void initialize(const Ref<SiMMLData> &p_data, MMLSequence *p_sequence, int p_fps, int p_internal_track_id, const Callable &p_event_trigger_on, const Callable &p_event_trigger_off, bool p_disposable);
+	void initialize(const std::shared_ptr<SiMMLData> &p_data, MMLSequence *p_sequence, int p_fps, int p_internal_track_id, const Callable &p_event_trigger_on, const Callable &p_event_trigger_off, bool p_disposable);
 
 	SiMMLTrack();
 	~SiMMLTrack();

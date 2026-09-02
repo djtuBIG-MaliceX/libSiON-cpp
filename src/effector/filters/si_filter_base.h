@@ -10,7 +10,7 @@
 #include "effector/si_effect_base.h"
 
 class SiFilterBase : public SiEffectBase {
-	GDCLASS(SiFilterBase, SiEffectBase)
+	//GDCLASS(SiFilterBase, SiEffectBase)
 
 	static const double THRESHOLD;
 
@@ -51,7 +51,7 @@ protected:
 
 public:
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
 	SiFilterBase() : SiEffectBase() {}
 	~SiFilterBase() {}

@@ -7,17 +7,17 @@
 #ifndef MML_SEQUENCE_H
 #define MML_SEQUENCE_H
 
-#include <godot_cpp/templates/list.hpp>
-#include <godot_cpp/variant/callable.hpp>
+//#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/variant/callable.hpp>
 #include "sequencer/base/mml_data.h"
 
-using namespace godot;
+
 
 class MMLEvent;
 
 // Sequence of 1 sound channel. MMLData > MMLSequenceGroup > MMLSequence > MMLEvent (">" means "has a").
 class MMLSequence : public Object {
-	GDCLASS(MMLSequence, Object)
+	//GDCLASS(MMLSequence, Object)
 
 	// Chain of sequences.
 
@@ -43,14 +43,14 @@ class MMLSequence : public Object {
 
 	// MML string.
 
-	String _mml_string;
+	std::string _mml_string;
 
 	void _update_event_length();
 
 protected:
 	static void _bind_methods();
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 public:
 	// Chain of sequences.
@@ -72,7 +72,7 @@ public:
 	void set_active(bool p_active) { _is_active = p_active; }
 
 	bool is_system_command() const;
-	String get_system_command() const;
+	std::string get_system_command() const;
 
 	MMLEvent *get_head_event() const { return _head_event; }
 	void set_head_event(MMLEvent *p_event) { _head_event = p_event; }
@@ -96,7 +96,7 @@ public:
 	// MML string.
 
 	void update_mml_string();
-	String get_mml_string() const { return _mml_string; }
+	std::string get_mml_string() const { return _mml_string; }
 
 	//
 

@@ -8,17 +8,17 @@
 #define SIOPM_CHANNEL_PCM_H
 
 #include "chip/channels/siopm_channel_base.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
 class SiOPMOperator;
 
 class SiOPMChannelPCM : public SiOPMChannelBase {
-	GDCLASS(SiOPMChannelPCM, SiOPMChannelBase)
+	//GDCLASS(SiOPMChannelPCM, SiOPMChannelBase)
 
 	static const int IDLING_THRESHOLD = 5120; // = 256(resolution)*10(2^10=1024)*2(p/n) = volume<1/1024
 
 	SiOPMOperator *_operator = nullptr;
-	Ref<SiOPMWavePCMTable> _pcm_table;
+	std::shared_ptr<SiOPMWavePCMTable> _pcm_table;
 	// Second set of variables for stereo.
 	double _filter_variables2[3] = { 0, 0, 0 };
 
@@ -35,7 +35,7 @@ class SiOPMChannelPCM : public SiOPMChannelBase {
 	int _sample_pan = 0;
 
 	// Second output pipe for stereo.
-	SinglyLinkedList<int> *_out_pipe2 = nullptr;
+	std::forward_list<int> *_out_pipe2 = nullptr;
 
 	// LFO control.
 
@@ -50,22 +50,22 @@ class SiOPMChannelPCM : public SiOPMChannelBase {
 	void _process_operator_mono(int p_length, bool p_mix);
 	void _process_operator_stereo(int p_length, bool p_mix);
 
-	void _write_stream_mono(SinglyLinkedList<int>::Element *p_output, int p_length);
-	void _write_stream_stereo(SinglyLinkedList<int>::Element *p_output_left, SinglyLinkedList<int>::Element *p_output_right, int p_length);
+	void _write_stream_mono(std::forward_list<int>::Element *p_output, int p_length);
+	void _write_stream_stereo(std::forward_list<int>::Element *p_output_left, std::forward_list<int>::Element *p_output_right, int p_length);
 
 protected:
 	static void _bind_methods();
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 public:
-	virtual void get_channel_params(const Ref<SiOPMChannelParams> &p_params) const override;
-	virtual void set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
+	virtual void get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const override;
+	virtual void set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
 	void set_params_by_value(int p_ar, int p_dr, int p_sr, int p_rr, int p_sl, int p_tl, int p_ksr, int p_ksl, int p_mul, int p_dt1, int p_dt2, int p_ams, int p_phase, int p_fix_note);
 
-	virtual void set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) override;
+	virtual void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) override;
 
-	virtual void set_parameters(Vector<int> p_params) override;
+	virtual void set_parameters(std::vector<int> p_params) override;
 	virtual void set_types(int p_pg_type, SiONPitchTableType p_pt_type) override;
 	virtual void set_all_attack_rate(int p_value) override;
 	virtual void set_all_release_rate(int p_value) override;
@@ -89,7 +89,7 @@ public:
 	// LFO control.
 
 	virtual void set_frequency_ratio(int p_ratio) override;
-	virtual void initialize_lfo(int p_waveform, Vector<int> p_custom_wave_table = Vector<int>()) override;
+	virtual void initialize_lfo(int p_waveform, std::vector<int> p_custom_wave_table = std::vector<int>()) override;
 	virtual void set_amplitude_modulation(int p_depth) override;
 	virtual void set_pitch_modulation(int p_depth) override;
 

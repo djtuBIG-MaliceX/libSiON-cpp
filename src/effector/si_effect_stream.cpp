@@ -6,28 +6,30 @@
 
 #include "si_effect_stream.h"
 
-#include <godot_cpp/classes/reg_ex.hpp>
-#include <godot_cpp/classes/reg_ex_match.hpp>
+//#include <godot_cpp/classes/reg_ex.hpp>
+//#include <godot_cpp/classes/reg_ex_match.hpp>
 #include "chip/siopm_sound_chip.h"
 #include "chip/siopm_stream.h"
 #include "effector/si_effector.h"
+#include <algorithm>
+#include <memory>
 
 int SiEffectStream::get_pan() const {
 	return _pan - 64;
 }
 
 void SiEffectStream::set_pan(int p_value) {
-	_pan = CLAMP(p_value + 64, 0, 128);
+	_pan = std::clamp(p_value + 64, 0, 128);
 }
 
 bool SiEffectStream::is_outputting_directly() const {
 	return (!_has_effect_send && _volumes[0] == 1 && _pan == 64);
 }
 
-void SiEffectStream::set_all_stream_send_levels(Vector<int> p_param) {
+void SiEffectStream::set_all_stream_send_levels(std::vector<int> p_param) {
 	for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
 		int value = p_param[i];
-		_volumes.write[i] = value == INT32_MIN ? 0 : (value * 0.0078125);
+		_volumes[i] = value == INT32_MIN ? 0 : (value * 0.0078125);
 	}
 
 	_has_effect_send = false;
@@ -39,7 +41,7 @@ void SiEffectStream::set_all_stream_send_levels(Vector<int> p_param) {
 }
 
 void SiEffectStream::set_stream_send(int p_stream_num, double p_volume) {
-	_volumes.write[p_stream_num] = p_volume;
+	_volumes[p_stream_num] = p_volume;
 	if (p_stream_num == 0) {
 		return;
 	}
@@ -62,11 +64,11 @@ double SiEffectStream::get_stream_send(int p_stream_num) {
 }
 
 void SiEffectStream::connect(SiOPMStream *p_output) {
-	_output_streams.write[0] = p_output;
+	_output_streams[0] = p_output;
 }
 
 int SiEffectStream::prepare_process() {
-	if (_chain.is_empty()) {
+	if (_chain.empty()()) {
 		return 0;
 	}
 
@@ -79,7 +81,7 @@ int SiEffectStream::prepare_process() {
 }
 
 int SiEffectStream::process(int p_start_idx, int p_length, bool p_write_in_stream) {
-	Vector<double> *buffer = _stream->get_buffer_ptr();
+	std::vector<double> *buffer = _stream->get_buffer_ptr();
 	int channel_count = _stream->get_channel_count();
 
 	for (int i = 0; i < _chain.size(); i++) {
@@ -113,18 +115,18 @@ int SiEffectStream::process(int p_start_idx, int p_length, bool p_write_in_strea
 
 //
 
-void SiEffectStream::_add_effect(String p_cmd, Vector<double> p_args, int p_argc) {
-	ERR_FAIL_COND_MSG(p_cmd.is_empty(), "SiEffectStream: Trying to add an effect with no name.");
+void SiEffectStream::_add_effect(std::string p_cmd, std::vector<double> p_args, int p_argc) {
+	////ERR_FAIL_COND_MSG(p_cmd.empty()(), "SiEffectStream: Trying to add an effect with no name.");
 
-	Ref<SiEffectBase> effect = SiEffector::get_effect_instance(p_cmd);
+	std::shared_ptr<SiEffectBase> effect = SiEffector::get_effect_instance(p_cmd);
 	if (effect.is_valid()) {
 		effect->set_by_mml(p_args);
 		_chain.push_back(effect);
 	}
 }
 
-void SiEffectStream::_set_postfix_param(int p_slot, String p_cmd, Vector<double> p_args, int p_argc) {
-	ERR_FAIL_COND_MSG(p_cmd.is_empty(), vformat("SiEffectStream: Trying to set an effect param with no name in slot %d.", p_slot));
+void SiEffectStream::_set_postfix_param(int p_slot, std::string p_cmd, std::vector<double> p_args, int p_argc) {
+	////ERR_FAIL_COND_MSG(p_cmd.empty()(), vformat("SiEffectStream: Trying to set an effect param with no name in slot %d.", p_slot));
 
 	if (p_cmd == "p") {
 		set_pan((((int)p_args[0]) << 4) - 64);
@@ -132,7 +134,7 @@ void SiEffectStream::_set_postfix_param(int p_slot, String p_cmd, Vector<double>
 		set_pan((int)p_args[0]);
 	} else if (p_cmd == "@v") {
 		double value = ((int)p_args[0]) * 0.0078125;
-		set_stream_send(0, CLAMP(value, 0, 1));
+		set_stream_send(0, std::clamp(value, 0, 1));
 
 		int max_count = p_argc;
 		if ((max_count + p_slot) >= SiOPMSoundChip::STREAM_SEND_SIZE) {
@@ -141,35 +143,35 @@ void SiEffectStream::_set_postfix_param(int p_slot, String p_cmd, Vector<double>
 
 		for (int i = 1; i < max_count; i++) {
 			value = ((int)p_args[i]) * 0.0078125;
-			set_stream_send(i + p_slot, CLAMP(value, 0, 1));
+			set_stream_send(i + p_slot, std::clamp(value, 0, 1));
 		}
 	} else {
-		ERR_PRINT(vformat("SiEffectStream: Trying to set an unknown effect param (%s) in slot %d.", p_cmd, p_slot));
+		//ERR_PRINT(vformat("SiEffectStream: Trying to set an unknown effect param (%s) in slot %d.", p_cmd, p_slot));
 	}
 }
 
-void SiEffectStream::parse_mml(int p_slot, String p_mml, String p_postfix) {
+void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_postfix) {
 	const int max_argc = 16;
 
 	// SUS: Slot number is only used to set postfix params, but not the effect itself.
 	// It is possible that the given slot number is incorrect and thus the effect is
 	// added in a different position than the params are set in.
 
-	String command;
+	std::string command;
 	int argc = 0;
-	Vector<double> args;
-	args.resize_zeroed(max_argc);
+	std::vector<double> args;
+	args.resize(max_argc); // TODO zeroed
 
 #define CLEAR_ARGS()                      \
 	command = "";                         \
 	for (int a = 0; a < max_argc; a++) {  \
-		args.write[a] = NAN;              \
+		args[a] = NAN;              \
 	}                                     \
 	argc = 0;
 
 #define CONSUME_ARG(m_index)                                     \
 	if (res->get_string(m_index).is_valid_float()) {             \
-		args.write[argc] = res->get_string(m_index).to_float();  \
+		args[argc] = res->get_string(m_index).to_float();  \
 	}                                                            \
 	argc++;
 
@@ -177,19 +179,19 @@ void SiEffectStream::parse_mml(int p_slot, String p_mml, String p_postfix) {
 	initialize(0);
 	CLEAR_ARGS();
 
-	Ref<RegEx> re_mml = RegEx::create_from_string("([a-zA-Z_]+|,)\\s*([.\\-\\d]+)?");
-	Ref<RegEx> re_postfix = RegEx::create_from_string("(p|@p|@v|,)\\s*([.\\-\\d]+)?");
+	std::shared_ptr<RegEx> re_mml = RegEx::create_from_string("([a-zA-Z_]+|,)\\s*([.\\-\\d]+)?");
+	std::shared_ptr<RegEx> re_postfix = RegEx::create_from_string("(p|@p|@v|,)\\s*([.\\-\\d]+)?");
 
 	// Parse MML.
 
-	TypedArray<RegExMatch> matches = re_mml->search_all(p_mml);
+	std::vector<RegExMatch> matches = re_mml->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == ",") {
 			CONSUME_ARG(2);
 		} else {
-			if (!command.is_empty()) {
+			if (!command.empty()()) {
 				_add_effect(command, args, argc);
 			}
 			CLEAR_ARGS();
@@ -199,7 +201,7 @@ void SiEffectStream::parse_mml(int p_slot, String p_mml, String p_postfix) {
 		}
 	}
 
-	if (!command.is_empty()) {
+	if (!command.empty()()) {
 		_add_effect(command, args, argc);
 	}
 	CLEAR_ARGS();
@@ -208,12 +210,12 @@ void SiEffectStream::parse_mml(int p_slot, String p_mml, String p_postfix) {
 
 	matches = re_postfix->search_all(p_postfix);
 	for (int i = 0; i < matches.size(); i++) {
-		Ref<RegExMatch> res = matches[i];
+		std::shared_ptr<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == ",") {
 			CONSUME_ARG(2);
 		} else {
-			if (!command.is_empty()) {
+			if (!command.empty()()) {
 				_set_postfix_param(p_slot, command, args, argc);
 			}
 			CLEAR_ARGS();
@@ -223,7 +225,7 @@ void SiEffectStream::parse_mml(int p_slot, String p_mml, String p_postfix) {
 		}
 	}
 
-	if (!command.is_empty()) {
+	if (!command.empty()()) {
 		_set_postfix_param(p_slot, command, args, argc);
 	}
 	CLEAR_ARGS();
@@ -237,11 +239,11 @@ void SiEffectStream::initialize(int p_depth) {
 	reset();
 
 	for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-		_volumes.write[i] = 0;
-		_output_streams.write[i] = nullptr;
+		_volumes[i] = 0;
+		_output_streams[i] = nullptr;
 	}
 
-	_volumes.write[0] = 1;
+	_volumes[0] = 1;
 	_pan = 64;
 	_has_effect_send = false;
 	_depth = p_depth;
@@ -253,7 +255,7 @@ void SiEffectStream::reset() {
 }
 
 void SiEffectStream::free() {
-	for (Ref<SiEffectBase> effect : _chain) {
+	for (std::shared_ptr<SiEffectBase> effect : _chain) {
 		effect->set_free(true);
 	}
 	_chain.clear();
@@ -267,6 +269,6 @@ SiEffectStream::SiEffectStream(SiOPMSoundChip *p_chip, SiOPMStream *p_stream) {
 		_stream = memnew(SiOPMStream);
 	}
 
-	_volumes.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
-	_output_streams.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
+	_volumes.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
+	_output_streams.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
 }

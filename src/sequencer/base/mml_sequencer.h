@@ -7,9 +7,9 @@
 #ifndef MML_SEQUENCER_H
 #define MML_SEQUENCER_H
 
-#include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/variant/callable.hpp>
-#include <godot_cpp/variant/string.hpp>
+////#include <godot_cpp/templates/hash_map.hpp>
+////#include <godot_cpp/variant/callable.hpp>
+////#include <godot_cpp/variant/string.hpp>
 #include "sequencer/base/mml_event.h"
 #include "sequencer/base/mml_data.h"
 
@@ -31,19 +31,19 @@ class MMLSequenceGroup;
 // 1) Call initialize() to initialize.
 // 2) Call prepare_compile() and compile() to compile the MML string to MMLData.
 // 3) Call prepare_process() and process() to process audio in inherited class.
-class MMLSequencer : public Object {
-	GDCLASS(MMLSequencer, Object)
+class MMLSequencer {
+	////GDCLASS(MMLSequencer, Object)
 
 	static MMLExecutor *_temp_executor;
 
 	// Events.
 
 	int _next_user_defined_event_id = MMLEvent::USER_DEFINED;
-	HashMap<String, int> _user_defined_event_map;
-	HashMap<int, String> _event_command_letter_map;
+	HashMap<std::string, int> _user_defined_event_map;
+	HashMap<int, std::string> _event_command_letter_map;
 
-	Vector<Callable> _event_handlers;
-	Vector<bool> _event_global_flags;
+	std::vector<Callable> _event_handlers;
+	std::vector<bool> _event_global_flags;
 
 	// Event handlers.
 
@@ -83,12 +83,12 @@ class MMLSequencer : public Object {
 
 	// Takes the MML string to parse and returns a new MML string. Returning an empty string
 	// means that the original string will be parsed.
-	virtual String _on_before_compile(String p_mml) { return String(); }
+	virtual std::string _on_before_compile(std::string p_mml) { return std::string(); }
 	virtual void _on_after_compile(MMLSequenceGroup *p_group) {}
 	virtual void _on_process(int p_length, MMLEvent *p_event) {}
 	virtual void _on_timer_interruption() {}
 	virtual void _on_beat(int p_delay_samples, int p_beat_counter) {}
-	virtual void _on_table_parse(MMLEvent *p_prev, String p_table) {}
+	virtual void _on_table_parse(MMLEvent *p_prev, std::string p_table) {}
 	virtual void _on_tempo_changed(double p_tempo_ratio) {}
 
 protected:
@@ -97,9 +97,9 @@ protected:
 
 	MMLExecutor *_global_executor = nullptr;
 	MMLExecutor *_current_executor = nullptr;
-	Ref<MMLData> mml_data;
-	Ref<BeatsPerMinute> _adjustible_bpm;
-	Ref<BeatsPerMinute> _bpm;
+	std::shared_ptr<MMLData> mml_data;
+	std::shared_ptr<BeatsPerMinute> _adjustible_bpm;
+	std::shared_ptr<BeatsPerMinute> _bpm;
 
 	int _global_buffer_index = 0;
 	double _global_beat_16th = 0;
@@ -109,7 +109,7 @@ protected:
 	// Events.
 
 	void _set_mml_event_listener(int p_event_id, const Callable &p_handler, bool p_global = false);
-	int _create_mml_event_listener(String p_letter, const Callable &p_handler, bool p_global = false);
+	int _create_mml_event_listener(std::string p_letter, const Callable &p_handler, bool p_global = false);
 
 	//
 
@@ -135,16 +135,16 @@ public:
 
 	// Events.
 
-	int get_event_id(String p_mml_command);
-	String get_event_letter(int p_event_id);
+	int get_event_id(std::string p_mml_command);
+	std::string get_event_letter(int p_event_id);
 
 	// Compilation and processing.
 
 	// Returns false if compilation is not needed.
-	virtual bool prepare_compile(const Ref<MMLData> &p_data, String p_mml);
+	virtual bool prepare_compile(const MMLData &p_data, std::string p_mml);
 	// Returns compilation progress [0-1].
 	virtual double compile(int p_interval = 1000);
-	virtual void prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length);
+	virtual void prepare_process(const MMLData &p_data, int p_sample_rate, int p_buffer_length);
 	virtual void process() {}
 
 	// Must be called between prepare_process() and process().
@@ -167,7 +167,7 @@ public:
 	//
 
 	MMLSequencer();
-	~MMLSequencer();
+	virtual ~MMLSequencer();
 };
 
 #endif // MML_SEQUENCER_H

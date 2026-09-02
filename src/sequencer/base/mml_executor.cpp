@@ -188,7 +188,7 @@ MMLExecutor::MMLExecutor() {
 	_bend_from_event->set_next(_bend_event);
 	_bend_event->set_next(_note_event);
 
-	_repeat_counters = memnew(SinglyLinkedList<int>);
+	_repeat_counters = memnew(std::forward_list<int>);
 }
 
 MMLExecutor::~MMLExecutor() {

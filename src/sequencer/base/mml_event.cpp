@@ -6,13 +6,14 @@
 
 #include "mml_event.h"
 
-#include <godot_cpp/core/memory.hpp>
-#include <godot_cpp/variant/string.hpp>
+//#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/variant/string.hpp>
 #include "sequencer/base/mml_parser.h"
+#include <string>
 
-using namespace godot;
 
-int MMLEvent::get_id_from_mml(String p_mml) {
+
+int MMLEvent::get_id_from_mml(std::string p_mml) {
 	if (p_mml == "c" || p_mml == "d" || p_mml == "e" || p_mml == "f" || p_mml == "g" || p_mml == "a" || p_mml == "b") {
 		return MMLEvent::NOTE;
 	}
@@ -79,12 +80,12 @@ int MMLEvent::get_id_from_mml(String p_mml) {
 
 // Helpers.
 
-MMLEvent *MMLEvent::get_parameters(Vector<int> *r_params, int p_length) const {
+MMLEvent *MMLEvent::get_parameters(std::vector<int> *r_params, int p_length) const {
 	MMLEvent *event = const_cast<MMLEvent *>(this);
 
 	int i = 0;
 	while (i < p_length) {
-		r_params->write[i] = event->data;
+		r_params[i] = event->data;
 		i++;
 
 		if (event->next == nullptr || event->next->id != EventID::PARAMETER) {
@@ -94,7 +95,7 @@ MMLEvent *MMLEvent::get_parameters(Vector<int> *r_params, int p_length) const {
 		event = event->next;
 	}
 	while (i < p_length) {
-		r_params->write[i] = INT32_MIN;
+		r_params[i] = INT32_MIN;
 		i++;
 	}
 
@@ -112,12 +113,12 @@ void MMLEvent::initialize(int p_id, int p_data, int p_length) {
 	jump = nullptr;
 }
 
-String MMLEvent::as_text() const {
+std::string MMLEvent::as_text() const {
 	return "#" + itos(id) + "{" + itos(data) + "," + itos(length) + "}";
 }
 
-String MMLEvent::_to_string() const {
-	String chain_str = "";
+std::string MMLEvent::_to_string() const {
+	std::string chain_str = "";
 	chain_str += "next=" + (next ? itos(next->id) : "null") + ", ";
 	chain_str += "jump=" + (jump ? itos(jump->id) : "null");
 

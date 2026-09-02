@@ -6,7 +6,7 @@
 
 #include "simml_track.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "sion_enums.h"
 #include "chip/channels/siopm_channel_base.h"
 #include "chip/channels/siopm_channel_manager.h"
@@ -21,10 +21,10 @@
 #include "sequencer/simml_ref_table.h"
 #include "sequencer/simml_voice.h"
 
-SinglyLinkedList<int> *SiMMLTrack::_envelope_zero_table = nullptr;
+std::forward_list<int> *SiMMLTrack::_envelope_zero_table = nullptr;
 
 void SiMMLTrack::initialize() {
-	_envelope_zero_table = memnew(SinglyLinkedList<int>(1, 0, true));
+	_envelope_zero_table = memnew(std::forward_list<int>(1, 0, true));
 }
 
 void SiMMLTrack::finalize() {
@@ -35,7 +35,7 @@ void SiMMLTrack::finalize() {
 
 // Properties and data.
 
-MMLSequence *SiMMLTrack::set_channel_parameters(Vector<int> p_params) {
+MMLSequence *SiMMLTrack::set_channel_parameters(std::vector<int> p_params) {
 	MMLSequence *sequence = nullptr;
 
 	if (p_params[0] != INT32_MIN) {
@@ -55,7 +55,7 @@ int SiMMLTrack::get_track_type_id() const {
 	return _internal_track_id & TRACK_TYPE_FILTER;
 }
 
-Ref<BeatsPerMinute> SiMMLTrack::get_bpm_settings() const {
+std::shared_ptr<BeatsPerMinute> SiMMLTrack::get_bpm_settings() const {
 	if (_mml_data.is_valid() && (_internal_track_id & TRACK_TYPE_FILTER) != MML_TRACK) {
 		return _mml_data->get_bpm_settings();
 	}
@@ -100,12 +100,12 @@ void SiMMLTrack::set_expression_mode(int p_mode) {
 }
 
 void SiMMLTrack::set_velocity(int p_value) {
-	_velocity = CLAMP(p_value, 0, 512);
+	_velocity = std::clamp(p_value, 0, 512);
 	_channel->offset_volume(_expression, _velocity);
 }
 
 void SiMMLTrack::set_expression(int p_value) {
-	_expression = CLAMP(p_value, 0, 128);
+	_expression = std::clamp(p_value, 0, 128);
 	_channel->offset_volume(_expression, _velocity);
 }
 
@@ -216,10 +216,10 @@ void SiMMLTrack::set_pan(int p_value) {
 
 // Envelopes.
 
-SinglyLinkedList<int> *SiMMLTrack::_make_modulation_table(int p_depth, int p_end_depth, int p_delay, int p_term) {
-	SinglyLinkedList<int> *list = memnew(SinglyLinkedList<int>(p_delay + p_term + 1));
+std::forward_list<int> *SiMMLTrack::_make_modulation_table(int p_depth, int p_end_depth, int p_delay, int p_term) {
+	std::forward_list<int> *list = memnew(std::forward_list<int>(p_delay + p_term + 1));
 
-	SinglyLinkedList<int>::Element *element = list->front();
+	std::forward_list<int>::Element *element = list->front();
 	if (p_delay != 0) {
 		for (int i = 0; i < p_delay; i++) {
 			element->value = p_depth;
@@ -271,10 +271,10 @@ void SiMMLTrack::set_release_sweep(int p_sweep) {
 }
 
 void SiMMLTrack::set_modulation_envelope(bool p_is_pitch_mod, int p_depth, int p_end_depth, int p_delay, int p_term) {
-	Vector<SinglyLinkedList<int> *> *table = (p_is_pitch_mod ? &_table_envelope_mod_pitch : &_table_envelope_mod_amp);
+	std::vector<std::forward_list<int> *> *table = (p_is_pitch_mod ? &_table_envelope_mod_pitch : &_table_envelope_mod_amp);
 
 	// Free previous table.
-	SinglyLinkedList<int> *old_table = table->get(1);
+	std::forward_list<int> *old_table = table->get(1);
 	if (old_table) {
 		memdelete(old_table);
 	}
@@ -295,58 +295,58 @@ void SiMMLTrack::set_modulation_envelope(bool p_is_pitch_mod, int p_depth, int p
 	}
 }
 
-void SiMMLTrack::set_tone_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step) {
+void SiMMLTrack::set_tone_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step) {
 	if (p_table.is_null() || p_step == 0) {
-		_setting_envelope_voice.write[p_note_on] = nullptr;
+		_setting_envelope_voice[p_note_on] = nullptr;
 		_disable_envelope_mode(p_note_on);
 	} else {
-		_setting_envelope_voice.write[p_note_on] = p_table->get_head();
+		_setting_envelope_voice[p_note_on] = p_table->get_head();
 		_setting_counter_voice[p_note_on] = p_step;
 		_enable_envelope_mode(p_note_on);
 	}
 }
 
-void SiMMLTrack::set_amplitude_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step, bool p_offset) {
+void SiMMLTrack::set_amplitude_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step, bool p_offset) {
 	if (p_table.is_null() || p_step == 0) {
-		_setting_envelope_exp.write[p_note_on] = nullptr;
+		_setting_envelope_exp[p_note_on] = nullptr;
 		_disable_envelope_mode(p_note_on);
 	} else {
-		_setting_envelope_exp.write[p_note_on] = p_table->get_head();
+		_setting_envelope_exp[p_note_on] = p_table->get_head();
 		_setting_counter_exp[p_note_on] = p_step;
 		_setting_exp_offset[p_note_on] = p_offset;
 		_enable_envelope_mode(p_note_on);
 	}
 }
 
-void SiMMLTrack::set_filter_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step) {
+void SiMMLTrack::set_filter_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step) {
 	if (p_table.is_null() || p_step == 0) {
-		_setting_envelope_filter.write[p_note_on] = nullptr;
+		_setting_envelope_filter[p_note_on] = nullptr;
 		_disable_envelope_mode(p_note_on);
 	} else {
-		_setting_envelope_filter.write[p_note_on] = p_table->get_head();
+		_setting_envelope_filter[p_note_on] = p_table->get_head();
 		_setting_counter_filter[p_note_on] = p_step;
 		_enable_envelope_mode(p_note_on);
 	}
 }
 
-void SiMMLTrack::set_pitch_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step) {
+void SiMMLTrack::set_pitch_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step) {
 	if (p_table.is_null() || p_step == 0) {
-		_setting_envelope_pitch.write[p_note_on] = _envelope_zero_table->get_front();
+		_setting_envelope_pitch[p_note_on] = _envelope_zero_table->get_front();
 		_disable_envelope_mode(p_note_on);
 	} else {
-		_setting_envelope_pitch.write[p_note_on] = p_table->get_head();
+		_setting_envelope_pitch[p_note_on] = p_table->get_head();
 		_setting_counter_pitch[p_note_on] = p_step;
 		_setting_pns_or[p_note_on] = true;
 		_enable_envelope_mode(p_note_on);
 	}
 }
 
-void SiMMLTrack::set_note_envelope(int p_note_on, const Ref<SiMMLEnvelopeTable> &p_table, int p_step) {
+void SiMMLTrack::set_note_envelope(int p_note_on, const std::shared_ptr<SiMMLEnvelopeTable> &p_table, int p_step) {
 	if (p_table.is_null() || p_step == 0) {
-		_setting_envelope_note.write[p_note_on] = _envelope_zero_table->get_front();
+		_setting_envelope_note[p_note_on] = _envelope_zero_table->get_front();
 		_disable_envelope_mode(p_note_on);
 	} else {
-		_setting_envelope_note.write[p_note_on] = p_table->get_head();
+		_setting_envelope_note[p_note_on] = p_table->get_head();
 		_setting_counter_note[p_note_on] = p_step;
 		_setting_pns_or[p_note_on] = true;
 		_enable_envelope_mode(p_note_on);
@@ -538,7 +538,7 @@ int SiMMLTrack::_buffer_envelope(int p_length, int p_step) {
 		if (_envelope_exp && _counter_exp == 1) {
 			_counter_exp--;
 
-			int expression = CLAMP(_envelope_exp_offset + _envelope_exp->value, 0, 128);
+			int expression = std::clamp(_envelope_exp_offset + _envelope_exp->value, 0, 128);
 			_channel->offset_volume(expression, _velocity);
 
 			_envelope_exp = _envelope_exp->next();
@@ -852,8 +852,8 @@ void SiMMLTrack::bend_note(int p_to_note, int p_tick_length) {
 	_executor->bend_single_note(p_to_note, p_tick_length);
 }
 
-void SiMMLTrack::sequence_on(const Ref<SiMMLData> &p_data, MMLSequence *p_sequence, int p_sample_length, int p_sample_delay) {
-	ERR_FAIL_NULL(p_sequence);
+void SiMMLTrack::sequence_on(const std::shared_ptr<SiMMLData> &p_data, MMLSequence *p_sequence, int p_sample_length, int p_sample_delay) {
+	//ERR_FAIL_NULL(p_sequence);
 
 	_mml_data = p_data;
 	_track_start_delay = p_sample_delay;
@@ -972,11 +972,11 @@ void SiMMLTrack::reset(int p_buffer_index) {
 	for (int i = 0; i < 2; i++) {
 		_setting_process_mode[i] = NORMAL;
 
-		_setting_envelope_exp.write[i]    = nullptr;
-		_setting_envelope_voice.write[i]  = nullptr;
-		_setting_envelope_note.write[i]   = _envelope_zero_table->get_front();
-		_setting_envelope_pitch.write[i]  = _envelope_zero_table->get_front();
-		_setting_envelope_filter.write[i] = nullptr;
+		_setting_envelope_exp[i]    = nullptr;
+		_setting_envelope_voice[i]  = nullptr;
+		_setting_envelope_note[i]   = _envelope_zero_table->get_front();
+		_setting_envelope_pitch[i]  = _envelope_zero_table->get_front();
+		_setting_envelope_filter[i] = nullptr;
 
 		_setting_pns_or[i]     = false;
 		_setting_exp_offset[i] = false;
@@ -990,15 +990,15 @@ void SiMMLTrack::reset(int p_buffer_index) {
 		_setting_sweep_step[i] = 0;
 		_setting_sweep_end[i]  = 0;
 
-		_table_envelope_mod_amp.write[i] = nullptr;
-		_table_envelope_mod_pitch.write[i] = nullptr;
+		_table_envelope_mod_amp[i] = nullptr;
+		_table_envelope_mod_pitch[i] = nullptr;
 	}
 
 	// Reset executor.
 	_executor->reset_pointer();
 }
 
-void SiMMLTrack::initialize(const Ref<SiMMLData> &p_data, MMLSequence *p_sequence, int p_fps, int p_internal_track_id, const Callable &p_event_trigger_on, const Callable &p_event_trigger_off, bool p_disposable) {
+void SiMMLTrack::initialize(const std::shared_ptr<SiMMLData> &p_data, MMLSequence *p_sequence, int p_fps, int p_internal_track_id, const Callable &p_event_trigger_on, const Callable &p_event_trigger_off, bool p_disposable) {
 	_mml_data = p_data;
 
 	_default_fps = p_fps;
@@ -1025,14 +1025,14 @@ void SiMMLTrack::_bind_methods() {
 SiMMLTrack::SiMMLTrack() {
 	_executor = memnew(MMLExecutor);
 
-	_setting_envelope_exp.resize_zeroed(2);
-	_setting_envelope_voice.resize_zeroed(2);
-	_setting_envelope_note.resize_zeroed(2);
-	_setting_envelope_pitch.resize_zeroed(2);
-	_setting_envelope_filter.resize_zeroed(2);
+	_setting_envelope_exp.resize(2); // TODO zeroed
+	_setting_envelope_voice.resize(2); // TODO zeroed
+	_setting_envelope_note.resize(2); // TODO zeroed
+	_setting_envelope_pitch.resize(2); // TODO zeroed
+	_setting_envelope_filter.resize(2); // TODO zeroed
 
-	_table_envelope_mod_amp.resize_zeroed(2);
-	_table_envelope_mod_pitch.resize_zeroed(2);
+	_table_envelope_mod_amp.resize(2); // TODO zeroed
+	_table_envelope_mod_pitch.resize(2); // TODO zeroed
 }
 
 SiMMLTrack::~SiMMLTrack() {

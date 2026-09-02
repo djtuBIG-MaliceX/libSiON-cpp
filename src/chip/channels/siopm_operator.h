@@ -7,12 +7,12 @@
 #ifndef SIOPM_OPERATOR_H
 #define SIOPM_OPERATOR_H
 
-#include <godot_cpp/classes/object.hpp>
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/classes/object.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "sion_enums.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class SiOPMOperatorParams;
 class SiOPMRefTable;
@@ -28,7 +28,7 @@ class SiOPMWaveTable;
 // 4) You can fix the pitch;
 // 5) You can set SGG envelope control in OPNA.
 class SiOPMOperator : public Object {
-	GDCLASS(SiOPMOperator, Object)
+	//GDCLASS(SiOPMOperator, Object)
 
 public:
 	enum EGState {
@@ -89,12 +89,12 @@ private:
 
 	int _pg_type = SiONPulseGeneratorType::PULSE_SINE;
 	SiONPitchTableType _pt_type = SiONPitchTableType::PITCH_TABLE_OPM;
-	Vector<int> _wave_table;
+	std::vector<int> _wave_table;
 	// Phase shift.
 	int _wave_fixed_bits = 0;
 	// Phase step shift.
 	int _wave_phase_step_shift = 0;
-	Vector<int> _pitch_table;
+	std::vector<int> _pitch_table;
 	int _pitch_table_filter = 0;
 
 	int _phase = 0;
@@ -142,10 +142,10 @@ private:
 	// SSG envelope control state.
 	int _eg_ssgec_state = 0;
 
-	Vector<int> _eg_increment_table;
+	std::vector<int> _eg_increment_table;
 	int _eg_state_shift_level = 0;
 	int _eg_state_table_index = 0;
-	Vector<int> _eg_level_table;
+	std::vector<int> _eg_level_table;
 
 	void _shift_eg_state(EGState p_state);
 
@@ -159,15 +159,15 @@ private:
 	// Pipes.
 
 	bool _final = false;
-	SinglyLinkedList<int> *_in_pipe = nullptr;
-	SinglyLinkedList<int> *_base_pipe = nullptr;
-	SinglyLinkedList<int> *_out_pipe = nullptr;
-	SinglyLinkedList<int> *_feed_pipe = nullptr;
+	std::forward_list<int> *_in_pipe = nullptr;
+	std::forward_list<int> *_base_pipe = nullptr;
+	std::forward_list<int> *_out_pipe = nullptr;
+	std::forward_list<int> *_feed_pipe = nullptr;
 
 protected:
 	static void _bind_methods() {}
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 public:
 	static const int PCM_WAVE_FIXED_BITS = 11;
@@ -297,20 +297,20 @@ public:
 
 	bool is_final() const { return _final; }
 
-	SinglyLinkedList<int> *get_in_pipe() const { return _in_pipe; }
-	SinglyLinkedList<int> *get_base_pipe() const { return _base_pipe; }
-	SinglyLinkedList<int> *get_out_pipe() const { return _out_pipe; }
-	SinglyLinkedList<int> *get_feed_pipe() const { return _feed_pipe; }
+	std::forward_list<int> *get_in_pipe() const { return _in_pipe; }
+	std::forward_list<int> *get_base_pipe() const { return _base_pipe; }
+	std::forward_list<int> *get_out_pipe() const { return _out_pipe; }
+	std::forward_list<int> *get_feed_pipe() const { return _feed_pipe; }
 
-	void set_pipes(SinglyLinkedList<int> *p_out_pipe, SinglyLinkedList<int> *p_in_pipe = nullptr, bool p_final = false);
-	void set_base_pipe(SinglyLinkedList<int> *p_pipe) { _base_pipe = p_pipe; }
+	void set_pipes(std::forward_list<int> *p_out_pipe, std::forward_list<int> *p_in_pipe = nullptr, bool p_final = false);
+	void set_base_pipe(std::forward_list<int> *p_pipe) { _base_pipe = p_pipe; }
 
 	//
 
-	void set_operator_params(const Ref<SiOPMOperatorParams> &p_params);
-	void get_operator_params(const Ref<SiOPMOperatorParams> &r_params);
-	void set_wave_table(const Ref<SiOPMWaveTable> &p_wave_table);
-	void set_pcm_data(const Ref<SiOPMWavePCMData> &p_pcm_data);
+	void set_operator_params(const std::shared_ptr<SiOPMOperatorParams> &p_params);
+	void get_operator_params(const std::shared_ptr<SiOPMOperatorParams> &r_params);
+	void set_wave_table(const std::shared_ptr<SiOPMWaveTable> &p_wave_table);
+	void set_pcm_data(const std::shared_ptr<SiOPMWavePCMData> &p_pcm_data);
 
 	void note_on();
 	void note_off();

@@ -7,19 +7,21 @@
 #ifndef MML_DATA_H
 #define MML_DATA_H
 
-#include <godot_cpp/classes/ref_counted.hpp>
-#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/classes/ref_counted.hpp>
+//#include <godot_cpp/templates/list.hpp>
 #include "sequencer/base/beats_per_minute.h"
 #include "sequencer/base/mml_system_command.h"
 
-using namespace godot;
+#include <string>
+
+
 
 class MMLEvent;
 class MMLSequence;
 class MMLSequenceGroup;
 
-class MMLData : public RefCounted {
-	GDCLASS(MMLData, RefCounted)
+class MMLData {
+	//GDCLASS(MMLData, RefCounted)
 
 public:
 	// Controls what tcommand argument is.
@@ -33,8 +35,8 @@ private:
 	MMLSequenceGroup *_sequence_group = nullptr;
 	MMLSequence *_global_sequence = nullptr;
 
-	String _title;
-	String _author;
+	std::string _title;
+	std::string _author;
 
 	int _default_fps = 60;
 	TCommandMode _tcommand_mode = TCOMMAND_BPM;
@@ -44,16 +46,16 @@ private:
 	int _default_velocity_mode = 0;
 	int _default_expression_mode = 0;
 
-	Ref<BeatsPerMinute> _initial_bpm;
+	std::shared_ptr<BeatsPerMinute> _initial_bpm;
 	// System commands that cannot be parsed by the system.
-	List<Ref<MMLSystemCommand>> _system_commands;
+	List<std::shared_ptr<MMLSystemCommand>> _system_commands;
 
 protected:
 	static void _bind_methods();
 
 public:
-	String get_title() const { return _title; }
-	void set_title(String p_title) { _title = p_title; }
+	std::string get_title() const { return _title; }
+	void set_title(std::string p_title) { _title = p_title; }
 
 	int get_default_fps() const { return _default_fps; }
 	void set_default_fps(int p_value) { _default_fps = p_value; }
@@ -72,13 +74,13 @@ public:
 	// Setting this to 0 makes data dependent on the driver's BPM.
 	void set_bpm(double p_value);
 
-	Ref<BeatsPerMinute> get_bpm_settings() const { return _initial_bpm; }
-	void set_bpm_settings(const Ref<BeatsPerMinute> &p_settings) { _initial_bpm = p_settings; }
+	std::shared_ptr<BeatsPerMinute> get_bpm_settings() const { return _initial_bpm; }
+	void set_bpm_settings(const std::shared_ptr<BeatsPerMinute> &p_settings) { _initial_bpm = p_settings; }
 
 	double get_bpm_from_tcommand(int p_param);
 
-	List<Ref<MMLSystemCommand>> get_system_commands() const { return _system_commands; }
-	void add_system_command(const Ref<MMLSystemCommand> &p_command);
+	List<std::shared_ptr<MMLSystemCommand>> get_system_commands() const { return _system_commands; }
+	void add_system_command(const std::shared_ptr<MMLSystemCommand> &p_command);
 
 	// Sequences.
 
@@ -91,7 +93,7 @@ public:
 	virtual void clear();
 
 	MMLData();
-	~MMLData();
+	virtual ~MMLData();
 };
 
 #endif // MML_DATA_H

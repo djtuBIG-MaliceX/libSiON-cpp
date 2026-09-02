@@ -10,7 +10,7 @@
 #include "effector/si_effect_base.h"
 
 class SiEffectSpeakerSimulator : public SiEffectBase {
-	GDCLASS(SiEffectSpeakerSimulator, SiEffectBase)
+	//GDCLASS(SiEffectSpeakerSimulator, SiEffectBase)
 
 	double _spring_coef = 0.96;
 
@@ -28,9 +28,9 @@ public:
 	//
 
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 	virtual void reset() override;
 
 	SiEffectSpeakerSimulator(double p_hardness = 0.2);

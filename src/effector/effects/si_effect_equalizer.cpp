@@ -44,26 +44,26 @@ double SiEffectEqualizer::_process_channel(PipeChannel *p_channel, double p_valu
 		return value_low * _low_gain + value_mid * _mid_gain + value_high * _high_gain;
 }
 
-void SiEffectEqualizer::_process_mono(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiEffectEqualizer::_process_mono(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value = _process_channel(&_left, (*r_buffer)[i]);
 
-		r_buffer->write[i] = value;
-		r_buffer->write[i + 1] = value;
+		r_buffer[i] = value;
+		r_buffer[i + 1] = value;
 	}
 }
 
-void SiEffectEqualizer::_process_stereo(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiEffectEqualizer::_process_stereo(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value_left = _process_channel(&_left, (*r_buffer)[i]);
-		r_buffer->write[i] = value_left;
+		r_buffer[i] = value_left;
 
 		double value_right = _process_channel(&_right, (*r_buffer)[i + 1]);
-		r_buffer->write[i + 1] = value_right;
+		r_buffer[i + 1] = value_right;
 	}
 }
 
-int SiEffectEqualizer::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectEqualizer::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	int start_index = p_start_index << 1;
 	int length = p_length << 1;
 
@@ -76,7 +76,7 @@ int SiEffectEqualizer::process(int p_channels, Vector<double> *r_buffer, int p_s
 	return p_channels;
 }
 
-void SiEffectEqualizer::set_by_mml(Vector<double> p_args) {
+void SiEffectEqualizer::set_by_mml(std::vector<double> p_args) {
 	double low_gain       = _get_mml_arg(p_args, 0, 100) / 100.0;
 	double mid_gain       = _get_mml_arg(p_args, 1, 100) / 100.0;
 	double high_gain      = _get_mml_arg(p_args, 2, 100) / 100.0;

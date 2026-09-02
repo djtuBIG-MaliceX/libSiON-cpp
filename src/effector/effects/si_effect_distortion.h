@@ -10,7 +10,7 @@
 #include "effector/si_effect_base.h"
 
 class SiEffectDistortion : public SiEffectBase {
-	GDCLASS(SiEffectDistortion, SiEffectBase)
+	//GDCLASS(SiEffectDistortion, SiEffectBase)
 
 	static const double THRESHOLD;
 
@@ -38,9 +38,9 @@ public:
 	//
 
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 	virtual void reset() override;
 
 	SiEffectDistortion(double p_pre_gain = -60, double p_post_gain = 18, double p_lpf_frequency = 2400, double p_lpf_slope = 1);

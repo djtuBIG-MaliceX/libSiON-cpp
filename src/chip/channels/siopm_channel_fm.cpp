@@ -6,7 +6,7 @@
 
 #include "siopm_channel_fm.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "chip/channels/siopm_operator.h"
 #include "chip/siopm_channel_params.h"
 #include "chip/siopm_sound_chip.h"
@@ -47,13 +47,13 @@ void SiOPMChannelFM::_update_process_function() {
 void SiOPMChannelFM::_update_operator_count(int p_count) {
 	if (_operator_count < p_count) {
 		for (int i = _operator_count; i < p_count; i++) {
-			_operators.write[i] = _alloc_operator();
+			_operators[i] = _alloc_operator();
 			_operators[i]->initialize();
 		}
 	} else if (_operator_count > p_count) {
 		for (int i = p_count; i < _operator_count; i++) {
 			_release_operator(_operators[i]);
-			_operators.write[i] = nullptr;
+			_operators[i] = nullptr;
 		}
 	}
 
@@ -70,7 +70,7 @@ void SiOPMChannelFM::_update_operator_count(int p_count) {
 
 //
 
-void SiOPMChannelFM::get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {
+void SiOPMChannelFM::get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {
 	p_params->set_operator_count(_operator_count);
 
 	p_params->set_algorithm(_algorithm);
@@ -102,7 +102,7 @@ void SiOPMChannelFM::get_channel_params(const Ref<SiOPMChannelParams> &p_params)
 	}
 }
 
-void SiOPMChannelFM::set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
+void SiOPMChannelFM::set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
 	if (p_params->get_operator_count() == 0) {
 		return;
 	}
@@ -121,7 +121,7 @@ void SiOPMChannelFM::set_channel_params(const Ref<SiOPMChannelParams> &p_params,
 
 	if (p_with_volume) {
 		for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-			_volumes.write[i] = p_params->get_master_volume(i);
+			_volumes[i] = p_params->get_master_volume(i);
 		}
 
 		_has_effect_send = false;
@@ -182,14 +182,14 @@ void SiOPMChannelFM::set_params_by_value(int p_ar, int p_dr, int p_sr, int p_rr,
 #undef SET_OP_PARAM
 }
 
-void SiOPMChannelFM::set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {
-	Ref<SiOPMWavePCMData> pcm_data = p_wave_data;
-	Ref<SiOPMWavePCMTable> pcm_table = p_wave_data;
+void SiOPMChannelFM::set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = p_wave_data;
+	std::shared_ptr<SiOPMWavePCMTable> pcm_table = p_wave_data;
 	if (pcm_table.is_valid()) {
 		pcm_data = pcm_table->get_note_data(60);
 	}
 
-	if (pcm_data.is_valid() && !pcm_data->get_wavelet().is_empty()) {
+	if (pcm_data.is_valid() && !pcm_data->get_wavelet().empty()()) {
 		_update_operator_count(1);
 		_process_function_type = PROCESS_PCM;
 		_update_process_function();
@@ -199,8 +199,8 @@ void SiOPMChannelFM::set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {
 		return;
 	}
 
-	Ref<SiOPMWaveTable> wave_table = p_wave_data;
-	if (wave_table.is_valid() && !wave_table->get_wavelet().is_empty()) {
+	std::shared_ptr<SiOPMWaveTable> wave_table = p_wave_data;
+	if (wave_table.is_valid() && !wave_table->get_wavelet().empty()()) {
 		_operators[0]->set_wave_table(wave_table);
 		if (_operators[1]) {
 			_operators[1]->set_wave_table(wave_table);
@@ -259,7 +259,7 @@ void SiOPMChannelFM::_set_by_opm_register(int p_address, int p_data) {
 					set_feedback((p_data >> 3) & 7, 0);
 
 					int value = p_data >> 6;
-					_volumes.write[0] = (value != 0 ? 0.5 : 0);
+					_volumes[0] = (value != 0 ? 0.5 : 0);
 					_pan = (value == 1 ? 128 : (value == 2 ? 0 : 64));
 				} break;
 
@@ -561,7 +561,7 @@ void SiOPMChannelFM::set_algorithm(int p_operator_count, bool p_analog_like, int
 			_set_algorithm_operator4(p_algorithm);
 			break;
 		default:
-			ERR_FAIL_MSG("SiOPMChannelFM: Invalid number of operators.");
+			//ERR_FAIL_MSG("SiOPMChannelFM: Invalid number of operators.");
 	}
 }
 
@@ -584,7 +584,7 @@ void SiOPMChannelFM::set_feedback(int p_level, int p_connection) {
 	}
 }
 
-void SiOPMChannelFM::set_parameters(Vector<int> p_params) {
+void SiOPMChannelFM::set_parameters(std::vector<int> p_params) {
 	set_params_by_value(
 			p_params[1],  p_params[2],  p_params[3],  p_params[4],  p_params[5],
 			p_params[6],  p_params[7],  p_params[8],  p_params[9],  p_params[10],
@@ -594,7 +594,7 @@ void SiOPMChannelFM::set_parameters(Vector<int> p_params) {
 
 void SiOPMChannelFM::set_types(int p_pg_type, SiONPitchTableType p_pt_type) {
 	if (p_pg_type >= SiONPulseGeneratorType::PULSE_PCM) {
-		Ref<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(p_pg_type - SiONPulseGeneratorType::PULSE_PCM);
+		std::shared_ptr<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(p_pg_type - SiONPulseGeneratorType::PULSE_PCM);
 		if (pcm_table.is_valid()) {
 			set_wave_data(pcm_table);
 		}
@@ -634,7 +634,7 @@ void SiOPMChannelFM::set_pitch(int p_value) {
 }
 
 void SiOPMChannelFM::set_active_operator_index(int p_value) {
-	int index = CLAMP(p_value, 0, _operator_count - 1);
+	int index = std::clamp(p_value, 0, _operator_count - 1);
 	_active_operator = _operators[index];
 }
 
@@ -713,7 +713,7 @@ void SiOPMChannelFM::set_frequency_ratio(int p_ratio) {
 	_lfo_timer_initial = (int)(SiOPMRefTable::LFO_TIMER_INITIAL * value_coef);
 }
 
-void SiOPMChannelFM::initialize_lfo(int p_waveform, Vector<int> p_custom_wave_table) {
+void SiOPMChannelFM::initialize_lfo(int p_waveform, std::vector<int> p_custom_wave_table) {
 	SiOPMChannelBase::initialize_lfo(p_waveform, p_custom_wave_table);
 
 	_set_lfo_state(false);
@@ -783,9 +783,9 @@ void SiOPMChannelFM::_update_lfo(int p_op_count) {
 }
 
 void SiOPMChannelFM::_process_operator1_lfo_off(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 
@@ -823,9 +823,9 @@ void SiOPMChannelFM::_process_operator1_lfo_off(int p_length) {
 }
 
 void SiOPMChannelFM::_process_operator1_lfo_on(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 
@@ -865,9 +865,9 @@ void SiOPMChannelFM::_process_operator1_lfo_on(int p_length) {
 }
 
 void SiOPMChannelFM::_process_operator2(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -932,9 +932,9 @@ void SiOPMChannelFM::_process_operator2(int p_length) {
 }
 
 void SiOPMChannelFM::_process_operator3(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -1021,9 +1021,9 @@ void SiOPMChannelFM::_process_operator3(int p_length) {
 }
 
 void SiOPMChannelFM::_process_operator4(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -1130,9 +1130,9 @@ void SiOPMChannelFM::_process_operator4(int p_length) {
 }
 
 void SiOPMChannelFM::_process_pcm_lfo_off(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 
@@ -1189,9 +1189,9 @@ void SiOPMChannelFM::_process_pcm_lfo_off(int p_length) {
 }
 
 void SiOPMChannelFM::_process_pcm_lfo_on(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 
@@ -1251,9 +1251,9 @@ void SiOPMChannelFM::_process_pcm_lfo_on(int p_length) {
 }
 
 void SiOPMChannelFM::_process_analog_like(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -1309,9 +1309,9 @@ void SiOPMChannelFM::_process_analog_like(int p_length) {
 }
 
 void SiOPMChannelFM::_process_ring(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -1365,9 +1365,9 @@ void SiOPMChannelFM::_process_ring(int p_length) {
 }
 
 void SiOPMChannelFM::_process_sync(int p_length) {
-	SinglyLinkedList<int>::Element *in_pipe   = _in_pipe->get();
-	SinglyLinkedList<int>::Element *base_pipe = _base_pipe->get();
-	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	std::forward_list<int>::Element *in_pipe   = _in_pipe->get();
+	std::forward_list<int>::Element *base_pipe = _base_pipe->get();
+	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
 
 	SiOPMOperator *ope0 = _operators[0];
 	SiOPMOperator *ope1 = _operators[1];
@@ -1473,8 +1473,8 @@ void SiOPMChannelFM::reset() {
 	_is_idling = true;
 }
 
-String SiOPMChannelFM::_to_string() const {
-	String params = "";
+std::string SiOPMChannelFM::_to_string() const {
+	std::string params = "";
 
 	params += "ops=" + itos(_operator_count) + ", ";
 
@@ -1526,14 +1526,14 @@ SiOPMChannelFM::SiOPMChannelFM(SiOPMSoundChip *p_chip) : SiOPMChannelBase(p_chip
 	};
 
 	_operator_count = 1;
-	_operators.resize_zeroed(4);
-	_operators.write[0] = _alloc_operator();
+	_operators.resize(4); // TODO zeroed
+	_operators[0] = _alloc_operator();
 	_active_operator = _operators[0];
 
 	_update_process_function();
 
-	_pipe0 = memnew(SinglyLinkedList<int>(1, 0, true));
-	_pipe1 = memnew(SinglyLinkedList<int>(1, 0, true));
+	_pipe0 = memnew(std::forward_list<int>(1, 0, true));
+	_pipe1 = memnew(std::forward_list<int>(1, 0, true));
 
 	initialize(nullptr, 0);
 }

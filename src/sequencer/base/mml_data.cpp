@@ -6,13 +6,13 @@
 
 #include "mml_data.h"
 
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/memory.hpp>
+//#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/memory.hpp>
 #include "sequencer/base/beats_per_minute.h"
 #include "sequencer/base/mml_sequence.h"
 #include "sequencer/base/mml_sequence_group.h"
 
-using namespace godot;
+
 
 double MMLData::get_bpm() const {
 	return _initial_bpm.is_valid() ? _initial_bpm->get_bpm() : 0.0;
@@ -20,10 +20,10 @@ double MMLData::get_bpm() const {
 
 void MMLData::set_bpm(double p_value) {
 	if (p_value > 0) {
-		Ref<BeatsPerMinute> bpm = memnew(BeatsPerMinute(p_value, 44100));
+		std::shared_ptr<BeatsPerMinute> bpm = memnew(BeatsPerMinute(p_value, 44100));
 		_initial_bpm = bpm;
 	} else {
-		Ref<BeatsPerMinute> bpm;
+		std::shared_ptr<BeatsPerMinute> bpm;
 		bpm.instantiate();
 		_initial_bpm = bpm;
 	}
@@ -42,7 +42,7 @@ double MMLData::get_bpm_from_tcommand(int p_param) {
 	return 0.0;
 }
 
-void MMLData::add_system_command(const Ref<MMLSystemCommand> &p_command) {
+void MMLData::add_system_command(const std::shared_ptr<MMLSystemCommand> &p_command) {
 	_system_commands.push_back(p_command);
 }
 
@@ -73,7 +73,7 @@ void MMLData::clear() {
 	_default_velocity_mode = 0;
 	_default_expression_mode = 0;
 
-	Ref<BeatsPerMinute> bpm;
+	std::shared_ptr<BeatsPerMinute> bpm;
 	bpm.instantiate();
 	_initial_bpm = bpm;
 	_system_commands.clear();

@@ -7,12 +7,12 @@
 #ifndef MML_PARSER_H
 #define MML_PARSER_H
 
-#include <godot_cpp/templates/hash_map.hpp>
-#include <godot_cpp/templates/list.hpp>
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/classes/reg_ex.hpp>
+//#include <godot_cpp/templates/hash_map.hpp>
+//#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/classes/reg_ex.hpp>
 
-using namespace godot;
+
 
 class MMLEvent;
 class MMLParserSettings;
@@ -26,16 +26,16 @@ class MMLParser {
 	// Settings.
 
 	MMLParserSettings *_settings = nullptr;
-	String _mml_string;
+	std::string _mml_string;
 
-	HashMap<String, int> _user_defined_event_map;
-	Vector<bool> _event_global_flags;
+	HashMap<std::string, int> _user_defined_event_map;
+	std::vector<bool> _event_global_flags;
 
-	Vector<String> _system_event_strings;
-	Vector<String> _sequence_mml_strings;
+	std::vector<std::string> _system_event_strings;
+	std::vector<std::string> _sequence_mml_strings;
 
-	int _register_system_event_string(String p_event);
-	int _register_sequence_mml_strings(String p_mml);
+	int _register_system_event_string(std::string p_event);
+	int _register_sequence_mml_strings(std::string p_mml);
 
 	// This is just a helper to make the code clearer when we access
 	// substrings parsed by the regex.
@@ -52,7 +52,7 @@ class MMLParser {
         REX_PERIOD     = 10,
 	};
 
-	Ref<RegEx> _mml_regex;
+	std::shared_ptr<RegEx> _mml_regex;
 	// Starting offset for subsequent searches. In the original code it's a part of the RegExp object.
 	int _mml_regex_last_index = 0;
 
@@ -61,7 +61,7 @@ class MMLParser {
 
 	// Key.
 
-	Vector<Vector<int>> _key_signature_table = {
+	std::vector<std::vector<int>> _key_signature_table = {
 		{  0, 0, 0, 0, 0, 0, 0 },
 		{  0, 0, 0, 1, 0, 0, 0 },
 		{  1, 0, 0, 1, 0, 0, 0 },
@@ -79,9 +79,9 @@ class MMLParser {
 		{ -1,-1,-1,-1,-1,-1,-1 }
 	};
 
-	Vector<int> _key_scale = { 0,2,4,5,7,9,11 };
-	Vector<int> _key_signature = _key_signature_table[0];
-	Vector<int> _key_signature_custom;
+	std::vector<int> _key_scale = { 0,2,4,5,7,9,11 };
+	std::vector<int> _key_signature = _key_signature_table[0];
+	std::vector<int> _key_signature_custom;
 
 	// Parsing and events.
 
@@ -102,9 +102,9 @@ class MMLParser {
 	void _reset_state();
 	void _reset_state_track();
 
-	int _parse_length(const Ref<RegExMatch> &p_res);
-	int _parse_param(const Ref<RegExMatch> &p_res, int p_default = INT32_MIN);
-	int _parse_period(const Ref<RegExMatch> &p_res);
+	int _parse_length(const std::shared_ptr<RegExMatch> &p_res);
+	int _parse_param(const std::shared_ptr<RegExMatch> &p_res, int p_default = INT32_MIN);
+	int _parse_period(const std::shared_ptr<RegExMatch> &p_res);
 
 	// Timers.
 
@@ -174,23 +174,23 @@ public:
 
 	// Settings.
 
-	void set_user_defined_event_map(HashMap<String, int> p_event_map);
-	void set_global_event_flags(Vector<bool> p_event_flags);
+	void set_user_defined_event_map(HashMap<std::string, int> p_event_map);
+	void set_global_event_flags(std::vector<bool> p_event_flags);
 
-	void get_command_letters(HashMap<int, String> *r_letter_map);
-	String get_system_event_string(MMLEvent *p_event);
-	String get_sequence_mml(MMLEvent *p_event);
+	void get_command_letters(HashMap<int, std::string> *r_letter_map);
+	std::string get_system_event_string(MMLEvent *p_event);
+	std::string get_sequence_mml(MMLEvent *p_event);
 
 	// Key.
 
 	// The string for the signature is expected in the following format: /[A-G][+\-#b]?m?/.
 	// A custom signature can be set by listing multiple signatures in the same manner,
 	// separated by a space or a comma.
-	void set_key_signature(String p_sign);
+	void set_key_signature(std::string p_sign);
 
 	// Parsing and events.
 
-	void prepare_parse(MMLParserSettings *p_settings, String p_mml);
+	void prepare_parse(MMLParserSettings *p_settings, std::string p_mml);
 	// Takes the interval for interruptions, in msec. 0 means no interruptions. Interruptions occur between sequences.
 	MMLEvent *parse(int p_interrupt = 0);
 	double get_parse_progress();

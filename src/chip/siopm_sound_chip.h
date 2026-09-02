@@ -7,25 +7,27 @@
 #ifndef SIOPM_SOUND_CHIP_H
 #define SIOPM_SOUND_CHIP_H
 
-#include <godot_cpp/core/object.hpp>
-#include <godot_cpp/templates/list.hpp>
-#include <godot_cpp/templates/vector.hpp>
+////#include <godot_cpp/core/object.hpp>
+////#include <godot_cpp/templates/list.hpp>
+#include <forward_list>
+////#include <godot_cpp/templates/vector.hpp>
+#include <vector>
 #include "chip/siopm_operator_params.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class SiOPMStream;
 
-class SiOPMSoundChip : public Object {
-	GDCLASS(SiOPMSoundChip, Object)
+class SiOPMSoundChip {
+	////GDCLASS(SiOPMSoundChip, Object)
 
-	Ref<SiOPMOperatorParams> init_operator_params;
-	SinglyLinkedList<int> *zero_buffer = nullptr;
+	std::shared_ptr<SiOPMOperatorParams> init_operator_params;
+	std::forward_list<int> *zero_buffer = nullptr;
 
 	SiOPMStream *output_stream = nullptr;
 	// Expected to be of STREAM_SEND_SIZE size.
-	Vector<SiOPMStream *> stream_slot;
+	std::vector<SiOPMStream *> stream_slot;
 	double pcm_volume = 4;
 	double sampler_volume = 2;
 
@@ -33,7 +35,7 @@ class SiOPMSoundChip : public Object {
 	int _bitrate = 0;
 
 	// Expected to be of PIPE_SIZE size.
-	Vector<SinglyLinkedList<int> *> _pipe_buffers;
+	std::vector<std::forward_list<int> *> _pipe_buffers;
 
 protected:
 	static void _bind_methods();
@@ -42,15 +44,15 @@ public:
 	static const int STREAM_SEND_SIZE = 8;
 	static const int PIPE_SIZE = 5;
 
-	Ref<SiOPMOperatorParams> get_init_operator_params() const { return init_operator_params; }
-	SinglyLinkedList<int> *get_zero_buffer() const { return zero_buffer; }
+	std::shared_ptr<SiOPMOperatorParams> get_init_operator_params() const { return init_operator_params; }
+	std::forward_list<int> *get_zero_buffer() const { return zero_buffer; }
 
 	SiOPMStream *get_output_stream() const { return output_stream; }
-	Vector<double> *get_output_buffer_ptr();
+	std::vector<double> *get_output_buffer_ptr();
 	int get_channel_count() const;
 
 	SiOPMStream *get_stream_slot(int p_slot) const { return stream_slot[p_slot]; }
-	void set_stream_slot(int p_slot, SiOPMStream *p_value) { stream_slot.write[p_slot] = p_value; }
+	void set_stream_slot(int p_slot, SiOPMStream *p_value) { stream_slot[p_slot] = p_value; }
 
 	double get_pcm_volume() const { return pcm_volume; }
 	double get_sampler_volume() const { return sampler_volume; }
@@ -58,7 +60,8 @@ public:
 	int get_buffer_length() const { return _buffer_length; }
 	int get_bitrate() const { return _bitrate; }
 
-	SinglyLinkedList<int> *get_pipe(int p_pipe_num, int p_index = 0);
+	//std::forward_list<int> *get_pipe(int p_pipe_num, int p_index = 0);
+	std::forward_list<int> *get_pipe(int p_pipe_num, int p_index = 0);
 
 	void begin_process();
 	void end_process();
@@ -68,7 +71,7 @@ public:
 	void reset();
 
 	SiOPMSoundChip();
-	~SiOPMSoundChip();
+	virtual ~SiOPMSoundChip();
 };
 
 #endif // SIOPM_SOUND_CHIP_H

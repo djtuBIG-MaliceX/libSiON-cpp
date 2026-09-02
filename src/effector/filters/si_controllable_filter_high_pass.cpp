@@ -8,7 +8,7 @@
 
 #include "chip/siopm_ref_table.h"
 
-void SiControllableFilterHighPass::_process_lfo(Vector<double> *r_buffer, int p_start_index, int p_length) {
+void SiControllableFilterHighPass::_process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	double cutoff = SiOPMRefTable::get_instance()->filter_cutoff_table[_cutoff_index];
 	double feedback = _resonance * SiOPMRefTable::get_instance()->filter_feedback_table[_cutoff_index];
 
@@ -16,13 +16,13 @@ void SiControllableFilterHighPass::_process_lfo(Vector<double> *r_buffer, int p_
 		double value_left = (*r_buffer)[i];
 		_p0_left += cutoff * (value_left - _p0_left + feedback * (_p0_left - _p1_left));
 		_p1_left += cutoff * (_p0_left - _p1_left);
-		r_buffer->write[i] = value_left - _p0_left;
+		r_buffer[i] = value_left - _p0_left;
 		i++;
 
 		double value_right = (*r_buffer)[i];
 		_p0_right += cutoff * (value_right - _p0_right + feedback * (_p0_right - _p1_right));
 		_p1_right += cutoff * (_p0_right - _p1_right);
-		r_buffer->write[i] = value_right - _p0_right;
+		r_buffer[i] = value_right - _p0_right;
 		i++;
 	}
 }

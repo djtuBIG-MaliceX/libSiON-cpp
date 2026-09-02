@@ -6,7 +6,7 @@
 
 #include "siopm_operator.h"
 
-#include <godot_cpp/classes/random_number_generator.hpp>
+//#include <godot_cpp/classes/random_number_generator.hpp>
 #include "chip/siopm_operator_params.h"
 #include "chip/siopm_ref_table.h"
 #include "chip/siopm_sound_chip.h"
@@ -61,7 +61,7 @@ void SiOPMOperator::_update_total_level() {
 }
 
 void SiOPMOperator::set_total_level(int p_value) {
-	_total_level = CLAMP(p_value, 0, 127);
+	_total_level = std::clamp(p_value, 0, 127);
 	_update_total_level();
 }
 
@@ -181,7 +181,7 @@ void SiOPMOperator::_update_phase_step(int p_step) {
 void SiOPMOperator::set_pulse_generator_type(int p_type) {
 	_pg_type = p_type & SiOPMRefTable::PG_FILTER;
 
-	Ref<SiOPMWaveTable> wave_table = _table->get_wave_table(_pg_type);
+	std::shared_ptr<SiOPMWaveTable> wave_table = _table->get_wave_table(_pg_type);
 	_wave_table = wave_table->get_wavelet();
 	_wave_fixed_bits = wave_table->get_fixed_bits();
 }
@@ -195,7 +195,7 @@ void SiOPMOperator::set_pitch_table_type(SiONPitchTableType p_type) {
 }
 
 int SiOPMOperator::get_wave_value(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, _wave_table.size(), -1);
+	////ERR_FAIL_INDEX_V(p_index, _wave_table.size(), -1);
 	return _wave_table[p_index];
 }
 
@@ -433,7 +433,7 @@ void SiOPMOperator::update_eg_output_from(SiOPMOperator *p_other) {
 
 // Pipes.
 
-void SiOPMOperator::set_pipes(SinglyLinkedList<int> *p_out_pipe, SinglyLinkedList<int> *p_in_pipe, bool p_final) {
+void SiOPMOperator::set_pipes(std::forward_list<int> *p_out_pipe, std::forward_list<int> *p_in_pipe, bool p_final) {
 	_final = p_final;
 	_fm_shift  = 15;
 
@@ -444,7 +444,7 @@ void SiOPMOperator::set_pipes(SinglyLinkedList<int> *p_out_pipe, SinglyLinkedLis
 
 //
 
-void SiOPMOperator::set_operator_params(const Ref<SiOPMOperatorParams> &p_params) {
+void SiOPMOperator::set_operator_params(const std::shared_ptr<SiOPMOperatorParams> &p_params) {
 	// Some code here is duplicated from respective setters to avoid calling them
 	// and triggering side effects. Modify with care.
 
@@ -487,7 +487,7 @@ void SiOPMOperator::set_operator_params(const Ref<SiOPMOperatorParams> &p_params
 	_update_pitch();
 }
 
-void SiOPMOperator::get_operator_params(const Ref<SiOPMOperatorParams> &r_params) {
+void SiOPMOperator::get_operator_params(const std::shared_ptr<SiOPMOperatorParams> &r_params) {
 	r_params->set_pulse_generator_type(_pg_type);
 	r_params->set_pitch_table_type(_pt_type);
 
@@ -512,7 +512,7 @@ void SiOPMOperator::get_operator_params(const Ref<SiOPMOperatorParams> &r_params
 	r_params->set_frequency_modulation_level(get_fm_level());
 }
 
-void SiOPMOperator::set_wave_table(const Ref<SiOPMWaveTable> &p_wave_table) {
+void SiOPMOperator::set_wave_table(const std::shared_ptr<SiOPMWaveTable> &p_wave_table) {
 	_pg_type = SiONPulseGeneratorType::PULSE_USER_CUSTOM;
 	_pt_type = p_wave_table->get_default_pitch_table_type();
 
@@ -520,8 +520,8 @@ void SiOPMOperator::set_wave_table(const Ref<SiOPMWaveTable> &p_wave_table) {
 	_wave_fixed_bits = p_wave_table->get_fixed_bits();
 }
 
-void SiOPMOperator::set_pcm_data(const Ref<SiOPMWavePCMData> &p_pcm_data) {
-	if (p_pcm_data.is_valid() && !p_pcm_data->get_wavelet().is_empty()) {
+void SiOPMOperator::set_pcm_data(const std::shared_ptr<SiOPMWavePCMData> &p_pcm_data) {
+	if (p_pcm_data.is_valid() && !p_pcm_data->get_wavelet().empty()()) {
 		_pg_type = SiONPulseGeneratorType::PULSE_USER_PCM;
 		_pt_type = SiONPitchTableType::PITCH_TABLE_PCM;
 
@@ -545,7 +545,7 @@ void SiOPMOperator::note_on() {
 	if (_key_on_phase >= 0) {
 		_phase = _key_on_phase;
 	} else if (_key_on_phase == -1) {
-		Ref<RandomNumberGenerator> rng;
+		std::shared_ptr<RandomNumberGenerator> rng;
 		rng.instantiate();
 
 		_phase = int(rng->randi_range(0, SiOPMRefTable::PHASE_MAX));
@@ -597,8 +597,8 @@ void SiOPMOperator::reset() {
 	_phase = 0;
 }
 
-String SiOPMOperator::_to_string() const {
-	String params = "";
+std::string SiOPMOperator::_to_string() const {
+	std::string params = "";
 
 	params += "pg=" + itos(_pg_type) + ", ";
 	params += "pt=" + itos(_pt_type) + ", ";
@@ -616,11 +616,11 @@ String SiOPMOperator::_to_string() const {
 
 	params += "amp=" + itos(get_amplitude_modulation_shift()) + ", ";
 	params += "phase=" + itos(get_key_on_phase()) + ", ";
-	params += "note=" + String(is_pitch_fixed() ? "yes" : "no") + ", ";
+	params += "note=" + std::string(is_pitch_fixed() ? "yes" : "no") + ", ";
 
 	params += "ssgec=" + itos(_ssg_type) + ", ";
 	params += "mute=" + itos(_mute) + ", ";
-	params += "reset=" + String(_envelope_reset_on_attack ? "yes" : "no");
+	params += "reset=" + std::string(_envelope_reset_on_attack ? "yes" : "no");
 
 	return "SiOPMOperator: " + params;
 }
@@ -629,7 +629,7 @@ SiOPMOperator::SiOPMOperator(SiOPMSoundChip *p_chip) {
 	_table = SiOPMRefTable::get_instance();
 	_sound_chip = p_chip;
 
-	_feed_pipe = memnew(SinglyLinkedList<int>(1, 0, true));
+	_feed_pipe = memnew(std::forward_list<int>(1, 0, true));
 	_eg_increment_table = make_vector<int>(_table->eg_increment_tables[17]);
 	_eg_level_table = make_vector<int>(_table->eg_level_tables[0]);
 }

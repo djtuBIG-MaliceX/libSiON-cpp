@@ -7,7 +7,7 @@
 #ifndef MML_EXECUTOR_H
 #define MML_EXECUTOR_H
 
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
 class MMLEvent;
 class MMLSequence;
@@ -30,7 +30,7 @@ class MMLExecutor {
 
 	int _current_tick_count = 0;
 	// Stack of counters.
-	SinglyLinkedList<int> *_repeat_counters = nullptr;
+	std::forward_list<int> *_repeat_counters = nullptr;
 	int _residue_sample_count = 0;
 	int _decimal_fraction_sample_count = 0;
 

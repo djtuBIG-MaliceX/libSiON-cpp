@@ -6,9 +6,9 @@
 
 #include "register_types.h"
 
-#include <gdextension_interface.h>
-#include <godot_cpp/core/defs.hpp>
-#include <godot_cpp/godot.hpp>
+// #include <gdextension_interface.h>
+// //#include <godot_cpp/core/defs.hpp>
+// //#include <godot_cpp/godot.hpp>
 
 #include "sion_data.h"
 #include "sion_driver.h"
@@ -75,9 +75,9 @@
 #include "sequencer/simml_voice.h"
 #include "utils/sion_voice_preset_util.h"
 
-#include "templates/singly_linked_list.h"
+// //#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 void initialize_sion_module(ModuleInitializationLevel p_level) {
 	if (p_level != MODULE_INITIALIZATION_LEVEL_SCENE) {
@@ -179,8 +179,8 @@ void initialize_sion_module(ModuleInitializationLevel p_level) {
 	// Initialization.
 
 	// SUS: This is a bit ugly, but I don't have a better idea yet.
-	SinglyLinkedList<int>::initialize_pool();
-	SinglyLinkedList<double>::initialize_pool();
+	std::forward_list<int>::initialize_pool();
+	std::forward_list<double>::initialize_pool();
 
 	// Initialize singletons and static members before the execution.
 	MMLParser::initialize();
@@ -198,8 +198,8 @@ void uninitialize_sion_module(ModuleInitializationLevel p_level) {
 	// Finalization.
 
 	// SUS: This is a bit ugly, but I don't have a better idea yet.
-	SinglyLinkedList<int>::finalize_pool();
-	SinglyLinkedList<double>::finalize_pool();
+	std::forward_list<int>::finalize_pool();
+	std::forward_list<double>::finalize_pool();
 
 	// Finalize singletons and static members after the execution.
 	SiOPMChannelFM::finalize_pool();

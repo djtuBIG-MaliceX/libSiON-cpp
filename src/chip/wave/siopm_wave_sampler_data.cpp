@@ -6,24 +6,24 @@
 
 #include "siopm_wave_sampler_data.h"
 
-#include <godot_cpp/core/error_macros.hpp>
-#include <godot_cpp/classes/audio_stream.hpp>
+//#include <godot_cpp/core/error_macros.hpp>
+//#include <godot_cpp/classes/audio_stream.hpp>
 
 #include "sion_enums.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 #include "utils/transformer_util.h"
 
-using namespace godot;
+
 
 void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_channel_count, int p_channel_count) {
-	int source_channels = CLAMP(p_src_channel_count, 1, 2);
-	int target_channels = (p_channel_count == 0 ? source_channels : CLAMP(p_channel_count, 1, 2));
+	int source_channels = std::clamp(p_src_channel_count, 1, 2);
+	int target_channels = (p_channel_count == 0 ? source_channels : std::clamp(p_channel_count, 1, 2));
 
 	Variant::Type data_type = p_data.get_type();
 	switch (data_type) {
 		case Variant::PACKED_FLOAT32_ARRAY: {
-			// TODO: If someday Vector<T> and Packed*Arrays become friends, this can be simplified.
-			Vector<double> raw_data;
+			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
+			std::vector<double> raw_data;
 			for (double value : (PackedFloat32Array)p_data) {
 				raw_data.append(value);
 			}
@@ -32,9 +32,9 @@ void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_c
 		} break;
 
 		case Variant::OBJECT: {
-			Ref<AudioStream> audio_stream = p_data;
+			std::shared_ptr<AudioStream> audio_stream = p_data;
 			if (audio_stream.is_valid()) {
-				Vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
+				std::vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
 				if (p_channel_count == 0) { // Update if necessary.
 					target_channels = source_channels;
 				}
@@ -43,7 +43,7 @@ void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_c
 				break;
 			}
 
-			ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
+			//ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
 		} break;
 
 		case Variant::NIL: {
@@ -51,7 +51,7 @@ void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_c
 		} break;
 
 		default: {
-			ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
+			//ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
 		} break;
 	}
 
@@ -78,7 +78,7 @@ int SiOPMWaveSamplerData::get_initial_sample_index(double p_phase) const {
 }
 
 int SiOPMWaveSamplerData::_seek_head_silence() {
-	if (_wave_data.is_empty()) {
+	if (_wave_data.empty()()) {
 		return 0;
 	}
 
@@ -89,7 +89,7 @@ int SiOPMWaveSamplerData::_seek_head_silence() {
 	// This method has been adjusted to fix the code according to the assumed intent. But it's not
 	// tested, and I can't say if the original idea behind the code is wrong somehow.
 
-	SinglyLinkedList<double> *ms_window = memnew(SinglyLinkedList<double>(22, 0.0, true)); // 0.5ms
+	std::forward_list<double> *ms_window = memnew(std::forward_list<double>(22, 0.0, true)); // 0.5ms
 	int i = 0;
 
 	if (_channel_count == 1) {
@@ -131,7 +131,7 @@ int SiOPMWaveSamplerData::_seek_head_silence() {
 }
 
 int SiOPMWaveSamplerData::_seek_end_gap() {
-	if (_wave_data.is_empty()) {
+	if (_wave_data.empty()()) {
 		return 0;
 	}
 
@@ -159,7 +159,7 @@ int SiOPMWaveSamplerData::_seek_end_gap() {
 	}
 
 	// SUS: What is 1152? Should be extracted into a clearly named constant.
-	return MAX(i, (get_length() - 1152));
+	return std::max(i, (get_length() - 1152));
 }
 
 void SiOPMWaveSamplerData::_slice() {

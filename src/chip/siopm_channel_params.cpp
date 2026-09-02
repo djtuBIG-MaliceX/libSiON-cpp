@@ -6,23 +6,23 @@
 
 #include "siopm_channel_params.h"
 
-#include <godot_cpp/core/class_db.hpp>
+//#include <godot_cpp/core/class_db.hpp>
 #include "sion_enums.h"
 #include "chip/siopm_operator_params.h"
 #include "chip/siopm_ref_table.h"
 #include "chip/siopm_sound_chip.h"
 #include "sequencer/base/mml_sequence.h"
 
-using namespace godot;
 
-Ref<SiOPMOperatorParams> SiOPMChannelParams::get_operator_params(int p_index) {
-	ERR_FAIL_INDEX_V(p_index, operator_count, nullptr);
+
+std::shared_ptr<SiOPMOperatorParams> SiOPMChannelParams::get_operator_params(int p_index) {
+	////ERR_FAIL_INDEX_V(p_index, operator_count, nullptr);
 
 	return operator_params[p_index];
 }
 
 void SiOPMChannelParams::set_operator_count(int p_value) {
-	ERR_FAIL_COND(p_value > MAX_OPERATORS);
+	////ERR_FAIL_COND(p_value > MAX_OPERATORS);
 
 	operator_count = p_value;
 }
@@ -36,15 +36,15 @@ bool SiOPMChannelParams::has_pitch_modulation() const {
 }
 
 double SiOPMChannelParams::get_master_volume(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, master_volumes.size(), 0);
+	////ERR_FAIL_INDEX_V(p_index, master_volumes.size(), 0);
 
 	return master_volumes[p_index];
 }
 
 void SiOPMChannelParams::set_master_volume(int p_index, double p_value) {
-	ERR_FAIL_INDEX(p_index, master_volumes.size());
+	////ERR_FAIL_INDEX(p_index, master_volumes.size());
 
-	master_volumes.write[p_index] = p_value;
+	master_volumes[p_index] = p_value;
 }
 
 bool SiOPMChannelParams::has_filter() const {
@@ -98,7 +98,7 @@ void SiOPMChannelParams::set_by_opm_register(int p_channel, int p_address, int p
 					feedback = (p_data >> 3) & 7;
 
 					int value = p_data >> 6;
-					master_volumes.write[0] = (value != 0 ? 0.5 : 0);
+					master_volumes[0] = (value != 0 ? 0.5 : 0);
 					pan = (value == 1 ? 128 : (value == 2 ? 0 : 64));
 				} break;
 
@@ -109,7 +109,7 @@ void SiOPMChannelParams::set_by_opm_register(int p_channel, int p_address, int p
 		} else { // Operator parameter
 			int ops[4] = { 3, 1, 2, 0 };
 			int op_index = ops[(p_address >> 3) & 3];
-			Ref<SiOPMOperatorParams> op_params = operator_params[op_index];
+			std::shared_ptr<SiOPMOperatorParams> op_params = operator_params[op_index];
 
 			switch ((p_address - 0x40) >> 5) {
 				case 0: { // DT1:6-4 MUL:3-0
@@ -156,9 +156,9 @@ void SiOPMChannelParams::initialize() {
 	envelope_frequency_ratio = 100;
 
 	for (int i = 1; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-		master_volumes.write[i] = 0;
+		master_volumes[i] = 0;
 	}
-	master_volumes.write[0] = 0.5;
+	master_volumes[0] = 0.5;
 	pan = 64;
 
 	filter_type = 0;
@@ -180,7 +180,7 @@ void SiOPMChannelParams::initialize() {
 	init_sequence->clear();
 }
 
-void SiOPMChannelParams::copy_from(const Ref<SiOPMChannelParams> &p_params) {
+void SiOPMChannelParams::copy_from(const std::shared_ptr<SiOPMChannelParams> &p_params) {
 	operator_count = p_params->operator_count;
 
 	algorithm = p_params->algorithm;
@@ -195,7 +195,7 @@ void SiOPMChannelParams::copy_from(const Ref<SiOPMChannelParams> &p_params) {
 	envelope_frequency_ratio = p_params->envelope_frequency_ratio;
 
 	for (int i = 1; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
-		master_volumes.write[i] = p_params->master_volumes[i];
+		master_volumes[i] = p_params->master_volumes[i];
 	}
 	pan = p_params->pan;
 
@@ -218,8 +218,8 @@ void SiOPMChannelParams::copy_from(const Ref<SiOPMChannelParams> &p_params) {
 	init_sequence->clear();
 }
 
-String SiOPMChannelParams::_to_string() const {
-	String params = "";
+std::string SiOPMChannelParams::_to_string() const {
+	std::string params = "";
 
 	params += "ops=" + itos(operator_count) + ", ";
 	params += "alg=" + itos(algorithm) + ", ";
@@ -334,7 +334,7 @@ void SiOPMChannelParams::_bind_methods() {
 SiOPMChannelParams::SiOPMChannelParams() {
 	init_sequence = memnew(MMLSequence);
 	master_volumes.clear();
-	master_volumes.resize_zeroed(SiOPMSoundChip::STREAM_SEND_SIZE);
+	master_volumes.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
 
 	operator_params.clear();
 	for (int i = 0; i < MAX_OPERATORS; i++) {

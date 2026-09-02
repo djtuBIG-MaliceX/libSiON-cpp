@@ -6,12 +6,13 @@
 
 #include "siopm_sound_chip.h"
 
-#include <godot_cpp/core/class_db.hpp>
+////#include <godot_cpp/core/class_db.hpp>
+#include <vector>
 #include "chip/channels/siopm_channel_manager.h"
 #include "chip/siopm_operator_params.h"
 #include "chip/siopm_stream.h"
 
-Vector<double> *SiOPMSoundChip::get_output_buffer_ptr() {
+std::vector<double> *SiOPMSoundChip::get_output_buffer_ptr() {
 	return output_stream->get_buffer_ptr();
 }
 
@@ -19,11 +20,11 @@ int SiOPMSoundChip::get_channel_count() const {
 	return output_stream->get_channel_count();
 }
 
-SinglyLinkedList<int> *SiOPMSoundChip::get_pipe(int p_pipe_num, int p_index) {
-	ERR_FAIL_INDEX_V(p_pipe_num, _pipe_buffers.size(), nullptr);
+std::forward_list<int> *SiOPMSoundChip::get_pipe(int p_pipe_num, int p_index) {
+	////ERR_FAIL_INDEX_V(p_pipe_num, _pipe_buffers.size(), nullptr);
 
-	SinglyLinkedList<int> *pipe = _pipe_buffers[p_pipe_num];
-	ERR_FAIL_INDEX_V(p_index, pipe->size(), nullptr);
+	std::forward_list<int> *pipe = _pipe_buffers[p_pipe_num];
+	////ERR_FAIL_INDEX_V(p_index, pipe->size(), nullptr);
 
 	pipe->front();
 	pipe->advance(p_index);
@@ -49,9 +50,9 @@ void SiOPMSoundChip::initialize(int p_channel_count, int p_bitrate, int p_buffer
 
 	// Reset stream slot.
 	for (int i = 0; i < STREAM_SEND_SIZE; i++) {
-		stream_slot.write[i] = nullptr;
+		stream_slot[i] = nullptr;
 	}
-	stream_slot.write[0] = output_stream;
+	stream_slot[0] = output_stream;
 
 	// Reallocate buffer.
 	if (_buffer_length != p_buffer_length) {
@@ -63,7 +64,7 @@ void SiOPMSoundChip::initialize(int p_channel_count, int p_bitrate, int p_buffer
 				memdelete(_pipe_buffers[i]);
 			}
 
-			_pipe_buffers.write[i] = memnew(SinglyLinkedList<int>(_buffer_length, 0, true));
+			_pipe_buffers[i] = memnew(std::forward_list<int>(_buffer_length, 0, true));
 		}
 	}
 
@@ -86,11 +87,11 @@ SiOPMSoundChip::SiOPMSoundChip() {
 
 	output_stream = memnew(SiOPMStream);
 
-	stream_slot.resize_zeroed(STREAM_SEND_SIZE);
+	stream_slot.resize(STREAM_SEND_SIZE); // TODO zeroed
 	stream_slot.fill(nullptr);
 
-	zero_buffer = memnew(SinglyLinkedList<int>(1, 0, true));
-	_pipe_buffers.resize_zeroed(PIPE_SIZE);
+	zero_buffer = memnew(std::forward_list<int>(1, 0, true));
+	_pipe_buffers.resize(PIPE_SIZE); // TODO zeroed
 
 	SiOPMChannelManager::initialize(this);
 }

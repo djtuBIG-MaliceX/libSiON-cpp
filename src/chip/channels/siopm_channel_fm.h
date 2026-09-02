@@ -7,12 +7,12 @@
 #ifndef SIOPM_CHANNEL_FM_H
 #define SIOPM_CHANNEL_FM_H
 
-#include <godot_cpp/templates/list.hpp>
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "chip/channels/siopm_channel_base.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class SiOPMOperator;
 
@@ -34,7 +34,7 @@ class SiOPMOperator;
 //   - flexible FM connections (from TSS)
 //   - ring modulation (from C64?)
 class SiOPMChannelFM : public SiOPMChannelBase {
-	GDCLASS(SiOPMChannelFM, SiOPMChannelBase)
+	//GDCLASS(SiOPMChannelFM, SiOPMChannelBase)
 
 	static const int IDLING_THRESHOLD = 5120; // = 256(resolution)*10(2^10=1024)*2(p/n) = volume<1/1024
 
@@ -57,14 +57,14 @@ class SiOPMChannelFM : public SiOPMChannelBase {
 		PROCESS_PCM = 8,
 	};
 
-	Vector<Vector<Callable>> _process_function_list;
+	std::vector<std::vector<Callable>> _process_function_list;
 	ProcessType _process_function_type = PROCESS_OP1;
 
 	void _update_process_function();
 	void _update_operator_count(int p_count);
 
-	SinglyLinkedList<int> *_pipe0 = nullptr;
-	SinglyLinkedList<int> *_pipe1 = nullptr;
+	std::forward_list<int> *_pipe0 = nullptr;
+	std::forward_list<int> *_pipe1 = nullptr;
 
 	enum RegisterType {
 		REGISTER_OPM = 0,
@@ -105,9 +105,9 @@ class SiOPMChannelFM : public SiOPMChannelBase {
 protected:
 	static void _bind_methods();
 
-	String _to_string() const;
+	std::string _to_string() const;
 
-	Vector<SiOPMOperator *> _operators;
+	std::vector<SiOPMOperator *> _operators;
 	SiOPMOperator *_active_operator = nullptr;
 	int _operator_count = 0;
 
@@ -122,17 +122,17 @@ protected:
 public:
 	static void finalize_pool();
 
-	virtual void get_channel_params(const Ref<SiOPMChannelParams> &p_params) const override;
-	virtual void set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
+	virtual void get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const override;
+	virtual void set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
 	void set_params_by_value(int p_ar, int p_dr, int p_sr, int p_rr, int p_sl, int p_tl, int p_ksr, int p_ksl, int p_mul, int p_dt1, int p_dt2, int p_ams, int p_phase, int p_fix_note);
 
-	virtual void set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) override;
+	virtual void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) override;
 	virtual void set_channel_number(int p_value) override;
 	virtual void set_register(int p_address, int p_data) override;
 
 	virtual void set_algorithm(int p_operator_count, bool p_analog_like, int p_algorithm) override;
 	virtual void set_feedback(int p_level, int p_connection) override;
-	virtual void set_parameters(Vector<int> p_params) override;
+	virtual void set_parameters(std::vector<int> p_params) override;
 	virtual void set_types(int p_pg_type, SiONPitchTableType p_pt_type) override;
 	virtual void set_all_attack_rate(int p_value) override;
 	virtual void set_all_release_rate(int p_value) override;
@@ -157,7 +157,7 @@ public:
 	// LFO control.
 
 	virtual void set_frequency_ratio(int p_ratio) override;
-	virtual void initialize_lfo(int p_waveform, Vector<int> p_custom_wave_table = Vector<int>()) override;
+	virtual void initialize_lfo(int p_waveform, std::vector<int> p_custom_wave_table = std::vector<int>()) override;
 	virtual void set_amplitude_modulation(int p_depth) override;
 	virtual void set_pitch_modulation(int p_depth) override;
 

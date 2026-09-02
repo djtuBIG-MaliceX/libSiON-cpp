@@ -7,7 +7,7 @@
 #ifndef SION_ENUMS_H
 #define SION_ENUMS_H
 
-#include <godot_cpp/core/binder_common.hpp>
+////#include <godot_cpp/core/binder_common.hpp>
 
 enum SiONChipType : signed int {
 	CHIP_AUTO        = -1,
@@ -137,9 +137,9 @@ enum SiONPulseGeneratorType : int {
 	PULSE_USER_PCM			= -2,   // User registered PCM data.
 };
 
-VARIANT_ENUM_CAST(SiONChipType);
-VARIANT_ENUM_CAST(SiONModuleType);
-VARIANT_ENUM_CAST(SiONPitchTableType);
-VARIANT_ENUM_CAST(SiONPulseGeneratorType);
+// VARIANT_ENUM_CAST(SiONChipType);
+// VARIANT_ENUM_CAST(SiONModuleType);
+// VARIANT_ENUM_CAST(SiONPitchTableType);
+// VARIANT_ENUM_CAST(SiONPulseGeneratorType);
 
 #endif // SION_ENUMS_H

@@ -24,7 +24,7 @@ void SiFilterHighPass::set_params(double p_frequency, double p_band) {
 	_b2 = -_b1 * 0.5;
 }
 
-void SiFilterHighPass::set_by_mml(Vector<double> p_args) {
+void SiFilterHighPass::set_by_mml(std::vector<double> p_args) {
 	double frequency = _get_mml_arg(p_args, 0, 5500);
 	double band      = _get_mml_arg(p_args, 1, 1);
 

@@ -6,9 +6,9 @@
 
 #include "simml_voice.h"
 
-#include <godot_cpp/core/class_db.hpp>
-#include <godot_cpp/core/math.hpp>
-#include <godot_cpp/core/object.hpp>
+// //#include <godot_cpp/core/class_db.hpp>
+// //#include <godot_cpp/core/math.hpp>
+// //#include <godot_cpp/core/object.hpp>
 
 #include "sion_enums.h"
 #include "chip/channels/siopm_channel_base.h"
@@ -21,19 +21,19 @@
 #include "sequencer/simml_ref_table.h"
 #include "sequencer/simml_track.h"
 
-using namespace godot;
+//
 
 bool SiMMLVoice::is_fm_voice() const {
 	return module_type == SiONModuleType::MODULE_FM;
 }
 
 bool SiMMLVoice::is_pcm_voice() const {
-	Ref<SiOPMWavePCMTable> pcm_table = wave_data;
+	std::shared_ptr<SiOPMWavePCMTable> pcm_table = wave_data;
 	if (pcm_table.is_valid()) {
 		return true;
 	}
 
-	Ref<SiOPMWavePCMData> pcm_data = wave_data;
+	std::shared_ptr<SiOPMWavePCMData> pcm_data = wave_data;
 	if (pcm_data.is_valid()) {
 		return true;
 	}
@@ -42,13 +42,13 @@ bool SiMMLVoice::is_pcm_voice() const {
 }
 
 bool SiMMLVoice::is_sampler_voice() const {
-	Ref<SiOPMWaveSamplerTable> sampler_table = wave_data;
+	std::shared_ptr<SiOPMWaveSamplerTable> sampler_table = wave_data;
 
 	return sampler_table.is_valid();
 }
 
 bool SiMMLVoice::is_wave_table_voice() const {
-	Ref<SiOPMWaveTable> wave_table = wave_data;
+	std::shared_ptr<SiOPMWaveTable> wave_table = wave_data;
 
 	return wave_table.is_valid();
 }
@@ -140,12 +140,12 @@ void SiMMLVoice::update_track_voice(SiMMLTrack *p_track) {
 	}
 }
 
-Ref<SiMMLVoice> SiMMLVoice::create_blank_pcm_voice(int p_channel_num) {
-	Ref<SiMMLVoice> instance;
+std::shared_ptr<SiMMLVoice> SiMMLVoice::create_blank_pcm_voice(int p_channel_num) {
+	std::shared_ptr<SiMMLVoice> instance;
 	instance.instantiate();
 	instance->module_type = SiONModuleType::MODULE_PCM;
 	instance->channel_num = p_channel_num;
-	instance->wave_data = Ref<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
+	instance->wave_data = std::shared_ptr<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
 
 	return instance;
 }
@@ -161,7 +161,7 @@ void SiMMLVoice::reset() {
 	preferable_note = -1;
 
 	channel_params->initialize();
-	wave_data = Ref<SiOPMWaveBase>();
+	wave_data = std::shared_ptr<SiOPMWaveBase>();
 	pms_tension = 8;
 
 	default_gate_time = NAN;
@@ -187,16 +187,16 @@ void SiMMLVoice::reset() {
 	pitch_modulation_delay = 0;
 	pitch_modulation_term = 0;
 
-	note_on_tone_envelope = Ref<SiMMLEnvelopeTable>();
-	note_on_amplitude_envelope = Ref<SiMMLEnvelopeTable>();
-	note_on_filter_envelope = Ref<SiMMLEnvelopeTable>();
-	note_on_pitch_envelope = Ref<SiMMLEnvelopeTable>();
-	note_on_note_envelope = Ref<SiMMLEnvelopeTable>();
-	note_off_tone_envelope = Ref<SiMMLEnvelopeTable>();
-	note_off_amplitude_envelope = Ref<SiMMLEnvelopeTable>();
-	note_off_filter_envelope = Ref<SiMMLEnvelopeTable>();
-	note_off_pitch_envelope = Ref<SiMMLEnvelopeTable>();
-	note_off_note_envelope = Ref<SiMMLEnvelopeTable>();
+	note_on_tone_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_on_amplitude_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_on_filter_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_on_pitch_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_on_note_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_off_tone_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_off_amplitude_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_off_filter_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_off_pitch_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_off_note_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
 
 	note_on_tone_envelope_step = 1;
 	note_on_amplitude_envelope_step = 1;
@@ -210,7 +210,7 @@ void SiMMLVoice::reset() {
 	note_off_note_envelope_step = 1;
 }
 
-void SiMMLVoice::copy_from(const Ref<SiMMLVoice> &p_source) {
+void SiMMLVoice::copy_from(const std::shared_ptr<SiMMLVoice> &p_source) {
 	chip_type = p_source->chip_type;
 
 	update_track_parameters = p_source->update_track_parameters;
@@ -249,7 +249,7 @@ void SiMMLVoice::copy_from(const Ref<SiMMLVoice> &p_source) {
 	pitch_modulation_term = p_source->pitch_modulation_term;
 
 #define COPY_NOTE_ENVELOPE(m_prop)            \
-	m_prop = Ref<SiMMLEnvelopeTable>();       \
+	m_prop = std::shared_ptr<SiMMLEnvelopeTable>();       \
 	if (p_source->m_prop.is_valid()) {        \
 		m_prop->copy_from(p_source->m_prop);  \
 	}

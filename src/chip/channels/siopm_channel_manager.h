@@ -7,9 +7,9 @@
 #ifndef SIOPM_CHANNEL_MANAGER_H
 #define SIOPM_CHANNEL_MANAGER_H
 
-#include <godot_cpp/templates/hash_map.hpp>
+////#include <godot_cpp/templates/hash_map.hpp>
 
-using namespace godot;
+
 
 class SiOPMChannelBase;
 class SiOPMSoundChip;
@@ -52,7 +52,7 @@ public:
 	int get_length() const { return _length; }
 
 	SiOPMChannelManager(ChannelType p_channel_type);
-	~SiOPMChannelManager();
+	virtual ~SiOPMChannelManager();
 };
 
 #endif // SIOPM_CHANNEL_MANAGER_H

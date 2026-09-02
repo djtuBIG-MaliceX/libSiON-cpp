@@ -7,9 +7,9 @@
 #ifndef MML_EXECUTOR_CONNECTOR_H
 #define MML_EXECUTOR_CONNECTOR_H
 
-#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/templates/list.hpp>
 
-using namespace godot;
+
 
 class MMLSequence;
 class MMLSequenceGroup;
@@ -58,7 +58,7 @@ public:
 	int get_sequence_count() const { return _sequence_count; }
 
 	MMLSequence *connect(MMLSequenceGroup *p_seq_group, MMLSequence *p_sequence);
-	void parse(String p_formula);
+	void parse(std::string p_formula);
 	void clear();
 
 	MMLExecutorConnector() {}

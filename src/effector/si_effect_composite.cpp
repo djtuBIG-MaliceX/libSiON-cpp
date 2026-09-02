@@ -5,25 +5,26 @@
 /***************************************************/
 
 #include "si_effect_composite.h"
+#include <vector>
 
-void SiEffectComposite::_set_slot_effects_bind(int p_slot, TypedArray<SiEffectBase> p_effects) {
-	Vector<Ref<SiEffectBase>> effects;
+// void SiEffectComposite::_set_slot_effects_bind(int p_slot, std::vector<SiEffectBase> p_effects) {
+// 	std::vector<SiEffectBase> effects;
 
-	for (int i = 0; i < p_effects.size(); i++) {
-		effects.push_back(p_effects[i]);
-	}
+// 	for (int i = 0; i < p_effects.size(); i++) {
+// 		effects.push_back(p_effects[i]);
+// 	}
 
-	set_slot_effects(p_slot, effects);
-}
+// 	set_slot_effects(p_slot, effects);
+// }
 
-void SiEffectComposite::set_slot_effects(int p_slot, Vector<Ref<SiEffectBase>> p_effects) {
-	ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
+void SiEffectComposite::set_slot_effects(int p_slot, std::vector<SiEffectBase> p_effects) {
+	////ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
 
 	_slots[p_slot].effects = p_effects;
 }
 
 void SiEffectComposite::set_slot_levels(int p_slot, double p_send_level, double p_mix_level) {
-	ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
+	////ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
 
 	_slots[p_slot].send_level = p_send_level;
 	_slots[p_slot].mix_level = p_mix_level;
@@ -31,7 +32,7 @@ void SiEffectComposite::set_slot_levels(int p_slot, double p_send_level, double 
 
 int SiEffectComposite::prepare_process() {
 	for (int i = 0; i < SLOTS_MAX; i++) {
-		for (Ref<SiEffectBase> effect : _slots[i].effects) {
+		for (std::shared_ptr<SiEffectBase> effect : _slots[i].effects) {
 			effect->prepare_process();
 		}
 	}
@@ -39,50 +40,50 @@ int SiEffectComposite::prepare_process() {
 	return 2;
 }
 
-int SiEffectComposite::process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) {
+int SiEffectComposite::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = 1; i < SLOTS_MAX; i++) {
-		if (_slots[i].effects.is_empty()) {
+		if (_slots[i].effects.empty()()) {
 			continue;
 		}
 
-		Vector<double> *slot_buffer = &_slots[i].buffer;
+		std::vector<double> *slot_buffer = &_slots[i].buffer;
 		if (slot_buffer->size() < r_buffer->size()) {
-			slot_buffer->resize_zeroed(r_buffer->size());
+			slot_buffer->resize(r_buffer->size()); // TODO zeroed
 		}
 
 		for (int j = p_start_index; j < (p_start_index + p_length); j++) {
-			slot_buffer->write[j] = (*r_buffer)[j] * _slots[i].send_level;
+			slot_buffer[j] = (*r_buffer)[j] * _slots[i].send_level;
 		}
 	}
 
 	for (int j = p_start_index; j < (p_start_index + p_length); j++) {
-		r_buffer->write[j] *= _slots[0].send_level;
+		r_buffer[j] *= _slots[0].send_level;
 	}
 
 	for (int i = 1; i < SLOTS_MAX; i++) {
-		if (_slots[i].effects.is_empty()) {
+		if (_slots[i].effects.empty()()) {
 			continue;
 		}
 
 		int channel_num = p_channels;
-		for (Ref<SiEffectBase> effect : _slots[i].effects) {
+		for (std::shared_ptr<SiEffectBase> effect : _slots[i].effects) {
 			channel_num = effect->process(channel_num, &_slots[i].buffer, p_start_index, p_length);
 		}
 
 		for (int j = p_start_index; j < (p_start_index + p_length); j++) {
-			r_buffer->write[j] += _slots[i].buffer[j] * _slots[i].mix_level;
+			r_buffer[j] += _slots[i].buffer[j] * _slots[i].mix_level;
 		}
 	}
 
 	int out_channels = p_channels;
-	if (!_slots[0].effects.is_empty()) {
-		for (Ref<SiEffectBase> effect : _slots[0].effects) {
+	if (!_slots[0].effects.empty()()) {
+		for (std::shared_ptr<SiEffectBase> effect : _slots[0].effects) {
 			out_channels = effect->process(out_channels, r_buffer, p_start_index, p_length);
 		}
 
 		if (_slots[0].mix_level != 1) {
 			for (int j = p_start_index; j < (p_start_index + p_length); j++) {
-				r_buffer->write[j] *= _slots[0].mix_level;
+				r_buffer[j] *= _slots[0].mix_level;
 			}
 		}
 	}

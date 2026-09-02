@@ -7,17 +7,17 @@
 #ifndef MML_SEQUENCE_GROUP_H
 #define MML_SEQUENCE_GROUP_H
 
-#include <godot_cpp/templates/list.hpp>
+//#include <godot_cpp/templates/list.hpp>
 #include "sequencer/base/mml_data.h"
 
-using namespace godot;
+
 
 class MMLEvent;
 class MMLSequence;
 
 // Group of MMLSequences. MMLData > MMLSequenceGroup > MMLSequence > MMLEvent (">" means "has a").
 class MMLSequenceGroup : public Object {
-	GDCLASS(MMLSequenceGroup, Object)
+	//GDCLASS(MMLSequenceGroup, Object)
 
 	List<MMLSequence *> _free_list;
 

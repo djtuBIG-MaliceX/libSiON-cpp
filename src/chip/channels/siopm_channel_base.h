@@ -7,15 +7,15 @@
 #ifndef SIOPM_CHANNEL_BASE_H
 #define SIOPM_CHANNEL_BASE_H
 
-#include <godot_cpp/core/object.hpp>
-#include <godot_cpp/templates/vector.hpp>
-#include <godot_cpp/variant/callable.hpp>
+//#include <godot_cpp/core/object.hpp>
+//#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/variant/callable.hpp>
 #include "sion_enums.h"
 #include "chip/channels/siopm_channel_manager.h"
 #include "chip/siopm_ref_table.h"
-#include "templates/singly_linked_list.h"
+//#include "templates/singly_linked_list.h"
 
-using namespace godot;
+
 
 class SiOPMChannelParams;
 class SiOPMSoundChip;
@@ -25,7 +25,7 @@ class SiOPMWaveBase;
 // SiOPM sound channel base class.
 // Sound channels generate wave data and write it into streaming buffer.
 class SiOPMChannelBase : public Object {
-	GDCLASS(SiOPMChannelBase, Object)
+	//GDCLASS(SiOPMChannelBase, Object)
 
 	friend class SiOPMChannelManager;
 
@@ -67,7 +67,7 @@ private:
 protected:
 	static void _bind_methods();
 
-	String _to_string() const;
+	std::string _to_string() const;
 
 	//
 
@@ -87,15 +87,15 @@ protected:
 	double _ringmod_level = 0;
 	InputMode _input_mode = InputMode::INPUT_ZERO;
 	OutputMode _output_mode = OutputMode::OUTPUT_STANDARD;
-	SinglyLinkedList<int> *_in_pipe = nullptr;
-	SinglyLinkedList<int> *_ring_pipe = nullptr;
-	SinglyLinkedList<int> *_base_pipe = nullptr;
-	SinglyLinkedList<int> *_out_pipe = nullptr;
+	std::forward_list<int> *_in_pipe = nullptr;
+	std::forward_list<int> *_ring_pipe = nullptr;
+	std::forward_list<int> *_base_pipe = nullptr;
+	std::forward_list<int> *_out_pipe = nullptr;
 
 	// Volume and stream.
 
-	Vector<SiOPMStream *> _streams;
-	Vector<double> _volumes;
+	std::vector<SiOPMStream *> _streams;
+	std::vector<double> _volumes;
 	bool _is_idling = true;
 	int _pan = 64;
 	bool _has_effect_send = false;
@@ -127,12 +127,12 @@ protected:
 	int _lfo_timer_step = 0;
 	int _lfo_timer_step_buffer = 0;
 	int _lfo_phase = 0;
-	Vector<int> _lfo_wave_table;
+	std::vector<int> _lfo_wave_table;
 	int _lfo_wave_shape = 0;
 
-	void _apply_ring_modulation(SinglyLinkedList<int>::Element *p_buffer_start, int p_length);
+	void _apply_ring_modulation(std::forward_list<int>::Element *p_buffer_start, int p_length);
 	// NOTE: Original code would implicitly use the filter variables if nothing was passed as the 3rd argument. We make this explicit.
-	void _apply_sv_filter(SinglyLinkedList<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]);
+	void _apply_sv_filter(std::forward_list<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]);
 	void _reset_sv_filter_state();
 	bool _try_shift_sv_filter_state(int p_state);
 	void _shift_sv_filter_state(int p_state);
@@ -140,16 +140,16 @@ protected:
 public:
 	SiOPMChannelManager::ChannelType get_channel_type() const { return _channel_type; }
 
-	virtual void get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {}
-	virtual void set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) {}
+	virtual void get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {}
+	virtual void set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) {}
 
-	virtual void set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {}
+	virtual void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {}
 	virtual void set_channel_number(int p_value) {}
 	virtual void set_register(int p_address, int p_data) {}
 
 	virtual void set_algorithm(int p_operator_count, bool p_analog_like, int p_algorithm) {}
 	virtual void set_feedback(int p_level, int p_connection) {}
-	virtual void set_parameters(Vector<int> p_params) {}
+	virtual void set_parameters(std::vector<int> p_params) {}
 	virtual void set_types(int p_pg_type, SiONPitchTableType p_pt_type) {}
 	virtual void set_all_attack_rate(int p_value) {}
 	virtual void set_all_release_rate(int p_value) {}
@@ -186,7 +186,7 @@ public:
 
 	// Volume control.
 
-	virtual void set_all_stream_send_levels(Vector<int> p_levels);
+	virtual void set_all_stream_send_levels(std::vector<int> p_levels);
 	virtual void set_stream_buffer(int p_stream_num, SiOPMStream *p_stream = nullptr);
 	virtual void set_stream_send(int p_stream_num, double p_volume);
 	virtual double get_stream_send(int p_stream_num);
@@ -195,7 +195,7 @@ public:
 	// LFO control.
 
 	virtual void set_frequency_ratio(int p_ratio) { _frequency_ratio = p_ratio; }
-	virtual void initialize_lfo(int p_waveform, Vector<int> p_custom_wave_table = Vector<int>());
+	virtual void initialize_lfo(int p_waveform, std::vector<int> p_custom_wave_table = std::vector<int>());
 	virtual void set_lfo_cycle_time(double p_ms);
 	virtual void set_amplitude_modulation(int p_depth) {}
 	virtual void set_pitch_modulation(int p_depth) {}

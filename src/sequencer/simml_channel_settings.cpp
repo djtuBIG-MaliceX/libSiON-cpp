@@ -80,7 +80,7 @@ MMLSequence *SiMMLChannelSettings::select_tone(SiMMLTrack *p_track, int p_voice_
 				voice_index = 0;
 			}
 
-			Ref<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(voice_index);
+			std::shared_ptr<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(voice_index);
 			if (voice.is_null()) {
 				break;
 			}
@@ -111,33 +111,33 @@ MMLSequence *SiMMLChannelSettings::select_tone(SiMMLTrack *p_track, int p_voice_
 //
 
 int SiMMLChannelSettings::get_pg_type(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, _pg_type_list.size(), -1);
+	////ERR_FAIL_INDEX_V(p_index, _pg_type_list.size(), -1);
 	return _pg_type_list[p_index];
 }
 
 void SiMMLChannelSettings::set_pg_type(int p_index, int p_type) {
-	ERR_FAIL_INDEX(p_index, _pg_type_list.size());
-	_pg_type_list.write[p_index] = p_type;
+	////ERR_FAIL_INDEX(p_index, _pg_type_list.size());
+	_pg_type_list[p_index] = p_type;
 }
 
 SiONPitchTableType SiMMLChannelSettings::get_pt_type(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, _pt_type_list.size(), SiONPitchTableType::PITCH_TABLE_OPM);
+	////ERR_FAIL_INDEX_V(p_index, _pt_type_list.size(), SiONPitchTableType::PITCH_TABLE_OPM);
 	return _pt_type_list[p_index];
 }
 
 void SiMMLChannelSettings::set_pt_type(int p_index, SiONPitchTableType p_type) {
-	ERR_FAIL_INDEX(p_index, _pt_type_list.size());
-	_pt_type_list.write[p_index] = p_type;
+	////ERR_FAIL_INDEX(p_index, _pt_type_list.size());
+	_pt_type_list[p_index] = p_type;
 }
 
 int SiMMLChannelSettings::get_voice_index(int p_index) const {
-	ERR_FAIL_INDEX_V(p_index, _voice_index_table.size(), -1);
+	////ERR_FAIL_INDEX_V(p_index, _voice_index_table.size(), -1);
 	return _voice_index_table[p_index];
 }
 
 void SiMMLChannelSettings::set_voice_index(int p_index, int p_value) {
-	ERR_FAIL_INDEX(p_index, _voice_index_table.size());
-	_voice_index_table.write[p_index] = p_value;
+	////ERR_FAIL_INDEX(p_index, _voice_index_table.size());
+	_voice_index_table[p_index] = p_value;
 }
 
 //
@@ -146,18 +146,18 @@ SiMMLChannelSettings::SiMMLChannelSettings(int p_module_type, int p_pg_type, int
 	_table = SiOPMRefTable::get_instance();
 	_type = p_module_type;
 
-	_pg_type_list.resize_zeroed(p_length);
-	_pt_type_list.resize_zeroed(p_length);
+	_pg_type_list.resize(p_length); // TODO zeroed
+	_pt_type_list.resize(p_length); // TODO zeroed
 
 	int idx = p_pg_type;
 	for (int i = 0; i < p_length; i++) {
-		_pg_type_list.write[i] = idx;
-		_pt_type_list.write[i] = _table->get_wave_table(idx)->get_default_pitch_table_type();
+		_pg_type_list[i] = idx;
+		_pt_type_list[i] = _table->get_wave_table(idx)->get_default_pitch_table_type();
 		idx += p_step;
 	}
 
-	_voice_index_table.resize_zeroed(p_channel_count);
+	_voice_index_table.resize(p_channel_count); // TODO zeroed
 	for (int i = 0; i < p_channel_count; i++) {
-		_voice_index_table.write[i] = i;
+		_voice_index_table[i] = i;
 	}
 }

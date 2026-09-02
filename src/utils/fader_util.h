@@ -7,9 +7,9 @@
 #ifndef SION_FADER_UTIL_H
 #define SION_FADER_UTIL_H
 
-#include <godot_cpp/variant/callable.hpp>
+//#include <godot_cpp/variant/callable.hpp>
 
-using namespace godot;
+
 
 class FaderUtil {
 

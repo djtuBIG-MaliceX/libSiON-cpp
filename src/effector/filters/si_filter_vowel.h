@@ -7,13 +7,13 @@
 #ifndef SI_FILTER_VOWEL_H
 #define SI_FILTER_VOWEL_H
 
-#include <godot_cpp/templates/vector.hpp>
+//#include <godot_cpp/templates/vector.hpp>
 #include "effector/si_effect_base.h"
 
-using namespace godot;
+
 
 class SiFilterVowel : public SiEffectBase {
-	GDCLASS(SiFilterVowel, SiEffectBase)
+	//GDCLASS(SiFilterVowel, SiEffectBase)
 
 	static const int FORMANT_COUNT = 6;
 	static const int BAND_TABLE_MAX = 8;
@@ -42,7 +42,7 @@ class SiFilterVowel : public SiEffectBase {
 		void update(int p_freq_index, int p_gain, int p_band_index);
 	};
 
-	Vector<Formant> _formants;
+	std::vector<Formant> _formants;
 
 	void _set_formant_band(int p_index, double p_frequency,  int p_gain, int p_band_index);
 
@@ -94,7 +94,7 @@ class SiFilterVowel : public SiEffectBase {
 	//
 
 	double _process_lfo_formant(Formant p_formant, FormantTap p_tap, double *r_input);
-	void _process_lfo(Vector<double> *r_buffer, int p_start_index, int p_length);
+	void _process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length);
 
 protected:
 	static void _bind_methods();
@@ -113,9 +113,9 @@ public:
 	//
 
 	virtual int prepare_process() override;
-	virtual int process(int p_channels, Vector<double> *r_buffer, int p_start_index, int p_length) override;
+	virtual int process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) override;
 
-	virtual void set_by_mml(Vector<double> p_args) override;
+	virtual void set_by_mml(std::vector<double> p_args) override;
 
 	SiFilterVowel();
 	~SiFilterVowel() {}
