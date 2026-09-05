@@ -1,6 +1,6 @@
 # libSiON-cpp
 
-**libSiON-cpp** is a standalone C++17 software synthesizer library, forked from [GDSiON](https://github.com/YuriSizov/gdsion) — the Godot GDExtension port of [SiON](https://github.com/keim/SiON), Keiichi's software synthesizer originally written in ActionScript 3 for Flash and Adobe AIR.
+**libSiON-cpp** is a standalone C++17 software synthesizer library, forked from [GDSiON](https://github.com/YuriSizov/gdsion) — the Godot GDExtension port of [SiON](https://github.com/keim/SiON), keim_at_Si's software synthesizer originally written in ActionScript 3 for Flash and Adobe AIR.
 
 The Godot glue has been removed entirely: what remains is a self-contained, dependency-light native library that compiles MML (a SiON-specific flavor of Music Macro Language) and renders it to audio — with byte-identical output to the original GDSiON renderer. Use it as a static library in your own application, or render and play music right away with the bundled `sion-cpp-play` command-line tool.
 
@@ -91,6 +91,12 @@ The native test suite doubles as the behavioral contract:
 
 - [SiON](https://github.com/keim/SiON) by keim — the original ActionScript 3 synthesizer.
 - [GDSiON](https://github.com/YuriSizov/gdsion) by Yuri Sizov and contributors — the Godot port this fork is built from, including the libification groundwork.
+
+## AI DISCLOSURE
+
+While the fork was initially attempted by hand, much of the completion effort was eventually co-assisted by [Qwen3.8-flash-next UD_Q4_K_XL](https://huggingface.co/unsloth/Qwen3.8-Flash-Next-GGUF/tree/main/UD-Q4_K_XL) operating on a Mac Studio M3 Ultra 256GB local AI/ML setup via opencode v1.
+
+Either way, all authorship and resulting outputs are humanly preserved with intention.
 
 ## License
 
