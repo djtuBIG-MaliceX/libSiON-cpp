@@ -21,6 +21,7 @@
 #include "utils/godot_util.h"
 
 #include <memory>
+#include <algorithm>
 
 // Channel params.
 
@@ -110,7 +111,7 @@ void TranslatorUtil::_set_siopm_params_by_array(const Ref<SiOPMChannelParams> &p
 	// (WS[0-511], AR[0-63], DR[0-63], SR[0-63], RR[0-63], SL[0-15], TL[0-127], KR[0-3], KL[0-3], ML[0-15], D1[0-7], D2[], AM[0-3], PH[-1-255], FN[0-127]) x operator_count
 
 	p_params->algorithm           = _sanitize_param_loop(p_data[0], 0, 15, "AL");
-	p_params->feedback            = _sanitize_param_loop(p_data[1], 0, 7,  "FB");
+	p_params->feedback            = _sanitize_param_clamp(p_data[1], 0, 7,  "FB");
 	p_params->feedback_connection = _sanitize_param_loop(p_data[2], 0, 3,  "FC");
 
 	int data_index = 3;
@@ -151,7 +152,7 @@ void TranslatorUtil::_set_opl_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	p_params->envelope_frequency_ratio = 133;
 	p_params->algorithm = algorithm;
-	p_params->feedback = _sanitize_param_loop(p_data[1], 0, 7, "FB");
+	p_params->feedback = _sanitize_param_clamp(p_data[1], 0, 7, "FB");
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
@@ -193,7 +194,7 @@ void TranslatorUtil::_set_opm_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 
 	p_params->algorithm = algorithm;
-	p_params->feedback = _sanitize_param_loop(p_data[1], 0, 7, "FB");
+	p_params->feedback = _sanitize_param_clamp(p_data[1], 0, 7, "FB");
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
@@ -231,7 +232,7 @@ void TranslatorUtil::_set_opn_params_by_array(const Ref<SiOPMChannelParams> &p_p
 	}
 
 	p_params->algorithm = algorithm;
-	p_params->feedback = _sanitize_param_loop(p_data[1], 0, 7, "FB");
+	p_params->feedback = _sanitize_param_clamp(p_data[1], 0, 7, "FB");
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
@@ -266,7 +267,7 @@ void TranslatorUtil::_set_opx_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	// LSB is the flag of feedback connection.
 	p_params->algorithm = (algorithm & 15);
-	p_params->feedback = _sanitize_param_loop(p_data[1], 0, 7, "FB");
+	p_params->feedback = _sanitize_param_clamp(p_data[1], 0, 7, "FB");
 	p_params->feedback_connection = (algorithm & 16) ? 1 : 0;
 
 	int data_index = 2;
@@ -313,7 +314,7 @@ void TranslatorUtil::_set_ma3_params_by_array(const Ref<SiOPMChannelParams> &p_p
 
 	p_params->envelope_frequency_ratio = 133;
 	p_params->algorithm = algorithm;
-	p_params->feedback = _sanitize_param_loop(p_data[1], 0, 7, "FB");
+	p_params->feedback = _sanitize_param_clamp(p_data[1], 0, 7, "FB");
 
 	int data_index = 2;
 	for (int op_index = 0; op_index < p_params->operator_count; op_index++) {
