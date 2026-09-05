@@ -6,10 +6,6 @@
 
 #include "sion_driver.h"
 
-//#include <godot_cpp/classes/time.hpp>
-//#include <godot_cpp/core/math.hpp>
-//#include <godot_cpp/variant/packed_vector2_array.hpp>
-
 #include "sion_data.h"
 #include "sion_enums.h"
 #include "sion_voice.h"
@@ -38,6 +34,8 @@
 #include "utils/fader_util.h"
 #include "utils/transformer_util.h"
 
+#include <algorithm>
+
 // TODO: Extract somewhere more manageable?
 const char *SiONDriver::VERSION = "0.7.0.0"; // Original code was last versioned as 0.6.6.0.
 const char *SiONDriver::VERSION_FLAVOR = "beta8";
@@ -65,7 +63,7 @@ Ref<SiOPMWaveTable> SiONDriver::set_wave_table(int p_index, std::vector<double> 
 	return wave_table;
 }
 
-Ref<SiOPMWavePCMData> SiONDriver::set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_num, int p_channel_num) {
+Ref<SiOPMWavePCMData> SiONDriver::set_pcm_wave(int p_index, const Ref<SampleData> &p_data, double p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_num, int p_channel_num) {
 	Ref<SiMMLVoice> pcm_voice = SiOPMRefTable::get_instance()->get_global_pcm_voice(p_index & (SiOPMRefTable::PCM_DATA_MAX - 1));
 	Ref<SiOPMWavePCMTable> pcm_table = pcm_voice->get_wave_data();
 	Ref<SiOPMWavePCMData> pcm_data = new SiOPMWavePCMData(p_data, (int)(p_sampling_note * 64), p_src_channel_num, p_channel_num);
@@ -74,7 +72,7 @@ Ref<SiOPMWavePCMData> SiONDriver::set_pcm_wave(int p_index, const Variant &p_dat
 	return pcm_data;
 }
 
-Ref<SiOPMWaveSamplerData> SiONDriver::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_num, int p_channel_num) {
+Ref<SiOPMWaveSamplerData> SiONDriver::set_sampler_wave(int p_index, const Ref<SampleData> &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_num, int p_channel_num) {
 	return SiOPMRefTable::get_instance()->register_sampler_data(p_index, p_data, p_ignore_note_off, p_pan, p_src_channel_num, p_channel_num);
 }
 
@@ -114,10 +112,10 @@ void SiONDriver::notify_user_defined_track(int p_event_trigger_id, int p_note) {
 
 // Background sound.
 
-void SiONDriver::_set_background_sample(const Ref<AudioStream> &p_sound) {
+void SiONDriver::_set_background_sample(const Ref<SampleData> &p_sound) {
 	_background_sample = p_sound;
 	if (_background_sample.is_valid()) {
-		_background_sample_data = Ref<SiOPMWaveSamplerData>(new SiOPMWaveSamplerData(_background_sample, true));
+		_background_sample_data = new SiOPMWaveSamplerData(_background_sample, true);
 	} else {
 		_background_sample_data = Ref<SiOPMWaveSamplerData>();
 	}
@@ -127,7 +125,7 @@ void SiONDriver::_set_background_sample(const Ref<AudioStream> &p_sound) {
 	}
 }
 
-void SiONDriver::set_background_sample(const Ref<AudioStream> &p_sound, double p_mix_level, double p_loop_point) {
+void SiONDriver::set_background_sample(const Ref<SampleData> &p_sound, double p_mix_level, double p_loop_point) {
 	set_background_sample_volume(p_mix_level);
 	_background_loop_point = p_loop_point;
 	_set_background_sample(p_sound);
@@ -135,7 +133,7 @@ void SiONDriver::set_background_sample(const Ref<AudioStream> &p_sound, double p
 
 void SiONDriver::clear_background_sample() {
 	_background_loop_point = -1;
-	_set_background_sample(nullptr);
+	_set_background_sample(Ref<SampleData>());
 }
 
 void SiONDriver::_start_background_sample() {
@@ -197,7 +195,7 @@ void SiONDriver::_fade_background_callback(double p_value) {
 	if (_background_fade_out_track) {
 		if (_background_fade_out_frames > 0) {
 			fade_out = 1.0 - p_value / _background_fade_out_frames;
-			fade_out = std::clamp(fade_out, 0, 1);
+			fade_out = std::clamp(fade_out, 0.0, 1.0);
 		}
 
 		_background_fade_out_track->set_expression(fade_out * 128);
@@ -206,7 +204,7 @@ void SiONDriver::_fade_background_callback(double p_value) {
 	if (_background_track) {
 		if (_background_fade_in_frames > 0) {
 			fade_in = 1.0 - (_background_total_fade_frames - p_value) / _background_fade_in_frames;
-			fade_in = std::clamp(fade_in, 0, 1);
+			fade_in = std::clamp(fade_in, 0.0, 1.0);
 		} else {
 			fade_in = 1.0;
 		}
@@ -285,11 +283,6 @@ void SiONDriver::set_max_track_count(int p_value) {
 	sequencer->set_max_track_count(p_value);
 }
 
-void SiONDriver::_update_volume() {
-	double db_volume = Math::linear2db(_master_volume * _fader_volume);
-	_audio_player->set_volume_db(db_volume);
-}
-
 double SiONDriver::get_volume() const {
 	return _master_volume;
 }
@@ -297,8 +290,9 @@ double SiONDriver::get_volume() const {
 void SiONDriver::set_volume(double p_value) {
 	ERR_FAIL_COND_MSG(p_value < 0 || p_value > 1, "SiONDriver: Volume must be between 0.0 and 1.0 (inclusive).");
 
+	// Master volume is applied as a linear gain by render_chunk(). In the Godot version this
+	// was delegated to the AudioStreamPlayer node.
 	_master_volume = p_value;
-	_update_volume();
 }
 
 double SiONDriver::get_bpm() const {
@@ -364,7 +358,7 @@ void SiONDriver::_prepare_compile(sion::String p_mml, const Ref<SiONData> &p_dat
 	_current_job_type = JobType::COMPILE;
 }
 
-void SiONDriver::_prepare_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
+void SiONDriver::_prepare_render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
 	_prepare_process(p_data, p_reset_effector);
 
 	_render_buffer.clear();
@@ -422,34 +416,12 @@ bool SiONDriver::_rendering() {
 	return (finished || (_render_buffer_size_max == 0 && sequencer->is_finished()));
 }
 
-void SiONDriver::_streaming() {
-	// Don't push new frames unless we can consume the entire buffer.
-	// This may not be the most optimal way to handle this, perhaps we should
-	// be more opportunistic and push frames as quickly as we can, keeping
-	// the remaining buffer stashed somewhere.
-	if (_audio_playback->get_frames_available() < _buffer_length) {
-		return;
-	}
-
-	// Calculate latency.
-	// FIXME: Fix latency calculation for Godot types.
-	// // 0.022675736961451247 = 1/44.1
-	// _audio_player->get_playback_position()
-	// _performance_stats.streaming_latency = (event.position * 0.022675736961451247 - channel.position) * 1000;
-
+// Processes a single `_buffer_length`-frames block of audio and appends interleaved stereo
+// samples (with master/fader volume applied) to p_block. This is the standalone replacement
+// for the Godot-era `_streaming()` method; event dispatch, fader and auto-stop bookkeeping
+// are all preserved.
+void SiONDriver::_stream_block(std::vector<double> &r_block) {
 	_in_streaming_process = true;
-	PackedVector2Array stream_buffer;
-
-	if (_is_paused || _suspend_streaming) {
-		// Zero-fill when there is nothing to write.
-		for (int i = 0; i < _buffer_length; i++) {
-			stream_buffer.push_back(std::vector2(0, 0));
-		}
-		_audio_playback->push_buffer(stream_buffer);
-
-		_in_streaming_process = false;
-		return;
-	}
 
 	int start_time = Time::get_singleton()->get_ticks_msec();
 	_performance_stats.streaming_time = start_time;
@@ -472,15 +444,20 @@ void SiONDriver::_streaming() {
 	_performance_stats.total_processing_time += frame_record->value;
 	_performance_stats.update_average_processing_time();
 
-	// Write samples.
+	// Write samples. Master and fader volume replace the AudioStreamPlayer gain of the Godot version.
+	const double gain = _master_volume * _fader_volume;
 	std::vector<double> *output_buffer = sound_chip->get_output_buffer_ptr();
-	for (int i = 0; i < output_buffer->size(); i += 2) {
-		stream_buffer.push_back(std::vector2((*output_buffer)[i], (*output_buffer)[i + 1]));
+	for (int i = 0; i < (int)output_buffer->size(); i += 2) {
+		r_block.push_back((*output_buffer)[i] * gain);
+		r_block.push_back((*output_buffer)[i + 1] * gain);
 	}
-	_audio_playback->push_buffer(stream_buffer);
 
 	// Dispatch events.
 	if (_stream_event_enabled) {
+		PackedVector2Array stream_buffer;
+		for (int i = 0; i < (int)r_block.size(); i += 2) {
+			stream_buffer.push_back(Vector2(r_block[i], r_block[i + 1]));
+		}
 		_dispatch_event(new SiONEvent(SiONEvent::STREAMING, this, stream_buffer));
 	}
 	if (!_is_finish_sequence_dispatched && sequencer->is_sequence_finished()) {
@@ -490,6 +467,10 @@ void SiONDriver::_streaming() {
 
 	bool finished = false;
 	if (_fader->execute()) {
+		PackedVector2Array stream_buffer;
+		for (int i = 0; i < (int)r_block.size(); i += 2) {
+			stream_buffer.push_back(Vector2(r_block[i], r_block[i + 1]));
+		}
 		sion::String event_type = (_fader->is_incrementing() ? SiONEvent::FADE_IN_COMPLETED : SiONEvent::FADE_OUT_COMPLETED);
 		_dispatch_event(new SiONEvent(event_type, this, stream_buffer));
 		finished = !_fader->is_incrementing();
@@ -504,6 +485,47 @@ void SiONDriver::_streaming() {
 	_in_streaming_process = false;
 }
 
+void SiONDriver::render_chunk(float *p_buffer, int p_frames) {
+	ERR_FAIL_NULL(p_buffer);
+	if (p_frames <= 0) {
+		return;
+	}
+
+	int remaining = p_frames * 2;
+	float *out = p_buffer;
+
+	while (remaining > 0) {
+		if (_chunk_position >= _chunk_buffer.size()) {
+			_chunk_buffer.clear();
+			_chunk_position = 0;
+
+			if (!_is_streaming || _is_paused || _suspend_streaming) {
+				// Zero-fill when there is nothing to render. This mirrors the Godot behavior where
+				// silence was pushed to the playback device instead of processing new frames.
+				std::fill(p_buffer, p_buffer + p_frames * 2, 0.0f);
+				return;
+			}
+
+			_stream_block(_chunk_buffer);
+		}
+
+		int available = (int)(_chunk_buffer.size() - _chunk_position);
+		int to_copy = std::min(available, remaining);
+		for (int i = 0; i < to_copy; i++) {
+			out[i] = (float)_chunk_buffer[_chunk_position + i];
+		}
+		_chunk_position += to_copy;
+		out += to_copy;
+		remaining -= to_copy;
+
+		// stop() may have been requested from the event callbacks above; do not render new blocks.
+		if (!_is_streaming) {
+			std::fill(out, p_buffer + p_frames * 2, 0.0f);
+			break;
+		}
+	}
+}
+
 Ref<SiONData> SiONDriver::compile(sion::String p_mml) {
 	stop();
 
@@ -516,8 +538,9 @@ Ref<SiONData> SiONDriver::compile(sion::String p_mml) {
 	_performance_stats.compiling_time = Time::get_singleton()->get_ticks_msec() - start_time;
 	_mml_string = "";
 
-	static const std::stringName compilation_finished = std::stringName("compilation_finished");
-	emit_signal(compilation_finished, _data);
+	if (on_compilation_finished) {
+		on_compilation_finished(_data);
+	}
 	return _data;
 }
 
@@ -537,7 +560,7 @@ int SiONDriver::queue_compile(sion::String p_mml) {
 	return _job_queue.size();
 }
 
-PackedFloat64Array SiONDriver::render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
+PackedFloat64Array SiONDriver::render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
 	stop();
 
 	int start_time = Time::get_singleton()->get_ticks_msec();
@@ -555,94 +578,86 @@ PackedFloat64Array SiONDriver::render(const Variant &p_data, int p_buffer_size, 
 		buffer.push_back(value);
 	}
 
-	static const std::stringName render_finished = std::stringName("render_finished");
-	emit_signal(render_finished, buffer);
+	if (on_render_finished) {
+		on_render_finished(buffer);
+	}
 	return buffer;
 }
 
-int SiONDriver::queue_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
-	ERR_FAIL_COND_V_MSG(p_data.get_type() == Variant::NIL, _job_queue.size(), "SiONDriver: Cannot queue a render task, the data object is empty.");
+PackedFloat64Array SiONDriver::render_mml(const sion::String &p_mml, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
+	Ref<SiONData> data = compile(p_mml);
+	return render(data, p_buffer_size, p_buffer_channel_num, p_reset_effector);
+}
+
+int SiONDriver::queue_render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
+	ERR_FAIL_COND_V_MSG(p_data.is_null(), _job_queue.size(), "SiONDriver: Cannot queue a render task, the data object is empty.");
 	ERR_FAIL_COND_V_MSG(p_buffer_size <= 0, _job_queue.size(), "SiONDriver: Cannot queue a render task, the buffer size must be a positive number.");
 
-	Variant::Type data_type = p_data.get_type();
-	switch (data_type) {
-		case Variant::STRING: {
-			sion::String mml_string = p_data;
+	SiONDriverJob render_job;
+	render_job.type = JobType::RENDER;
+	render_job.data = p_data;
+	render_job.buffer_size = p_buffer_size;
+	render_job.channel_num = p_buffer_channel_num;
+	render_job.reset_effector = p_reset_effector;
 
-			// Data is shared between the two tasks.
-			Ref<SiONData> sion_data = new SiONData;
-			sion_data.instantiate();
+	_job_queue.push_back(render_job);
+	return _job_queue.size();
+}
 
-			// Queue compilation first.
-			SiONDriverJob compile_job;
-			compile_job.type = JobType::COMPILE;
-			compile_job.data = sion_data;
-			compile_job.mml_string = mml_string;
-			compile_job.channel_num = 2;
+int SiONDriver::queue_render(const sion::String &p_mml, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector) {
+	ERR_FAIL_COND_V_MSG(p_mml.empty(), _job_queue.size(), "SiONDriver: Cannot queue a render task, the MML string is empty.");
+	ERR_FAIL_COND_V_MSG(p_buffer_size <= 0, _job_queue.size(), "SiONDriver: Cannot queue a render task, the buffer size must be a positive number.");
 
-			_job_queue.push_back(compile_job);
+	// Data is shared between the two tasks.
+	Ref<SiONData> sion_data;
+	sion_data.instantiate();
 
-			// Then queue the render.
-			SiONDriverJob render_job;
-			render_job.type = JobType::RENDER;
-			render_job.data = sion_data;
-			render_job.buffer_size = p_buffer_size;
-			render_job.channel_num = p_buffer_channel_num;
-			render_job.reset_effector = p_reset_effector;
+	// Queue compilation first.
+	SiONDriverJob compile_job;
+	compile_job.type = JobType::COMPILE;
+	compile_job.data = sion_data;
+	compile_job.mml_string = p_mml;
+	compile_job.channel_num = 2;
 
-			_job_queue.push_back(render_job);
-			return _job_queue.size();
-		} break;
+	_job_queue.push_back(compile_job);
 
-		case Variant::OBJECT: {
-			Ref<SiONData> sion_data = p_data;
-			if (sion_data.is_valid()) {
-				SiONDriverJob render_job;
-				render_job.type = JobType::RENDER;
-				render_job.data = sion_data;
-				render_job.buffer_size = p_buffer_size;
-				render_job.channel_num = p_buffer_channel_num;
-				render_job.reset_effector = p_reset_effector;
-
-				_job_queue.push_back(render_job);
-				return _job_queue.size();
-			}
-		} break;
-
-		default: break; // Silences enum warnings.
-	}
-
-	ERR_FAIL_V_MSG(_job_queue.size(), "SiONDriver: Data type is unsupported by the render.");
+	return queue_render(sion_data, p_buffer_size, p_buffer_channel_num, p_reset_effector);
 }
 
 // Playback.
 
-void SiONDriver::_prepare_stream(const Variant &p_data, bool p_reset_effector) {
+void SiONDriver::_prepare_stream(const Ref<SiONData> &p_data, bool p_reset_effector) {
 	_prepare_process(p_data, p_reset_effector);
 
 	_performance_stats.total_processing_time = 0;
 	_performance_stats.processing_time_data->reset();
 
+	_chunk_buffer.clear();
+	_chunk_position = 0;
+
 	_is_paused = false;
-	_is_finish_sequence_dispatched = (p_data.get_type() == Variant::NIL);
+	_is_finish_sequence_dispatched = p_data.is_null();
 
 	// Start streaming.
 	_is_streaming = true;
 	_suspend_streaming = true;
-	_audio_player->play();
-	_audio_playback = _audio_player->get_stream_playback();
 
 	_set_processing_immediate();
 }
 
 void SiONDriver::stream(bool p_reset_effector) {
 	stop();
-	_prepare_stream(nullptr, p_reset_effector);
+	_prepare_stream(Ref<SiONData>(), p_reset_effector);
 }
 
-void SiONDriver::play(const Variant &p_data, bool p_reset_effector) {
+void SiONDriver::play(const Ref<SiONData> &p_data, bool p_reset_effector) {
 	stop();
 	_prepare_stream(p_data, p_reset_effector);
+}
+
+void SiONDriver::play_mml(const sion::String &p_mml, bool p_reset_effector) {
+	Ref<SiONData> data = compile(p_mml);
+	play(data, p_reset_effector);
 }
 
 void SiONDriver::stop() {
@@ -664,9 +679,10 @@ void SiONDriver::stop() {
 
 	_fader->stop();
 	_fader_volume = 1;
-	_audio_playback = Ref<AudioStreamGeneratorPlayback>();
-	_audio_player->stop();
-	_update_volume();
+
+	_chunk_buffer.clear();
+	_chunk_position = 0;
+
 	sequencer->stop_sequence();
 
 	_dispatch_event(new SiONEvent(SiONEvent::STREAM_STOPPED, this));
@@ -778,14 +794,14 @@ SiMMLTrack *SiONDriver::note_on_with_bend(int p_note, int p_note_to, double p_be
 	return track;
 }
 
-std::vector<SiMMLTrack> SiONDriver::note_off(int p_note, int p_track_id, double p_delay, double p_quant, bool p_stop_immediately) {
-	ERR_FAIL_COND_V_MSG(!_is_streaming, std::vector<SiMMLTrack>(), "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
-	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Note off delay cannot be less than zero.");
+std::vector<SiMMLTrack *> SiONDriver::note_off(int p_note, int p_track_id, double p_delay, double p_quant, bool p_stop_immediately) {
+	ERR_FAIL_COND_V_MSG(!_is_streaming, std::vector<SiMMLTrack *>(), "SiONDriver: Driver is not streaming, you must call SiONDriver.stream() first.");
+	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack *>(), "SiONDriver: Note off delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_NOTE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 
-	std::vector<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack *> tracks;
 	for (SiMMLTrack *track : sequencer->get_tracks()) {
 		if (track->get_internal_track_id() != internal_track_id) {
 			continue;
@@ -804,21 +820,21 @@ std::vector<SiMMLTrack> SiONDriver::note_off(int p_note, int p_track_id, double 
 	return tracks;
 }
 
-std::vector<SiMMLTrack> SiONDriver::sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
-	ERR_FAIL_COND_V(p_data.is_null(), std::vector<SiMMLTrack>());
-	ERR_FAIL_COND_V_MSG(p_length < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence length cannot be less than zero.");
-	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence delay cannot be less than zero.");
+std::vector<SiMMLTrack *> SiONDriver::sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice, double p_length, double p_delay, double p_quant, int p_track_id, bool p_disposable) {
+	ERR_FAIL_COND_V(p_data.is_null(), std::vector<SiMMLTrack *>());
+	ERR_FAIL_COND_V_MSG(p_length < 0, std::vector<SiMMLTrack *>(), "SiONDriver: Sequence length cannot be less than zero.");
+	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack *>(), "SiONDriver: Sequence delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_SEQUENCE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 	int length_samples = sequencer->calculate_sample_length(p_length);
 
-	std::vector<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack *> tracks;
 
 	MMLSequence *sequence = p_data->get_sequence_group()->get_head_sequence();
 	while (sequence) {
 		if (sequence->is_active()) {
-			SiMMLTrack *track =	sequencer->create_controllable_track(internal_track_id, p_disposable);
+			SiMMLTrack *track = sequencer->create_controllable_track(internal_track_id, p_disposable);
 			ERR_FAIL_NULL_V_MSG(track, tracks, "SiONDriver: Failed to allocate a track for playback. Pushing the limits?");
 
 			track->sequence_on(p_data, sequence, length_samples, delay_samples);
@@ -835,13 +851,13 @@ std::vector<SiMMLTrack> SiONDriver::sequence_on(const Ref<SiONData> &p_data, con
 	return tracks;
 }
 
-std::vector<SiMMLTrack> SiONDriver::sequence_off(int p_track_id, double p_delay, double p_quant, bool p_stop_with_reset) {
-	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack>(), "SiONDriver: Sequence off delay cannot be less than zero.");
+std::vector<SiMMLTrack *> SiONDriver::sequence_off(int p_track_id, double p_delay, double p_quant, bool p_stop_with_reset) {
+	ERR_FAIL_COND_V_MSG(p_delay < 0, std::vector<SiMMLTrack *>(), "SiONDriver: Sequence off delay cannot be less than zero.");
 
 	int internal_track_id = (p_track_id & SiMMLTrack::TRACK_ID_FILTER) | SiMMLTrack::DRIVER_SEQUENCE;
 	int delay_samples = sequencer->calculate_sample_delay(0, p_delay, p_quant);
 
-	std::vector<SiMMLTrack> tracks;
+	std::vector<SiMMLTrack *> tracks;
 	for (SiMMLTrack *track : sequencer->get_tracks()) {
 		if (track->get_internal_track_id() != internal_track_id) {
 			continue;
@@ -856,7 +872,6 @@ std::vector<SiMMLTrack> SiONDriver::sequence_off(int p_track_id, double p_delay,
 
 void SiONDriver::_fade_callback(double p_value) {
 	_fader_volume = p_value;
-	_update_volume();
 
 	if (!_fading_event_enabled) {
 		return;
@@ -878,49 +893,24 @@ void SiONDriver::fade_out(double p_time) {
 void SiONDriver::_set_processing_queue() {
 	ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin processing the queue, driver is busy (%d).", _current_frame_processing));
 	_current_frame_processing = FrameProcessingType::PROCESSING_QUEUE;
-	_update_node_processing();
 }
 
 void SiONDriver::_set_processing_immediate() {
 	ERR_FAIL_COND_MSG(_current_frame_processing != FrameProcessingType::NONE, vformat("SiONDriver: Cannot begin immediate processing, driver is busy (%d).", _current_frame_processing));
 	_current_frame_processing = FrameProcessingType::PROCESSING_IMMEDIATE;
-	_update_node_processing();
 
 	_performance_stats.frame_timestamp = Time::get_singleton()->get_ticks_msec();
 }
 
 void SiONDriver::_clear_processing() {
 	_current_frame_processing = FrameProcessingType::NONE;
-	_update_node_processing();
 }
 
-void SiONDriver::_prepare_process(const Variant &p_data, bool p_reset_effector) {
-	Variant::Type data_type = p_data.get_type();
-	switch (data_type) {
-		case Variant::NIL: {
-			// Do nothing and continue.
-		} break;
-
-		case Variant::STRING: { // MML string.
-			sion::String mml_string = p_data;
-			compile(mml_string); // Populates _data inside.
-		} break;
-
-		case Variant::OBJECT: {
-			Ref<SiONData> sion_data = p_data;
-			if (sion_data.is_valid()) {
-				_data = sion_data;
-				break;
-			}
-
-			// TODO: Add MIDI/SMF support.
-
-			ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
-		} break;
-
-		default: {
-			ERR_FAIL_MSG("SiONDriver: Unsupported data type.");
-		} break;
+void SiONDriver::_prepare_process(const Ref<SiONData> &p_data, bool p_reset_effector) {
+	if (p_data.is_valid()) {
+		// Passing a null Ref keeps the previously compiled data, mirroring the old Variant-based
+		// nil/string/object discrimination.
+		_data = p_data;
 	}
 
 	// Order of operations below is critical.
@@ -955,6 +945,12 @@ void SiONDriver::_prepare_process(const Variant &p_data, bool p_reset_effector) 
 
 	if (_timer_interval_event->get_length() > 0) {
 		sequencer->set_global_sequence(_timer_sequence);
+	}
+}
+
+void SiONDriver::update() {
+	if (_current_frame_processing != FrameProcessingType::NONE) {
+		_process_frame();
 	}
 }
 
@@ -1004,18 +1000,19 @@ void SiONDriver::_process_frame_queue() {
 	if (_job_progress == 1) {
 		switch (_current_job_type) {
 			case JobType::COMPILE: {
-				static const std::stringName compilation_finished = std::stringName("compilation_finished");
-				emit_signal(compilation_finished, _data);
+				if (on_compilation_finished) {
+					on_compilation_finished(_data);
+				}
 			} break;
 
 			case JobType::RENDER: {
-				static const std::stringName render_finished = std::stringName("render_finished");
-
-				PackedFloat64Array buffer;
-				for (double value : _render_buffer) {
-					buffer.push_back(value);
+				if (on_render_finished) {
+					PackedFloat64Array buffer;
+					for (double value : _render_buffer) {
+						buffer.push_back(value);
+					}
+					on_render_finished(buffer);
 				}
-				emit_signal(render_finished, buffer);
 			} break;
 
 			default: break; // Silences enum warnings.
@@ -1041,7 +1038,7 @@ void SiONDriver::_process_frame_immediate() {
 
 		// In the original code this event is cancellable and this means users can
 		// react to it to trigger an immediate stop to streaming. If this is needed
-		// in this implementation, you can just call stop() while reacting to the signal.
+		// in this implementation, you can just call stop() while reacting to the callback.
 		_dispatch_event(new SiONEvent(SiONEvent::STREAM_STARTED, this));
 		return;
 	}
@@ -1095,7 +1092,7 @@ bool SiONDriver::_prepare_next_job() {
 		case JobType::RENDER: {
 			if (job.buffer_size <= 0) {
 				WARN_PRINT("SiONDriver: Invalid render job queued up, buffer size must be a positive number.");
-				return _prepare_next_job(); // Skip this job.
+				return _prepare_next_job(); // Skip this job;
 			}
 
 			_prepare_render(job.data, job.buffer_size, job.channel_num, job.reset_effector);
@@ -1167,15 +1164,16 @@ double SiONDriver::_convert_event_length(double p_length) const {
 }
 
 void SiONDriver::_dispatch_event(const Ref<SiONEvent> &p_event) {
-	// This method exists as a proxy. Original implementation relied on native events, whereas we
-	// want to rely on signals. For simplicity's sake, we keep original event objects but strip any
-	// Event-related logic from them. Instead, they are just data objects which we pass to signals.
-	// Signal names are event types.
+	// This method exists as a proxy. Original implementation relied on native events and signals,
+	// whereas we route everything through the single on_event callback. Event objects are plain
+	// data carriers; their type string identifies what happened.
 
 	sion::String signal_name = p_event->get_event_type();
 	ERR_FAIL_COND(signal_name.empty());
 
-	emit_signal(signal_name, p_event);
+	if (on_event) {
+		on_event(p_event);
+	}
 }
 
 void SiONDriver::_note_on_callback(SiMMLTrack *p_track) {
@@ -1235,43 +1233,19 @@ void SiONDriver::set_beat_callback_interval(double p_length_16th) {
 	sequencer->set_beat_callback_filter(filter - 1);
 }
 
-void SiONDriver::_timer_callback() {
-	static const std::stringName timer_interval = std::stringName("timer_interval");
-	emit_signal(timer_interval);
-}
-
 void SiONDriver::set_timer_interval(double p_length) {
 	ERR_FAIL_COND_MSG(p_length < 0, "SiONDriver: Timer interval value cannot be less than zero.");
 
 	_timer_interval_event->set_length(_convert_event_length(p_length));
 
 	if (p_length > 0) {
-		sequencer->set_timer_callback(Callable(this, "_timer_callback"));
+		sequencer->set_timer_callback([this]() {
+			if (on_timer_interval) {
+				on_timer_interval();
+			}
+		});
 	} else {
-		sequencer->set_timer_callback(Callable());
-	}
-}
-
-//
-
-void SiONDriver::_update_node_processing() {
-	set_process(_is_streaming || _current_frame_processing != FrameProcessingType::NONE);
-}
-
-void SiONDriver::_notification(int p_what) {
-	switch (p_what) {
-		case NOTIFICATION_PROCESS: {
-			if (_is_streaming) {
-				_streaming();
-			}
-			if (_current_frame_processing != FrameProcessingType::NONE) {
-				_process_frame();
-			}
-		} break;
-
-		case NOTIFICATION_EXIT_TREE: {
-			stop();
-		} break;
+		sequencer->set_timer_callback(nullptr);
 	}
 }
 
@@ -1292,38 +1266,28 @@ SiONDriver::SiONDriver(int p_buffer_length, int p_channel_num, int p_sample_rate
 	sound_chip = new SiOPMSoundChip;
 	effector = new SiEffector(sound_chip);
 	sequencer = new SiMMLSequencer(sound_chip);
-	sequencer->set_note_on_callback(Callable(this, "_note_on_callback"));
-	sequencer->set_note_off_callback(Callable(this, "_note_off_callback"));
-	sequencer->set_tempo_changed_callback(Callable(this, "_tempo_changed_callback"));
-	sequencer->set_beat_callback(Callable(this, "_beat_callback"));
+	sequencer->set_note_on_callback([this](SiMMLTrack *p_track) { _note_on_callback(p_track); });
+	sequencer->set_note_off_callback([this](SiMMLTrack *p_track) { _note_off_callback(p_track); });
+	sequencer->set_tempo_changed_callback([this](int p_buffer_index, bool p_dummy) { _tempo_changed_callback(p_buffer_index, p_dummy); });
+	sequencer->set_beat_callback([this](int p_buffer_index, int p_beat_counter) { _beat_callback(p_buffer_index, p_beat_counter); });
 
 	// Main sound.
 	{
-		_audio_player = new AudioStreamPlayer;
-		add_child(_audio_player);
-		_update_volume();
-
-		_audio_stream.instantiate();
-		_audio_stream->set_mix_rate(p_sample_rate);
-		_audio_stream->set_buffer_length((double)p_buffer_length / p_sample_rate);
-		_audio_player->set_stream(_audio_stream);
-
 		_fader = new FaderUtil;
-		_fader->set_callback(Callable(this, "_fade_callback"));
+		_fader->set_callback([this](double p_value) { _fade_callback(p_value); });
 	}
 
 	// Background sound.
 	{
-		Ref<SiONVoice> voice = new SiONVoice(SiONModuleType::MODULE_SAMPLE);
-		_background_voice = voice;
+		_background_voice = new SiONVoice(SiONModuleType::MODULE_SAMPLE);
 		_background_voice->set_update_volumes(true);
 		_background_fader = new FaderUtil;
-		_background_fader->set_callback(Callable(this, "_fade_background_callback"));
+		_background_fader->set_callback([this](double p_value) { _fade_background_callback(p_value); });
 	}
 
 	// FIXME: Implement SMF/MIDI support.
-	//_midi_module = memnew(MIDIModule);
-	//_midi_converter = memnew(SiONDataConverterSMF(nullptr, _midi_module));
+	//_midi_module = new MIDIModule;
+	//_midi_converter = new SiONDataConverterSMF(nullptr, _midi_module);
 
 	{
 		_buffer_length = p_buffer_length;
@@ -1345,6 +1309,11 @@ SiONDriver::SiONDriver(int p_buffer_length, int p_channel_num, int p_sample_rate
 }
 
 SiONDriver::~SiONDriver() {
+	if (_is_streaming) {
+		_in_streaming_process = false; // Force-clean shutdown, bypass the deferred stop guard.
+		stop();
+	}
+
 	if (_mutex == this) {
 		_mutex = nullptr;
 	}

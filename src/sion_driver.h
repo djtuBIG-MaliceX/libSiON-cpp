@@ -7,26 +7,16 @@
 #ifndef SION_DRIVER_H
 #define SION_DRIVER_H
 
-// //#include <godot_cpp/classes/audio_stream.hpp>
-// //#include <godot_cpp/classes/audio_stream_generator.hpp>
-// //#include <godot_cpp/classes/audio_stream_generator_playback.hpp>
-// //#include <godot_cpp/classes/audio_stream_player.hpp>
-// //#include <godot_cpp/classes/node.hpp>
-// //#include <godot_cpp/templates/hash_map.hpp>
-// //#include <godot_cpp/templates/list.hpp>
-// //#include <godot_cpp/templates/vector.hpp>
-// //#include <godot_cpp/variant/typed_array.hpp>
-
 #include "sion_voice.h"
 #include "chip/wave/siopm_wave_sampler_data.h"
+#include "compat/sion_audio.h"
 #include "events/sion_event.h"
 #include "events/sion_track_event.h"
 #include "sequencer/base/mml_data.h"
 #include "sequencer/base/mml_system_command.h"
+
+#include <functional>
 #include <vector>
-//#include "templates/singly_linked_list.h"
-
-
 
 class FaderUtil;
 class MIDIModule;
@@ -44,11 +34,15 @@ class SiOPMWaveSamplerData;
 class SiOPMWaveSamplerTable;
 
 // SiONDriver class provides the driver of SiON's digital signal processor emulator. All SiON's basic operations are
-// provided as driver's properties, methods, and signals. Only one instance must exist at a time.
-// TODO: Mostly implemented, aside from MIDI support, audio stream sampling, and background sound. Refer to FIXMEs and TODOs.
+// provided as driver's properties, methods, and callbacks. Only one instance must exist at a time.
+//
+// Standalone usage model:
+// - call sion::initialize() once before creating any driver;
+// - compile/queue_compile MML sources;
+// - either offline-render with render(), or drive realtime playback by calling render_chunk()
+//   from an audio callback (e.g. PortAudio) and update() regularly from the main loop to pump
+//   queued jobs, deferred track events and stream start/stop bookkeeping.
 class SiONDriver {
-	////GDCLASS(SiONDriver, Node)
-
 public:
 	static const char *VERSION;
 	static const char *VERSION_FLAVOR;
@@ -61,6 +55,18 @@ public:
 		NEM_SHIFT = 3,     // Shift the sound timing to next quantize when track IDs are conflicting.
 		NEM_MAX = 4
 	};
+
+	// Signal replacements. These callbacks fire from various driver entry points; some of them
+	// run on the audio callback thread (events dispatched by render_chunk). Keep them cheap.
+
+	// All SiONEvent-based signals (streaming, sequence_finished, queue_*, note events...).
+	std::function<void(const Ref<SiONEvent> &)> on_event = nullptr;
+	// Emitted when a compilation job finishes (immediate compile() and queued jobs alike).
+	std::function<void(const Ref<SiONData> &)> on_compilation_finished = nullptr;
+	// Emitted when a rendering job finishes (immediate render() and queued jobs alike).
+	std::function<void(const PackedFloat64Array &)> on_render_finished = nullptr;
+	// Emitted on every timer interval tick (see set_timer_interval()).
+	std::function<void()> on_timer_interval = nullptr;
 
 private:
 	enum FrameProcessingType {
@@ -87,15 +93,11 @@ private:
 
 	// Main playback.
 
-	AudioStreamPlayer *_audio_player = nullptr;
-	Ref<AudioStreamGenerator> _audio_stream;
-	Ref<AudioStreamGeneratorPlayback> _audio_playback;
-
 	FaderUtil *_fader = nullptr;
 
 	// Background sound.
 
-	Ref<AudioStream> _background_sample;
+	Ref<SampleData> _background_sample;
 	Ref<SiOPMWaveSamplerData> _background_sample_data;
 	double _background_loop_point = -1; // In seconds.
 
@@ -110,7 +112,7 @@ private:
 
 	FaderUtil *_background_fader = nullptr;
 
-	void _set_background_sample(const Ref<AudioStream> &p_sound);
+	void _set_background_sample(const Ref<SampleData> &p_sound);
 	void _start_background_sample();
 	void _fade_background_callback(double p_value);
 
@@ -138,7 +140,6 @@ private:
 	bool _suspend_streaming = false;
 	// Suspend starting steam while loading.
 	bool _suspend_while_loading = true;
-	std::vector<Variant> _loading_sound_list;
 	// If true, FINISH_SEQUENCE event has already been dispatched.
 	bool _is_finish_sequence_dispatched = false;
 
@@ -147,13 +148,18 @@ private:
 	int _render_buffer_index = 0;
 	int _render_buffer_size_max = 0;
 
+	// Interleaved stereo samples produced by the last rendered block and not yet consumed by
+	// render_chunk(). Allows audio callbacks with arbitrary frame counts.
+	std::vector<double> _chunk_buffer;
+	size_t _chunk_position = 0;
+
 	bool _parse_system_command(const List<Ref<MMLSystemCommand>> &p_system_commands);
 
 	void _prepare_compile(sion::String p_mml, const Ref<SiONData> &p_data);
-	void _prepare_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector);
-	void _prepare_stream(const Variant &p_data, bool p_reset_effector);
+	void _prepare_render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num, bool p_reset_effector);
+	void _prepare_stream(const Ref<SiONData> &p_data, bool p_reset_effector);
 	bool _rendering();
-	void _streaming();
+	void _stream_block(std::vector<double> &r_block);
 
 	// Playback.
 
@@ -170,7 +176,6 @@ private:
 
 	SiMMLTrack *_find_or_create_track(int p_track_id, double p_delay, double p_quant, bool p_disposable, int *r_delay_samples);
 
-	void _update_volume();
 	void _fade_callback(double p_value);
 
 	// Processing.
@@ -181,7 +186,7 @@ private:
 	void _set_processing_immediate();
 	void _clear_processing();
 
-	void _prepare_process(const Variant &p_data, bool p_reset_effector);
+	void _prepare_process(const Ref<SiONData> &p_data, bool p_reset_effector);
 
 	void _process_frame();
 	void _process_frame_queue();
@@ -229,8 +234,6 @@ private:
 	MMLSequence *_timer_sequence = nullptr;
 	MMLEvent *_timer_interval_event = nullptr; // MMLEvent::GLOBAL_WAIT
 
-	void _timer_callback();
-
 	// MIDI.
 	// FIXME: Implement SMF/MIDI support.
 
@@ -268,21 +271,12 @@ private:
 		}
 	} _performance_stats;
 
-	//
-
-	void _update_node_processing();
-
-protected:
-
-	void _notification(int p_what);
-
 public:
 	static sion::String get_version() { return VERSION; }
 	static sion::String get_version_flavor() { return VERSION_FLAVOR; }
 
 	// The singleton instance.
 	static SiONDriver *get_mutex() { return _mutex; }
-	// NOTE: Godot doesn't support exposing constructors to the API, so we make do with a static factory method. Hopefully this can be fixed at some point.
 	static SiONDriver *create(int p_buffer_length = 2048, int p_channel_num = 2, int p_sample_rate = 44100, int p_bitrate = 0);
 
 	// Original code marks this as experimental and notes that each driver has a large memory footprint.
@@ -303,8 +297,8 @@ public:
 	void clear_data() { _data = Ref<SiONData>(); }
 
 	Ref<SiOPMWaveTable> set_wave_table(int p_index, std::vector<double> p_table);
-	Ref<SiOPMWavePCMData> set_pcm_wave(int p_index, const Variant &p_data, double p_sampling_note = 69, int p_key_range_from = 0, int p_key_range_to = 127, int p_src_channel_num = 2, int p_channel_num = 0);
-	Ref<SiOPMWaveSamplerData> set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_num = 2, int p_channel_num = 0);
+	Ref<SiOPMWavePCMData> set_pcm_wave(int p_index, const Ref<SampleData> &p_data, double p_sampling_note = 69, int p_key_range_from = 0, int p_key_range_to = 127, int p_src_channel_num = 2, int p_channel_num = 0);
+	Ref<SiOPMWaveSamplerData> set_sampler_wave(int p_index, const Ref<SampleData> &p_data, bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_num = 2, int p_channel_num = 0);
 	void set_pcm_voice(int p_index, const Ref<SiONVoice> &p_voice);
 	void set_sampler_table(int p_bank, const Ref<SiOPMWaveSamplerTable> &p_table);
 	void set_envelope_table(int p_index, std::vector<int> p_table, int p_loop_point = -1);
@@ -316,15 +310,12 @@ public:
 
 	// Main sound.
 
-	AudioStreamPlayer *get_audio_player() const { return _audio_player; }
-	Ref<AudioStreamGenerator> get_audio_stream() const { return _audio_stream; }
-	Ref<AudioStreamGeneratorPlayback> get_audio_playback() const { return _audio_playback; }
 	FaderUtil *get_fader() const { return _fader; }
 
 	// Background sound.
 
-	Ref<AudioStream> get_background_sample() const { return _background_sample; }
-	void set_background_sample(const Ref<AudioStream> &p_sound, double p_mix_level = 0.5, double p_loop_point = -1);
+	Ref<SampleData> get_background_sample() const { return _background_sample; }
+	void set_background_sample(const Ref<SampleData> &p_sound, double p_mix_level = 0.5, double p_loop_point = -1);
 	void clear_background_sample();
 	Ref<SiOPMWaveSamplerData> get_background_sample_data() const { return _background_sample_data; }
 	SiMMLTrack *get_background_sample_track() const { return _background_track; }
@@ -379,13 +370,19 @@ public:
 	Ref<SiONData> compile(sion::String p_mml);
 	int queue_compile(sion::String p_mml);
 
-	PackedFloat64Array render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = true);
-	int queue_render(const Variant &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = false);
+	// Offline rendering. Passing a null Ref keeps the currently compiled data (if any).
+	PackedFloat64Array render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = true);
+	int queue_render(const Ref<SiONData> &p_data, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = false);
+	// Convenience overloads that compile the MML string first.
+	PackedFloat64Array render_mml(const sion::String &p_mml, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = true);
+	int queue_render(const sion::String &p_mml, int p_buffer_size, int p_buffer_channel_num = 2, bool p_reset_effector = false);
 
 	// Playback.
 
 	void stream(bool p_reset_effector = true);
-	void play(const Variant &p_data, bool p_reset_effector = true);
+	void play(const Ref<SiONData> &p_data, bool p_reset_effector = true);
+	// Convenience overload that compiles the MML string first.
+	void play_mml(const sion::String &p_mml, bool p_reset_effector = true);
 	void stop();
 	void reset();
 	void pause();
@@ -394,18 +391,29 @@ public:
 	bool is_streaming() const { return _is_streaming; }
 	bool is_paused() const { return _is_paused; }
 
+	// Realtime audio sink. Fills p_buffer with p_frames * 2 interleaved stereo float samples
+	// in [-1, +1] (master volume included). Designed to be called from an audio callback
+	// (e.g. PortAudio) at the driver's configured buffer_length frames per call. Safe to call
+	// before playback starts or while paused — silence is produced.
+	void render_chunk(float *p_buffer, int p_frames);
+
 	SiMMLTrack *sample_on(int p_sample_number, double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
 	SiMMLTrack *note_on(int p_note, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
 	SiMMLTrack *note_on_with_bend(int p_note, int p_note_to, double p_bend_length, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 0, int p_track_id = 0, bool p_disposable = true);
-	std::vector<SiMMLTrack> note_off(int p_note, int p_track_id = 0, double p_delay = 0, double p_quant = 0, bool p_stop_immediately = false);
+	std::vector<SiMMLTrack *> note_off(int p_note, int p_track_id = 0, double p_delay = 0, double p_quant = 0, bool p_stop_immediately = false);
 
-	std::vector<SiMMLTrack> sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 1, int p_track_id = 0, bool p_disposable = true);
-	std::vector<SiMMLTrack> sequence_off(int p_track_id, double p_delay = 0, double p_quant = 1, bool p_stop_with_reset = false);
+	std::vector<SiMMLTrack *> sequence_on(const Ref<SiONData> &p_data, const Ref<SiONVoice> &p_voice = Ref<SiONVoice>(), double p_length = 0, double p_delay = 0, double p_quant = 1, int p_track_id = 0, bool p_disposable = true);
+	std::vector<SiMMLTrack *> sequence_off(int p_track_id, double p_delay = 0, double p_quant = 1, bool p_stop_with_reset = false);
 
 	void fade_in(double p_time);
 	void fade_out(double p_time);
 
 	// Processing.
+
+	// Main loop pump: advances queued compile/render jobs and dispatches deferred frame events.
+	// Call this regularly (e.g. once per UI frame or every few milliseconds) while streaming or
+	// executing queue jobs.
+	void update();
 
 	double get_queue_job_progress() const { return _job_progress; }
 	double get_queue_total_progress() const;
@@ -417,7 +425,6 @@ public:
 	// Events.
 
 	void set_beat_callback_interval(double p_length_16th = 1);
-	// Note: Original code takes a callback. Here you need to connect to the `timer_interval` signal.
 	void set_timer_interval(double p_length = 1);
 
 	// MIDI.

@@ -102,6 +102,10 @@ public:
 struct Vector2 {
 	double x = 0;
 	double y = 0;
+
+	Vector2() = default;
+	Vector2(double p_x, double p_y) :
+			x(p_x), y(p_y) {}
 };
 
 using PackedVector2Array = std::vector<Vector2>;
@@ -113,7 +117,8 @@ public:
 	virtual ~AudioStream() = default;
 };
 
-class AudioStreamWAV : public AudioStream {public:
+class AudioStreamWAV : public AudioStream {
+public:
 	enum Format {
 		FORMAT_NONE,
 		FORMAT_8_BITS,
@@ -180,42 +185,8 @@ public:
 	}
 };
 
-// --- Placeholder types referenced by the not-yet-libified SiONDriver header.
-// Phase 2 removes these along with the Godot audio plumbing.
-
-class AudioStreamGenerator : public AudioStream {
-public:
-	void set_mix_rate(double p_rate) { mix_rate = p_rate; }
-	double get_mix_rate() const { return mix_rate; }
-	double mix_rate = 44100.0;
-};
-
-class AudioStreamGeneratorPlayback {};
-class AudioStreamPlayer {};
-
-// Minimal stand-in keeping the legacy SiONDriver header parseable; real
-// payloads now flow through SampleData. Removed with the Phase 2 driver.
-class Variant {
-public:
-	enum Type {
-		NIL,
-		BOOL,
-		INT,
-		FLOAT,
-		STRING,
-		OBJECT,
-		PACKED_BYTE_ARRAY,
-		PACKED_INT32_ARRAY,
-		PACKED_FLOAT32_ARRAY,
-	};
-
-private:
-	Type _type = NIL;
-
-public:
-	Variant() = default;
-
-	Type get_type() const { return _type; }
-};
+// --- Godot audio plumbing (AudioStreamPlayer/Generator/Playback) and the legacy Variant
+// placeholder were removed in Phase 2; the standalone driver renders via render_chunk()
+// and sample payloads flow through SampleData.
 
 #endif // SION_COMPAT_AUDIO_H

@@ -120,8 +120,59 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
   SinglyLinkedList<int/double>::initialize_pool/finalize_pool (+ SiOPMChannelFM::finalize_pool).
   Smoke test currently calls initialize_pool by hand.)
 
-## Status: Phase 1 COMPLETE — smoke test green (session 4). Phase 2 driver work NEXT.
-Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 1/1 Passed.
+## Status: Phase 1 + Phase 2 COMPLETE; Phase 3 CLI working (offline WAV + realtime PortAudio). Phase 4 test porting NEXT.
+Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 2/2 Passed.
+Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_CLI=ON`.
+
+### DONE — session 5 (Phase 2 driver libification + Phase 3 CLI core)
+- HEAD = a88e050 "WIP libify" (session-4 work committed). Session-5 changes UNCOMMITTED:
+  sion_driver.{h,cpp} rewritten, sion_event.h (virtual ~SiONEvent — dynamic_cast for CLI),
+  compat/sion_audio.h (Vector2 ctor; DELETED Variant placeholder + AudioStreamPlayer/Generator/
+  Playback stubs), compat/sion_callable.h DELETED (+ umbrella include removed), new
+  tests/smoke_driver_render.cpp, new cli/ (CMakeLists.txt, main.cpp, wav_writer.h).
+- SiONDriver Phase 2 design (locked): plain class; NO Node/AudioStreamPlayer. Public
+  std::function members replace signals: `on_event(Ref<SiONEvent>)` (all SiONEvent dispatch),
+  `on_compilation_finished(Ref<SiONData>)`, `on_render_finished(PackedFloat64Array)`,
+  `on_timer_interval()`. Play/render/queue APIs are overload-based on `Ref<SiONData>` +
+  convenience `play_mml()/render_mml()/queue_render(String)` (Variant gone everywhere).
+  Background sample = `Ref<SampleData>`. note_off/sequence_on/off return std::vector<SiMMLTrack*>.
+- Realtime model: `render_chunk(float*, frames)` = old `_streaming()` — audio-callback entry
+  (PortAudio); internal `_chunk_buffer/_chunk_position` ring so arbitrary callback sizes work;
+  master*fader linear gain applied HERE only (replaces AudioStreamPlayer volume; render()
+  offline path untouched → goldens safe); pause/suspend/not-streaming = zero-fill.
+  `update()` pumps queue jobs + track-event queue (was NOTIFICATION_PROCESS minus streaming);
+  STREAM_STARTED dispatch rides first update() after play(). Upstream _find_or_create_track
+  arg-swap quirk PRESERVED (main has it too — parity).
+- `_update_volume`/Math::linear2db removed from driver (volume via chunk gain).
+- CMake: GDSION_DRIVER_EXPERIMENTAL default NOW ON; verified both ON and OFF configure+build clean.
+- CLI `gdsion-play` (cli/, opt-in GDSION_BUILD_CLI): -f/-m/--demo [scale|arp|bass] --list-demos,
+  -o wav (16-bit PCM writer, header-only cli/wav_writer.h), -t secs (offline default cap 30s;
+  realtime: until sequence end w/ auto_stop unless -t), -r (44100 only), -c 1|2, -b block,
+  --repeat, --events (system-command dump after compile + live event print), --device idx|substr,
+  --list-devices. PortAudio v19.7.0 FetchContent tarball: link target `portaudio_static`
+  (set PA_BUILD_SHARED OFF — the SHARED default left a missing-DLL 0xC0000135 at launch).
+- Realtime threading: std::mutex gate held by BOTH pa_callback (render_chunk) and main loop
+  (update/stop/get_*); event callbacks must stay cheap, never call driver reentrantly (would
+  deadlock — non-recursive mutex). Mono driver dup L→R in callback (chip output buffer is stereo).
+- VERIFIED: offline WAV peaks non-silent (--demo scale -t 2 → peak 0.176 == smoke test); realtime
+  playback through 'Line (Steinberg UR824)' completed w/ progress print; device listing works.
+
+## IMMEDIATE NEXT (Phase 4 kickoff)
+1. voices-sound-consistency native test: render int32 per preset voice, compare data/*.dat goldens
+   byte-identical — THE determinism gate (study tests/*.gd on main for exact render params!).
+2. mml-compilation golden port: mmltalks_mml.json via nlohmann/json; index-named vendored inputs.
+3. CLI polish (optional): --list-voices not implemented yet; driver --events thread caveat.
+4. Godot glue final cleanup (register_types/SConstruct/.gitmodules/godot-cpp/bin/doc_classes/
+   example/tests/*.gd) once Phase 4 goldens pass.
+
+### Session-5 gotchas learned (keep!)
+- LIFETIME: driver MUST be destroyed BEFORE sion::finalize() (~MMLSequence→free_all_events uses the
+  parser singleton; AV at MMLParser::free_all_events if not — bit us in cli/main.cpp; driver+data
+  now live in an inner scope closed before finalize). Early `return` paths SKIP finalize entirely —
+  that is safe (leak-at-exit only), don't "fix" by adding finalize-after-return.
+- MSVC `setvbuf(stdout, NULL, _IOLBF, 0)` = Debug assert (buffer_size must be ≥2). Use a real size.
+- cdb via pwsh: nested quoting of -c breaks; use a command file `-cf cmds.txt` instead.
+- ctest on win multi-config needs `-C Debug`; stale exe shows as "Unable to find executable" — build first.
 
 ### DONE — session 4
 - HEAD moved: c417362 "WIP libify" (earlier work committed). Working tree now has session-4 changes
@@ -150,13 +201,7 @@ Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 1/1 Passed.
   `& cdb -G -c "sxe -c \`"k 25; q\`" av; g" exe`. NOTE stdout is fully buffered under pipes —
   test sets setvbuf(_IONBF) to keep checkpoint prints visible.
 
-## IMMEDIATE NEXT (Phase 2 kickoff)
-1. sion_driver.{h,cpp}: fresh sed debris (`std::stringName` ~519 etc.), delete Node/AudioStreamPlayer
-   lifecycle, `_notification` called explicitly or inlined, `render_chunk()` exposing internal
-   `_streaming()` ring, update() pump, std::function signals (see Phase 2 plan above), then delete
-   Variant placeholder + sion_callable.h entirely. GDSION_DRIVER_EXPERIMENTAL flag: flip ON when builds.
-2. cdb debugging pattern above if new AVs.
-3. Phase 1 leftovers otherwise: NONE. tests/CMakeLists.txt gdsion_add_test() helper in place; CTest works.
+## ~~IMMEDIATE NEXT (Phase 2 kickoff)~~ — DONE session 5; see "IMMEDIATE NEXT (Phase 4 kickoff)" above.
 
 ### DONE this session (session 3 — compile-green push)
 - 4 agent waves, max 2 concurrent (ref_table+sequencer / chip+utils / effector; orchestrator fixed

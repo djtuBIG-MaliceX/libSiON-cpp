@@ -20,3 +20,8 @@ function(gdsion_add_test name source)
 endfunction()
 
 gdsion_add_test(smoke_mml_compile smoke_mml_compile.cpp)
+
+# Phase 2 milestone: standalone SiONDriver offline render + realtime chunk streaming.
+if(GDSION_DRIVER_EXPERIMENTAL)
+	gdsion_add_test(smoke_driver_render smoke_driver_render.cpp)
+endif()

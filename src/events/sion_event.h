@@ -79,7 +79,7 @@ public:
 	//
 
 	SiONEvent(sion::String p_type = sion::String(), SiONDriver *p_driver = nullptr, PackedVector2Array p_stream_buffer = PackedVector2Array());
-	~SiONEvent() {}
+	virtual ~SiONEvent() {}
 };
 
 #endif // SION_EVENT_H

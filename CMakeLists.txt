@@ -14,7 +14,7 @@ set(CMAKE_CXX_EXTENSIONS OFF)
 
 option(GDSION_BUILD_CLI "Build the gdsion-play command-line tool" OFF)
 option(GDSION_BUILD_TESTS "Build native tests" OFF)
-option(GDSION_DRIVER_EXPERIMENTAL "Include SiONDriver in the library (WIP during libification)" OFF)
+option(GDSION_DRIVER_EXPERIMENTAL "Include SiONDriver in the library" ON)
 
 if(POLICY CMP0135)
 	cmake_policy(SET CMP0135 NEW)

@@ -23,7 +23,6 @@
 #include "compat/sion_string.h"
 #include "compat/sion_regex.h"
 #include "compat/sion_audio.h"
-#include "compat/sion_callable.h"
 #include "compat/sion_random.h"
 #include "compat/sion_time.h"
 
