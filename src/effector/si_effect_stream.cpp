@@ -134,7 +134,7 @@ void SiEffectStream::_set_postfix_param(int p_slot, sion::String p_cmd, std::vec
 		set_pan((int)p_args[0]);
 	} else if (p_cmd == "@v") {
 		double value = ((int)p_args[0]) * 0.0078125;
-		set_stream_send(0, std::clamp(value, 0, 1));
+		set_stream_send(0, std::clamp(value, 0.0, 1.0));
 
 		int max_count = p_argc;
 		if ((max_count + p_slot) >= SiOPMSoundChip::STREAM_SEND_SIZE) {
@@ -143,7 +143,7 @@ void SiEffectStream::_set_postfix_param(int p_slot, sion::String p_cmd, std::vec
 
 		for (int i = 1; i < max_count; i++) {
 			value = ((int)p_args[i]) * 0.0078125;
-			set_stream_send(i + p_slot, std::clamp(value, 0, 1));
+			set_stream_send(i + p_slot, std::clamp(value, 0.0, 1.0));
 		}
 	} else {
 		ERR_PRINT(vformat("SiEffectStream: Trying to set an unknown effect param (%s) in slot %d.", p_cmd, p_slot));
@@ -184,7 +184,7 @@ void SiEffectStream::parse_mml(int p_slot, sion::String p_mml, sion::String p_po
 
 	// Parse MML.
 
-	std::vector<RegExMatch> matches = re_mml->search_all(p_mml);
+	std::vector<Ref<RegExMatch>> matches = re_mml->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
 		Ref<RegExMatch> res = matches[i];
 

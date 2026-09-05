@@ -13,7 +13,7 @@
 
 
 bool BeatsPerMinute::update(double p_bpm, int p_sample_rate) {
-	double bpm = std::clamp(p_bpm, 1, 511);
+	double bpm = std::clamp(p_bpm, 1.0, 511.0);
 
 	if (bpm == _bpm && p_sample_rate == _sample_rate) {
 		return false;

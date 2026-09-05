@@ -57,7 +57,7 @@ class SiOPMChannelFM : public SiOPMChannelBase {
 		PROCESS_PCM = 8,
 	};
 
-	std::vector<std::vector<Callable>> _process_function_list;
+	std::vector<std::vector<void (SiOPMChannelFM::*)(int)>> _process_function_list;
 	ProcessType _process_function_type = PROCESS_OP1;
 
 	void _update_process_function();

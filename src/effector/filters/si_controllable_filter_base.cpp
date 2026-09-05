@@ -50,11 +50,11 @@ double SiControllableFilterBase::get_cutoff() const {
 }
 
 void SiControllableFilterBase::set_cutoff(double p_value) {
-	_cutoff_index = std::clamp(p_value * 128, 0, 128);
+	_cutoff_index = std::clamp(p_value * 128.0, 0.0, 128.0);
 }
 
 void SiControllableFilterBase::set_resonance(double p_value) {
-	_resonance = std::clamp(p_value, 0, 1);
+	_resonance = std::clamp(p_value, 0.0, 1.0);
 }
 
 //

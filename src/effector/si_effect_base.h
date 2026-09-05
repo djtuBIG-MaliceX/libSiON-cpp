@@ -50,6 +50,7 @@ public:
 	virtual void reset() {}
 
 	SiEffectBase() {}
+	virtual ~SiEffectBase() {}
 };
 
 #endif // SI_EFFECT_BASE_H

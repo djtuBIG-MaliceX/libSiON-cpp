@@ -183,8 +183,8 @@ void SiOPMChannelKS::buffer(int p_length) {
 	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
-	if (_process_function.is_valid()) {
-		_process_function.call(p_length);
+	if (_process_function != nullptr) {
+		_process_function(p_length);
 	}
 
 	if (_ring_pipe) {
@@ -243,7 +243,7 @@ void SiOPMChannelKS::initialize(SiOPMChannelBase *p_prev, int p_buffer_index) {
 }
 
 void SiOPMChannelKS::reset() {
-	_ks_delay_buffer.fill(0);
+	std::fill(_ks_delay_buffer.begin(), _ks_delay_buffer.end(), 0);
 
 	SiOPMChannelFM::reset();
 }

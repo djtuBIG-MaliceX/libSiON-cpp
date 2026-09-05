@@ -101,7 +101,7 @@ void MMLExecutorConnector::parse(sion::String p_formula) {
 	MECElement *last_elem = nullptr;
 
 	Ref<RegEx> re_formula = RegEx::create_from_string("(\\()?([a-zA-Z])([0-7])?(\\)+)?");
-	std::vector<RegExMatch> matches = re_formula->search_all(p_formula);
+	std::vector<Ref<RegExMatch>> matches = re_formula->search_all(p_formula);
 	for (int i = 0; i < matches.size(); i++) {
 		Ref<RegExMatch> res = matches[i];
 

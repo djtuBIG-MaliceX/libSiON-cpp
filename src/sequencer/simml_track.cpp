@@ -274,16 +274,16 @@ void SiMMLTrack::set_modulation_envelope(bool p_is_pitch_mod, int p_depth, int p
 	std::vector<SinglyLinkedList<int> *> *table = (p_is_pitch_mod ? &_table_envelope_mod_pitch : &_table_envelope_mod_amp);
 
 	// Free previous table.
-	SinglyLinkedList<int> *old_table = table->get(1);
+	SinglyLinkedList<int> *old_table = (*table)[1];
 	if (old_table) {
 		delete old_table;
 	}
 
 	if ((p_depth >= 0 && p_depth < p_end_depth) || (p_depth < 0 && p_depth > p_end_depth)) {
-		table->set(1, _make_modulation_table(p_depth, p_end_depth, p_delay, p_term));
+		(*table)[1] = _make_modulation_table(p_depth, p_end_depth, p_delay, p_term);
 		_enable_envelope_mode(1);
 	} else {
-		table->set(1, nullptr);
+		(*table)[1] = nullptr;
 
 		if (p_is_pitch_mod) {
 			_channel->set_pitch_modulation(p_depth);

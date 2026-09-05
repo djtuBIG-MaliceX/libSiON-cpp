@@ -92,9 +92,19 @@ inline void vformat_expand(std::string &r_out, const char *p_fmt) {
 	}
 }
 
+// Enum arguments: Godot passes bound enums through Variant as integers, so
+// both specs render the numeric value.
+template <class A>
+inline std::enable_if_t<std::is_enum_v<std::decay_t<A>>> vformat_write(std::string &r_out, char p_spec, const A &p_arg) {
+	(void)p_spec;
+	char buf[64];
+	snprintf(buf, sizeof(buf), "%lld", static_cast<long long>(static_cast<typename std::underlying_type<std::decay_t<A>>::type>(p_arg)));
+	r_out += buf;
+}
+
 // Object-like/string arguments.
-template <class A, class = std::enable_if_t<!std::is_arithmetic_v<A> && !std::is_pointer_v<std::decay_t<A>>>>
-inline void vformat_write(std::string &r_out, char p_spec, const A &p_arg) {
+template <class A>
+inline std::enable_if_t<!std::is_arithmetic_v<std::decay_t<A>> && !std::is_enum_v<std::decay_t<A>> && !std::is_pointer_v<std::decay_t<A>>> vformat_write(std::string &r_out, char p_spec, const A &p_arg) {
 	if (p_spec == 's') {
 		r_out += static_cast<std::string>(p_arg);
 	} else {
@@ -106,8 +116,8 @@ inline void vformat_write(std::string &r_out, char p_spec, const A &p_arg) {
 
 // Arithmetic arguments: Godot's vformat is untyped and stringifies whatever
 // spec pairs with whatever value. Mirror that instead of failing to compile.
-template <class A, class = std::enable_if_t<std::is_arithmetic_v<A> && !std::is_same_v<std::decay_t<A>, bool>>>
-inline void vformat_write(std::string &r_out, char p_spec, A p_arg) {
+template <class A>
+inline std::enable_if_t<std::is_arithmetic_v<std::decay_t<A>> && !std::is_same_v<std::decay_t<A>, bool>> vformat_write(std::string &r_out, char p_spec, A p_arg) {
 	char buf[64];
 	if constexpr (std::is_floating_point_v<A>) {
 		snprintf(buf, sizeof(buf), "%.14g", static_cast<double>(p_arg));
@@ -205,6 +215,14 @@ using ::sion::vformat;
 		if (m_condition) {                                                                                                                      \
 			::sion::err_print(__func__, __FILE__, __LINE__, "Condition \"" #m_condition "\" is true.", static_cast<std::string>(m_message));    \
 			return;                                                                                                                             \
+		}                                                                                                                                       \
+	} while (0)
+
+#define ERR_CONTINUE_MSG(m_condition, m_message)                                                                                                \
+	do {                                                                                                                                        \
+		if (m_condition) {                                                                                                                      \
+			::sion::err_print(__func__, __FILE__, __LINE__, "Condition \"" #m_condition "\" is true. Continued.", static_cast<std::string>(m_message)); \
+			continue;                                                                                                                           \
 		}                                                                                                                                       \
 	} while (0)
 

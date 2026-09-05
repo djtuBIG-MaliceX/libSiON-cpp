@@ -44,7 +44,7 @@ Ref<RegEx> RegEx::create_from_string(const std::string &p_pattern) {
 
 	if (!code) {
 		PCRE2_UCHAR8 buffer[512];
-		pcre2_get_error_message_8(errcode, PCRE2_CODE_UNIT_WIDTH_8, buffer, sizeof(buffer));
+		pcre2_get_error_message_8(errcode, buffer, sizeof(buffer));
 		ERR_PRINT(vformat("RegEx: Compilation failed at offset %d: %s", (int)erroffset, (const char *)buffer));
 		return nullptr;
 	}
@@ -65,7 +65,7 @@ static Ref<RegExMatch> _build_match(pcre2_match_data_8 *p_match_data, const std:
 	match->_ends.resize(count);
 
 	for (uint32_t i = 0; i < count; i++) {
-		if (ovector[i * 2] == PCRE2_NOMATCH) {
+		if (ovector[i * 2] == PCRE2_UNSET) {
 			match->_starts[i] = -1;
 			match->_ends[i] = -1;
 		} else {

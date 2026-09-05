@@ -135,7 +135,7 @@ sion::String SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_ap
 	}
 
 	if (p_append_postfix) {
-		Ref<SiONVoice> this_voice = const_cast<SiONVoice *>(this);
+		Ref<SiONVoice> this_voice = Ref<SiONVoice>::borrow(const_cast<SiONVoice *>(this));
 		sion::String postfix = TranslatorUtil::get_voice_setting_as_mml(this_voice);
 		if (!postfix.empty()) {
 			mml += "\n" + postfix;
@@ -348,7 +348,7 @@ void SiONVoice::set_pitch_modulation(int p_depth, int p_end_depth, int p_delay, 
 Ref<SiONVoice> SiONVoice::clone() {
 	Ref<SiONVoice> new_voice;
 	new_voice.instantiate();
-	new_voice->copy_from(this);
+	new_voice->copy_from(Ref<SiMMLVoice>::borrow(this));
 	new_voice->_name = _name;
 
 	return new_voice;

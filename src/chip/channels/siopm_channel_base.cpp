@@ -351,8 +351,8 @@ void SiOPMChannelBase::buffer(int p_length) {
 	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
-	if (_process_function.is_valid()) {
-		_process_function.call(p_length);
+	if (_process_function != nullptr) {
+		_process_function(p_length);
 	}
 
 	if (_ring_pipe) {
@@ -460,7 +460,7 @@ sion::String SiOPMChannelBase::_to_string() const {
 SiOPMChannelBase::SiOPMChannelBase(SiOPMSoundChip *p_chip) {
 	_table = SiOPMRefTable::get_instance();
 	_sound_chip = p_chip;
-	_process_function = Callable(this, "_no_process");
+	_process_function = [this](int p_length) { _no_process(p_length); };
 
 	_streams.clear();
 	_streams.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed

@@ -50,9 +50,9 @@ public:
 
 	// Slots and connections.
 
-	std::vector<SiEffectBase> get_slot_effects(int p_slot) const;
+	std::vector<Ref<SiEffectBase>> get_slot_effects(int p_slot) const;
 	void add_slot_effect(int p_slot, const Ref<SiEffectBase> &p_effect);
-	void set_slot_effects(int p_slot, const std::vector<SiEffectBase> &p_effects);
+	void set_slot_effects(int p_slot, const std::vector<Ref<SiEffectBase>> &p_effects);
 	void clear_slot_effects(int p_slot);
 
 	SiEffectStream *create_local_effect(int p_depth, List<Ref<SiEffectBase>> p_effects);

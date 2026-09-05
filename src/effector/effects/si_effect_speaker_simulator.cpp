@@ -32,14 +32,14 @@ int SiEffectSpeakerSimulator::process(int p_channels, std::vector<double> *r_buf
 		_diaphragm_pos_left += value_left;
 
 		_previous_left = (*r_buffer)[i];
-		r_buffer[i] = _diaphragm_pos_left;
+		(*r_buffer)[i] = _diaphragm_pos_left;
 
 		double value_right = (*r_buffer)[i + 1] - _previous_right;
 		_diaphragm_pos_right *= _spring_coef;
 		_diaphragm_pos_right += value_right;
 
 		_previous_right = (*r_buffer)[i + 1];
-		r_buffer[i + 1] = _diaphragm_pos_right;
+		(*r_buffer)[i + 1] = _diaphragm_pos_right;
 	}
 
 	return p_channels;

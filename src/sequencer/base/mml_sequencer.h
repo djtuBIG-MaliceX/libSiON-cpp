@@ -146,10 +146,10 @@ public:
 	// Compilation and processing.
 
 	// Returns false if compilation is not needed.
-	virtual bool prepare_compile(const MMLData &p_data, sion::String p_mml);
+	virtual bool prepare_compile(const Ref<MMLData> &p_data, sion::String p_mml);
 	// Returns compilation progress [0-1].
 	virtual double compile(int p_interval = 1000);
-	virtual void prepare_process(const MMLData &p_data, int p_sample_rate, int p_buffer_length);
+	virtual void prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length);
 	virtual void process() {}
 
 	// Must be called between prepare_process() and process().

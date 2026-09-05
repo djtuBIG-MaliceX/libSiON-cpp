@@ -64,8 +64,8 @@ int SiEffectDistortion::process(int p_channels, std::vector<double> *r_buffer, i
 			_out1 = output;
 		}
 
-		r_buffer[i] = output;
-		r_buffer[i + 1] = output;
+		(*r_buffer)[i] = output;
+		(*r_buffer)[i + 1] = output;
 	}
 
 	return 1;

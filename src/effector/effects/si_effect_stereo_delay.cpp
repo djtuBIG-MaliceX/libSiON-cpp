@@ -5,6 +5,7 @@
 /***************************************************/
 
 #include "si_effect_stereo_delay.h"
+#include <algorithm>
 
 void SiEffectStereoDelay::set_params(double p_delay_time, double p_feedback, bool p_cross, double p_wet) {
 	int offset = (int)(p_delay_time * 44.1);
@@ -26,18 +27,18 @@ void SiEffectStereoDelay::set_params(double p_delay_time, double p_feedback, boo
 }
 
 int SiEffectStereoDelay::prepare_process() {
-	_delay_buffer_left.fill(0);
-	_delay_buffer_right.fill(0);
+	std::fill(_delay_buffer_left.begin(), _delay_buffer_left.end(), 0.0);
+	std::fill(_delay_buffer_right.begin(), _delay_buffer_right.end(), 0.0);
 
 	return 2;
 }
 
 void SiEffectStereoDelay::_process_channel(std::vector<double> *r_buffer, int p_buffer_index, std::vector<double> *p_read_buffer, std::vector<double> *r_write_buffer) {
 	double value = (*p_read_buffer)[_pointer_read];
-	r_write_buffer[_pointer_write] = (*r_buffer)[p_buffer_index] - value * _feedback;
+	(*r_write_buffer)[_pointer_write] = (*r_buffer)[p_buffer_index] - value * _feedback;
 
-	r_buffer[p_buffer_index] *= 1 - _wet;
-	r_buffer[p_buffer_index] += value * _wet;
+	(*r_buffer)[p_buffer_index] *= 1 - _wet;
+	(*r_buffer)[p_buffer_index] += value * _wet;
 }
 
 int SiEffectStereoDelay::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {

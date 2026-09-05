@@ -11,6 +11,7 @@
 #include "chip/siopm_stream.h"
 #include "effector/si_effect_stream.h"
 #include "templates/type_constraints.h"
+#include <algorithm>
 
 #include "effector/effects/si_effect_autopan.h"
 #include "effector/effects/si_effect_compressor.h"
@@ -142,16 +143,16 @@ Ref<T> SiEffector::create_effect_instance() {
 
 // Slots and connections.
 
-std::vector<SiEffectBase> SiEffector::get_slot_effects(int p_slot) const {
-	ERR_FAIL_INDEX_V_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, std::vector<SiEffectBase>(), "SiEffector: Invalid effect slot index.");
+std::vector<Ref<SiEffectBase>> SiEffector::get_slot_effects(int p_slot) const {
+	ERR_FAIL_INDEX_V_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, std::vector<Ref<SiEffectBase>>(), "SiEffector: Invalid effect slot index.");
 
 	if (!_global_effects[p_slot]) {
-		return std::vector<SiEffectBase>();
+		return std::vector<Ref<SiEffectBase>>();
 	}
 
 	List<Ref<SiEffectBase>> chained_effects = _global_effects[p_slot]->get_chain();
 
-	std::vector<SiEffectBase> effects;
+	std::vector<Ref<SiEffectBase>> effects;
 	for (const Ref<SiEffectBase> &effect : chained_effects) {
 		effects.push_back(effect);
 	}
@@ -167,7 +168,7 @@ void SiEffector::add_slot_effect(int p_slot, const Ref<SiEffectBase> &p_effect) 
 	p_effect->prepare_process();
 }
 
-void SiEffector::set_slot_effects(int p_slot, const std::vector<SiEffectBase> &p_effects) {
+void SiEffector::set_slot_effects(int p_slot, const std::vector<Ref<SiEffectBase>> &p_effects) {
 	ERR_FAIL_INDEX_MSG(p_slot, SiOPMSoundChip::STREAM_SEND_SIZE, "SiEffector: Invalid effect slot index.");
 
 	List<Ref<SiEffectBase>> chained_effects;
@@ -207,17 +208,17 @@ SiEffectStream *SiEffector::create_local_effect(int p_depth, List<Ref<SiEffectBa
 
 	for (int i = _local_effects.size() - 1; i >= 0; i--) {
 		if (_local_effects[i]->get_depth() >= p_depth) {
-			_local_effects.insert(i, effect);
+			_local_effects.insert(_local_effects.begin() + i, effect);
 			return effect;
 		}
 	}
 
-	_local_effects.insert(0, effect);
+	_local_effects.insert(_local_effects.begin(), effect);
 	return effect;
 }
 
 void SiEffector::delete_local_effect(SiEffectStream *p_effect) {
-	_local_effects.erase(p_effect);
+	_local_effects.erase(std::find(_local_effects.begin(), _local_effects.end(), p_effect), _local_effects.end());
 	p_effect->free();
 	_free_effect_streams.push_back(p_effect);
 }
@@ -279,7 +280,7 @@ void SiEffector::end_process() {
 				std::vector<double> *buffer = effect->get_stream()->get_buffer_ptr();
 				std::vector<double> *output = _sound_chip->get_output_stream()->get_buffer_ptr();
 				for (int j = 0; j < output->size(); j++) {
-					output[j] += (*buffer)[j];
+					(*output)[j] += (*buffer)[j];
 				}
 			} else {
 				effect->process(0, _sound_chip->get_buffer_length(), true);

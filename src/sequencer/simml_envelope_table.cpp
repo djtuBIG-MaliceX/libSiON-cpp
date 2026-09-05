@@ -57,10 +57,10 @@ void SiMMLEnvelopeTable::from_vector(std::vector<int> p_table, int p_loop_point)
 		return;
 	}
 
-	_data = new SinglyLinkedList<int>(p_table.size());
+	_data = new SinglyLinkedList<int>(static_cast<int>(p_table.size()));
 	SinglyLinkedList<int>::Element *loop = nullptr;
 
-	for (int i = 0; i < p_table.size(); i++) {
+	for (int i = 0; i < static_cast<int>(p_table.size()); i++) {
 		if (p_loop_point == i) {
 			loop = _data->get();
 		}
@@ -77,7 +77,7 @@ void SiMMLEnvelopeTable::from_vector(std::vector<int> p_table, int p_loop_point)
 }
 
 void SiMMLEnvelopeTable::to_vector(int p_length, std::vector<int> *r_destination, int p_min, int p_max) {
-	r_destination->resize(p_length); // TODO zeroed
+	r_destination->assign(p_length, 0);
 
 	_data->front();
 
@@ -89,8 +89,8 @@ void SiMMLEnvelopeTable::to_vector(int p_length, std::vector<int> *r_destination
 			_data->next();
 		}
 
-		std::clamp(value, p_min, p_max);
-		r_destination[i] = value;
+		value = std::clamp(value, p_min, p_max);
+		(*r_destination)[i] = value;
 	}
 }
 

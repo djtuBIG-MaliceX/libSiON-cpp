@@ -206,7 +206,7 @@ sion::String SiMMLSequencer::_on_before_compile(sion::String p_mml) {
 	Ref<RegEx> re_sequence = RegEx::create_from_string("(?s)[ \\t\\r\\n]*(#([A-Z@\\-]+)(\\+=|=)?)?([^;{]*({.*?})?[^;]*);");
 	Ref<RegEx> re_macro_id = RegEx::create_from_string("([A-Z])?(-([A-Z])?)?");
 
-	std::vector<RegExMatch> matches = re_sequence->search_all(mml);
+	std::vector<Ref<RegExMatch>> matches = re_sequence->search_all(mml);
 	for (int i = 0; i < matches.size(); i++) {
 		Ref<RegExMatch> res = matches[i];
 
@@ -234,7 +234,7 @@ sion::String SiMMLSequencer::_on_before_compile(sion::String p_mml) {
 		bool concat = (res->get_string(3) == "+=");
 
 		// Parse macro IDs.
-		std::vector<RegExMatch> mid_matches = re_macro_id->search_all(macro_id);
+		std::vector<Ref<RegExMatch>> mid_matches = re_macro_id->search_all(macro_id);
 		for (int j = 0; j < mid_matches.size(); j++) {
 			Ref<RegExMatch> mid_res = mid_matches[j];
 			if (mid_res->get_string().empty()) {
@@ -484,7 +484,7 @@ sion::String SiMMLSequencer::_expand_macro(sion::String p_macro, uint32_t p_macr
 	sion::String expanded_macro = p_macro;
 
 	Ref<RegEx> re_macro = RegEx::create_from_string("([A-Z])(\\(([\\-\\d]+)\\))?");
-	std::vector<RegExMatch> matches = re_macro->search_all(expanded_macro);
+	std::vector<Ref<RegExMatch>> matches = re_macro->search_all(expanded_macro);
 	// Iterate backwards so we can do in-place replacements without disturbing indices.
 	for (int i = matches.size() - 1; i >= 0; i--) {
 		Ref<RegExMatch> res = matches[i];
@@ -593,7 +593,7 @@ void SiMMLSequencer::_parse_tmode_command(sion::String p_mml) {
 
 void SiMMLSequencer::_parse_vmode_command(sion::String p_mml) {
 	Ref<RegEx> re_vcommand = RegEx::create_from_string("(n88|mdx|psg|mck|tss|%[xv])(\\d*)(\\s*,?\\s*(\\d?))");
-	std::vector<RegExMatch> matches = re_vcommand->search_all(p_mml);
+	std::vector<Ref<RegExMatch>> matches = re_vcommand->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
 		Ref<RegExMatch> res = matches[i];
 

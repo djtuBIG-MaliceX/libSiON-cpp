@@ -41,7 +41,7 @@ void SiOPMChannelFM::_release_operator(SiOPMOperator *p_operator) {
 //
 
 void SiOPMChannelFM::_update_process_function() {
-	_process_function = _process_function_list[_lfo_on][_process_function_type];
+	_process_function = [this, fn = _process_function_list[_lfo_on][_process_function_type]](int p_length) { (this->*fn)(p_length); };
 }
 
 void SiOPMChannelFM::_update_operator_count(int p_count) {
@@ -1488,26 +1488,26 @@ sion::String SiOPMChannelFM::_to_string() const {
 SiOPMChannelFM::SiOPMChannelFM(SiOPMSoundChip *p_chip) : SiOPMChannelBase(p_chip) {
 	_process_function_list = {
 		{
-			Callable(this, "_process_operator1_lfo_off"),
-			Callable(this, "_process_operator2"),
-			Callable(this, "_process_operator3"),
-			Callable(this, "_process_operator4"),
-			Callable(this, "_process_analog_like"),
-			Callable(this, "_process_ring"),
-			Callable(this, "_process_sync"),
-			Callable(this, "_process_operator2"),
-			Callable(this, "_process_pcm_lfo_off")
+			&SiOPMChannelFM::_process_operator1_lfo_off,
+			&SiOPMChannelFM::_process_operator2,
+			&SiOPMChannelFM::_process_operator3,
+			&SiOPMChannelFM::_process_operator4,
+			&SiOPMChannelFM::_process_analog_like,
+			&SiOPMChannelFM::_process_ring,
+			&SiOPMChannelFM::_process_sync,
+			&SiOPMChannelFM::_process_operator2,
+			&SiOPMChannelFM::_process_pcm_lfo_off
 		},
 		{
-			Callable(this, "_process_operator1_lfo_on"),
-			Callable(this, "_process_operator2"),
-			Callable(this, "_process_operator3"),
-			Callable(this, "_process_operator4"),
-			Callable(this, "_process_analog_like"),
-			Callable(this, "_process_ring"),
-			Callable(this, "_process_sync"),
-			Callable(this, "_process_operator2"),
-			Callable(this, "_process_pcm_lfo_on")
+			&SiOPMChannelFM::_process_operator1_lfo_on,
+			&SiOPMChannelFM::_process_operator2,
+			&SiOPMChannelFM::_process_operator3,
+			&SiOPMChannelFM::_process_operator4,
+			&SiOPMChannelFM::_process_analog_like,
+			&SiOPMChannelFM::_process_ring,
+			&SiOPMChannelFM::_process_sync,
+			&SiOPMChannelFM::_process_operator2,
+			&SiOPMChannelFM::_process_pcm_lfo_on
 		}
 	};
 

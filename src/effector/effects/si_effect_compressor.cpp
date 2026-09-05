@@ -58,11 +58,11 @@ int SiEffectCompressor::process(int p_channels, std::vector<double> *r_buffer, i
 			_gain = _max_gain;
 		}
 
-		value_left = std::clamp(value_left * _gain, -1, 1);
-		value_right = std::clamp(value_right * _gain, -1, 1);
+		value_left = std::clamp(value_left * _gain, -1.0, 1.0);
+		value_right = std::clamp(value_right * _gain, -1.0, 1.0);
 
-		r_buffer[i] = value_left * _mixing_level;
-		r_buffer[i + 1] = value_right * _mixing_level;
+		(*r_buffer)[i] = value_left * _mixing_level;
+		(*r_buffer)[i + 1] = value_right * _mixing_level;
 	}
 
 	return p_channels;

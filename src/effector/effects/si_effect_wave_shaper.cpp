@@ -32,7 +32,7 @@ int SiEffectWaveShaper::process(int p_channels, std::vector<double> *r_buffer, i
 			double value = (*r_buffer)[i];
 			value = coef * value / (1 + _coefficient * std::abs(value));
 
-			r_buffer[i] = value;
+			(*r_buffer)[i] = value;
 		}
 	} else {
 		for (int i = start_index; i < (start_index + length); i += 2) {

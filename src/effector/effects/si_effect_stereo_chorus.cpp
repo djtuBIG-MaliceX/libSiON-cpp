@@ -5,6 +5,7 @@
 /***************************************************/
 
 #include "si_effect_stereo_chorus.h"
+#include <algorithm>
 
 void SiEffectStereoChorus::set_params(double p_delay_time, double p_feedback, double p_frequency, double p_depth, double p_wet, bool p_invert_phase) {
 	ERR_FAIL_COND_MSG(p_delay_time == 0, "SiEffectStereoChorus: Delay cannot be zero.");
@@ -17,7 +18,7 @@ void SiEffectStereoChorus::set_params(double p_delay_time, double p_feedback, do
 	}
 
 	_pointer_write = (_pointer_read + offset) & DELAY_BUFFER_FILTER;
-	_depth = std::min(p_depth, offset - 4);
+	_depth = std::min(p_depth, static_cast<double>(offset - 4));
 
 	_feedback = p_feedback;
 	if (_feedback >= 1) {
@@ -58,8 +59,8 @@ int SiEffectStereoChorus::prepare_process() {
 	_lfo_residue_step = 0;
 	_pointer_read = 0;
 
-	_delay_buffer_left.fill(0);
-	_delay_buffer_right.fill(0);
+	std::fill(_delay_buffer_left.begin(), _delay_buffer_left.end(), 0.0);
+	std::fill(_delay_buffer_right.begin(), _delay_buffer_right.end(), 0.0);
 
 	return 2;
 }
@@ -69,9 +70,9 @@ void SiEffectStereoChorus::_process_channel(std::vector<double> *r_buffer, int p
 	double value = (*r_delay_buffer)[delay_index];
 	double next_value = (*r_buffer)[p_buffer_index] - value * _feedback;
 
-	r_delay_buffer[_pointer_write] = next_value;
-	r_buffer[p_buffer_index] *= (1 - _wet);
-	r_buffer[p_buffer_index] += value * _wet;
+	(*r_delay_buffer)[_pointer_write] = next_value;
+	(*r_buffer)[p_buffer_index] *= (1 - _wet);
+	(*r_buffer)[p_buffer_index] += value * _wet;
 }
 
 void SiEffectStereoChorus::_process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length) {

@@ -6,6 +6,8 @@
 
 #include "mml_parser.h"
 
+#include <algorithm>
+
 //#include <godot_cpp/core/memory.hpp>
 //#include <godot_cpp/classes/time.hpp>
 //#include <godot_cpp/classes/reg_ex_match.hpp>
@@ -66,8 +68,8 @@ void MMLParser::_create_mml_regex(bool p_reset) {
 	// If there are no definitions, we set the string to "a" as a hacky solution.
 	sion::String user_defs_str = "a";
 	if (user_defs.size() > 0) {
-		user_defs.sort();
-		user_defs.reverse(); // We want descending order.
+		std::sort(user_defs.begin(), user_defs.end());
+		std::reverse(user_defs.begin(), user_defs.end()); // We want descending order.
 
 		user_defs_str = sion::String("|").join(user_defs);
 	}
@@ -252,8 +254,10 @@ void MMLParser::set_key_signature(sion::String p_sign) {
 	// If notes are missing then they are set to 0 in the table.
 	for (int i = 0; i < arr.size(); i++) {
 		sion::String note_sign = arr[i].to_lower();
-		int note_idx = note_letters.find(note_sign[0]);
-		//ERR_CONTINUE_MSG(note_idx == -1, vformat("MMLParser: Cannot recognize '%s' as a key signature.", p_sign));
+		const char32_t note_letter = (char32_t)note_sign.unicode_at(0);
+		auto note_it = std::find(note_letters.begin(), note_letters.end(), note_letter);
+		int note_idx = (note_it == note_letters.end()) ? -1 : (int)(note_it - note_letters.begin());
+		ERR_CONTINUE_MSG(note_idx == -1, vformat("MMLParser: Cannot recognize '%s' as a key signature.", p_sign));
 
 		if (note_sign.length() > 1) {
 			char32_t note_shift = note_sign[1];
@@ -384,7 +388,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 
 	// Start parsing.
 
-	std::vector<RegExMatch> matches = _mml_regex->search_all(_mml_string, _mml_regex_last_index);
+	std::vector<Ref<RegExMatch>> matches = _mml_regex->search_all(_mml_string, _mml_regex_last_index);
 	for (int i = 0; i < matches.size(); i++) {
 		Ref<RegExMatch> res = matches[i];
 		const sion::String match_string = res->get_string(0);
@@ -425,7 +429,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 		// User defined events.
 		} else if (!res->get_string(REX_USER_EVENT).empty()) {
 			sion::String event_str = res->get_string(REX_USER_EVENT);
-			//ERR_CONTINUE_MSG(!_user_defined_event_map.has(event_str), vformat("MMLParser: Unknown user-defined event: '%s'.", event_str));
+			ERR_CONTINUE_MSG(!_user_defined_event_map.has(event_str), vformat("MMLParser: Unknown user-defined event: '%s'.", event_str));
 			_add_mml_event(_user_defined_event_map[event_str], _parse_param(res));
 
 		// Standard events.
@@ -531,7 +535,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 			}
 
 			else {
-				//ERR_CONTINUE_MSG(true, vformat("MMLParser: Unknown standard event: '%s'.", event_str));
+				ERR_CONTINUE_MSG(true, vformat("MMLParser: Unknown standard event: '%s'.", event_str));
 			}
 
 		// System events.

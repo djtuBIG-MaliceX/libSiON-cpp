@@ -594,7 +594,7 @@ sion::String SiOPMChannelPCM::_to_string() const {
 
 SiOPMChannelPCM::SiOPMChannelPCM(SiOPMSoundChip *p_chip) : SiOPMChannelBase(p_chip) {
 	_operator = new SiOPMOperator(p_chip);
-	_process_function = Callable(this, "_no_process");
+	_process_function = [this](int p_length) { _no_process(p_length); };
 
 	initialize(nullptr, 0);
 }

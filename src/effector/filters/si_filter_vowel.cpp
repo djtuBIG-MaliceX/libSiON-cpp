@@ -196,10 +196,10 @@ void SiFilterVowel::_process_lfo(std::vector<double> *r_buffer, int p_start_inde
 		_process_lfo_formant(_formants[4], _tap4, &input);
 
 		double output = _process_lfo_formant(_formants[5], _tap5, &input);
-		output = std::clamp(output * _output_level, -1, 1);
+		output = std::clamp(output * _output_level, -1.0, 1.0);
 
-		r_buffer[i] = output;
-		r_buffer[i + 1] = output;
+		(*r_buffer)[i] = output;
+		(*r_buffer)[i + 1] = output;
 	}
 }
 

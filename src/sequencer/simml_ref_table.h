@@ -25,16 +25,16 @@ class SiMMLRefTable {
 
 	static SiMMLRefTable *_instance;
 
-	std::vector<SiMMLEnvelopeTable> _master_envelopes;
-	std::vector<SiMMLVoice> _master_voices;
-	std::vector<SiMMLEnvelopeTable> _stencil_envelopes;
-	std::vector<SiMMLVoice> _stencil_voices;
+	std::vector<Ref<SiMMLEnvelopeTable>> _master_envelopes;
+	std::vector<Ref<SiMMLVoice>> _master_voices;
+	std::vector<Ref<SiMMLEnvelopeTable>> _stencil_envelopes;
+	std::vector<Ref<SiMMLVoice>> _stencil_voices;
 
 	void _fill_tss_log_table(sion::String (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255);
 
 	template <size_t S>
-	std::vector<SiMMLVoice> _setup_ym2413_default_voices(uint32_t (&p_register_map)[S]);
-	void _dump_ym2413_register(const SiMMLVoice &p_voice, uint32_t p_u0, uint32_t p_u1);
+	std::vector<Ref<SiMMLVoice>> _setup_ym2413_default_voices(uint32_t (&p_register_map)[S]);
+	void _dump_ym2413_register(const Ref<SiMMLVoice> &p_voice, uint32_t p_u0, uint32_t p_u1);
 
 public:
 	static const int ENVELOPE_TABLE_MAX = 512;

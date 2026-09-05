@@ -39,6 +39,16 @@ public:
 
 	void instantiate() { Base::reset(new T()); }
 
+	// Non-owning alias view. Godot's intrusive refcount made `fn(this)` with a
+	// const Ref& parameter safe (temporary + INCREF); a plain shared_ptr wrap
+	// would double-own, so use this for synchronous calls where the true owner
+	// outlives the call.
+	static Ref borrow(T *p_ptr) {
+		Ref r;
+		r.reset(p_ptr, [](T *) {});
+		return r;
+	}
+
 	// Godot's Ref accepted raw pointers and related-type downcasts directly;
 	// mirror both so `x = new T()` and base->derived Ref conversions keep
 	// compiling exactly as they did against godot-cpp.
@@ -90,7 +100,7 @@ public:
 	struct const_iterator {
 		typename std::unordered_map<K, V>::const_iterator _it;
 
-		KeyValue<K, V> operator*() const { return { _it->first, _it->second }; }
+		KeyValue<K, const V> operator*() const { return { _it->first, _it->second }; }
 		bool operator==(const const_iterator &p_other) const { return _it == p_other._it; }
 		bool operator!=(const const_iterator &p_other) const { return _it != p_other._it; }
 		const_iterator &operator++() { ++_it; return *this; }
@@ -98,6 +108,11 @@ public:
 	};
 
 	V &operator[](const K &p_key) { return _map[p_key]; }
+	const V &operator[](const K &p_key) const {
+		auto it = _map.find(p_key);
+		static const V missing = V();
+		return (it != _map.end()) ? it->second : missing;
+	}
 
 	void insert(const K &p_key, const V &p_value, bool p_overwrite = true) {
 		if (p_overwrite) {
@@ -126,8 +141,11 @@ public:
 
 	iterator begin() { return iterator { _map.begin() }; }
 	iterator end() { return iterator { _map.end() }; }
-	const_iterator begin() const { return const_iterator { _map.begin() }; }
-	const_iterator end() const { return const_iterator { _map.end() }; }
+	// Godot-era code iterates const maps binding `const KeyValue<K, V> &`,
+	// which the original (intrusive, non-owning) pair view allowed. Mirror that
+	// permissiveness; call sites only read through these iterators.
+	iterator begin() const { return iterator { const_cast<std::unordered_map<K, V> &>(_map).begin() }; }
+	iterator end() const { return iterator { const_cast<std::unordered_map<K, V> &>(_map).end() }; }
 };
 
 // Doubly-linked list with Godot-style Element pointers, preserving the

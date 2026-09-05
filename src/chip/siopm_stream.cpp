@@ -21,7 +21,7 @@ void SiOPMStream::clear() {
 void SiOPMStream::limit() {
 	// Limit buffered signals between -1 and 1.
 	for (int i = 0; i < buffer.size(); i++) {
-		buffer[i] = std::clamp(buffer[i], -1, 1);
+		buffer[i] = std::clamp(buffer[i], -1.0, 1.0);
 	}
 }
 

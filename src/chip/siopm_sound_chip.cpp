@@ -83,8 +83,7 @@ SiOPMSoundChip::SiOPMSoundChip() {
 
 	output_stream = new SiOPMStream;
 
-	stream_slot.resize(STREAM_SEND_SIZE); // TODO zeroed
-	stream_slot.fill(nullptr);
+	stream_slot.assign(STREAM_SEND_SIZE, nullptr);
 
 	zero_buffer = new SinglyLinkedList<int>(1, 0, true);
 	_pipe_buffers.resize(PIPE_SIZE); // TODO zeroed

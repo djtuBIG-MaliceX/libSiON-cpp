@@ -518,7 +518,7 @@ std::vector<int> TranslatorUtil::get_siopm_params(const Ref<SiOPMChannelParams> 
 
 	for (int i = 0; i < p_params->operator_count; i++) {
 		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
-		res.append_array({
+		res.insert(res.end(), {
 			op_params->pulse_generator_type,
 			op_params->attack_rate,
 			op_params->decay_rate,
@@ -563,7 +563,7 @@ std::vector<int> TranslatorUtil::get_opl_params(const Ref<SiOPMChannelParams> &p
 		int egt = op_params->sustain_rate == 0 ? 1 : 0; // Envelope generator t?..
 		int total_level = op_params->total_level < 63 ? op_params->total_level : 63;
 
-		res.append_array({
+		res.insert(res.end(), {
 			wave_shape,
 			op_params->attack_rate >> 2,
 			op_params->decay_rate >> 2,
@@ -598,7 +598,7 @@ std::vector<int> TranslatorUtil::get_opm_params(const Ref<SiOPMChannelParams> &p
 
 		int	detune2 = _get_nearest_dt2(op_params->detune2);
 
-		res.append_array({
+		res.insert(res.end(), {
 			op_params->attack_rate >> 1,
 			op_params->decay_rate >> 1,
 			op_params->sustain_rate >> 1,
@@ -632,7 +632,7 @@ std::vector<int> TranslatorUtil::get_opn_params(const Ref<SiOPMChannelParams> &p
 	for (int i = 0; i < p_params->operator_count; i++) {
 		Ref<SiOPMOperatorParams> op_params = p_params->operator_params[i];
 
-		res.append_array({
+		res.insert(res.end(), {
 			op_params->attack_rate >> 1,
 			op_params->decay_rate >> 1,
 			op_params->sustain_rate >> 1,
@@ -669,7 +669,7 @@ std::vector<int> TranslatorUtil::get_opx_params(const Ref<SiOPMChannelParams> &p
 			return std::vector<int>();
 		}
 
-		res.append_array({
+		res.insert(res.end(), {
 			wave_shape,
 			op_params->attack_rate >> 1,
 			op_params->decay_rate >> 1,
@@ -710,7 +710,7 @@ std::vector<int> TranslatorUtil::get_ma3_params(const Ref<SiOPMChannelParams> &p
 
 		int total_level = op_params->total_level < 63 ? op_params->total_level : 63;
 
-		res.append_array({
+		res.insert(res.end(), {
 			wave_shape,
 			op_params->attack_rate >> 2,
 			op_params->decay_rate >> 2,
@@ -1173,7 +1173,7 @@ void TranslatorUtil::parse_voice_setting(const Ref<SiMMLVoice> &p_voice, sion::S
 	sion::String args_re_exp = "(-?\\d*)" + sion::String("(\\s*,\\s*(-?\\d*))?").repeat(10); // One mandatory and 10 optional arguments supported.
 
 	Ref<RegEx> re_setting = RegEx::create_from_string(base_re_exp + args_re_exp);
-	std::vector<RegExMatch> settings = re_setting->search_all(p_mml);
+	std::vector<Ref<RegExMatch>> settings = re_setting->search_all(p_mml);
 
 	// For convenience macros take the ordered index of the argument, and convert it to the index of a capture group.
 	// Capture group indices for arguments start at 2 and then continue with every even number up to 22 (11 arguments).
@@ -1517,7 +1517,7 @@ TranslatorUtil::MMLTableNumbers TranslatorUtil::parse_table_numbers(sion::String
 
 	// match[1];(n..),m {match[2];n.., match[3];m} / match[4];n / match[5];|[] / match[6]; ]n
 	Ref<RegEx> re_table = RegEx::create_from_string("(\\(\\s*([,\\-\\d\\s]+)\\)[,\\s]*(\\d+))|(-?\\d+)|(\\||\\[|\\](\\d*))");
-	std::vector<RegExMatch> numbers = re_table->search_all(p_table_numbers);
+	std::vector<Ref<RegExMatch>> numbers = re_table->search_all(p_table_numbers);
 
 	SinglyLinkedList<int>::Element *repeat = nullptr;
 	List<SinglyLinkedList<int>::Element *> loop_stack;
@@ -1637,13 +1637,13 @@ void TranslatorUtil::parse_wav(sion::String p_table_numbers, sion::String p_post
 	table.data->front();
 	for (; i < data_length && table.data->get(); i++) {
 		double value = (table.data->get()->value + 0.5) * 0.0078125;
-		r_data[i] = std::clamp(value, -1, 1);
+		(*r_data)[i] = std::clamp(value, -1.0, 1.0);
 
 		table.data->next();
 	}
 
 	for (; i < data_length; i++) {
-		r_data[i] = 0;
+		(*r_data)[i] = 0;
 	}
 }
 
@@ -1657,9 +1657,9 @@ void TranslatorUtil::parse_wavb(sion::String p_hex, std::vector<double> *r_data)
 	for (int i = 0; i < data_length; i++) {
 		int value = hex.substr(i << 1, 2).hex_to_int();
 		if (value < 128) {
-			r_data[i] = value * 0.0078125;
+			(*r_data)[i] = value * 0.0078125;
 		} else {
-			r_data[i] = (value - 256) * 0.0078125;
+			(*r_data)[i] = (value - 256) * 0.0078125;
 		}
 	}
 }

@@ -65,7 +65,7 @@ void SiMMLRefTable::register_master_voice(int p_index, const Ref<SiMMLVoice> &p_
 Ref<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
 	ERR_FAIL_INDEX_V(p_index, ENVELOPE_TABLE_MAX, nullptr);
 
-	if (p_index < _stencil_envelopes.size() && _stencil_envelopes[p_index].is_valid()) {
+	if (p_index < static_cast<int>(_stencil_envelopes.size()) && _stencil_envelopes[p_index].is_valid()) {
 		return _stencil_envelopes[p_index];
 	}
 	return _master_envelopes[p_index];
@@ -74,7 +74,7 @@ Ref<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
 Ref<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
 	ERR_FAIL_INDEX_V(p_index, VOICE_MAX, nullptr);
 
-	if (p_index < _stencil_voices.size() && _stencil_voices[p_index].is_valid()) {
+	if (p_index < static_cast<int>(_stencil_voices.size()) && _stencil_voices[p_index].is_valid()) {
 		return _stencil_voices[p_index];
 	}
 	return _master_voices[p_index];
@@ -91,12 +91,12 @@ int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_
 	int tone_num = p_tone_num;
 
 	std::vector<int> voice_index_table = channel_settings->get_voice_index_table();
-	if (tone_num == -1 && p_channel_num >= 0 && p_channel_num < voice_index_table.size()) {
+	if (tone_num == -1 && p_channel_num >= 0 && p_channel_num < static_cast<int>(voice_index_table.size())) {
 		tone_num = voice_index_table[p_channel_num];
 	}
 
 	std::vector<int> pg_type_list = channel_settings->get_pg_type_list();
-	if (tone_num < 0 || tone_num >= pg_type_list.size()) {
+	if (tone_num < 0 || tone_num >= static_cast<int>(pg_type_list.size())) {
 		tone_num = channel_settings->get_initial_voice_index();
 	}
 
@@ -133,9 +133,9 @@ void SiMMLRefTable::_fill_tss_log_table(sion::String (&r_table)[256], int p_star
 template <size_t S>
 std::vector<Ref<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_voices(uint32_t (&p_register_map)[S]) {
 	std::vector<Ref<SiMMLVoice>> voices;
-	voices.resize(S >> 1); // TODO zeroed
+	voices.resize(S >> 1);
 
-	for (int i = 0, j = 0; i < voices.size(); i++, j += 2) {
+	for (int i = 0, j = 0; i < static_cast<int>(voices.size()); i++, j += 2) {
 		Ref<SiMMLVoice> voice;
 		voice.instantiate();
 		_dump_ym2413_register(voice, p_register_map[j], p_register_map[j + 1]);
@@ -345,10 +345,8 @@ SiMMLRefTable::SiMMLRefTable() {
 
 	// Master tables.
 	{
-		_master_envelopes.resize(ENVELOPE_TABLE_MAX); // TODO zeroed
-		_master_envelopes.fill(nullptr);
-		_master_voices.resize(VOICE_MAX); // TODO zeroed
-		_master_voices.fill(nullptr);
+		_master_envelopes.assign(ENVELOPE_TABLE_MAX, Ref<SiMMLEnvelopeTable>());
+		_master_voices.assign(VOICE_MAX, Ref<SiMMLVoice>());
 	}
 
 	// TSSCP maps.

@@ -43,8 +43,8 @@ void SiEffectAutopan::_process_lfo_mono(std::vector<double> *r_buffer, int p_sta
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value = (*r_buffer)[i];
 
-		r_buffer[i] = value * _p_left->get()->value;
-		r_buffer[i + 1] = value * _p_right->get()->value;
+		(*r_buffer)[i] = value * _p_left->get()->value;
+		(*r_buffer)[i + 1] = value * _p_right->get()->value;
 	}
 
 	_p_left->next();
@@ -56,8 +56,8 @@ void SiEffectAutopan::_process_lfo_stereo(std::vector<double> *r_buffer, int p_s
 		double value_left = (*r_buffer)[i];
 		double value_right = (*r_buffer)[i + 1];
 
-		r_buffer[i] = value_left * _p_left->get()->value - value_right * _p_right->get()->value;
-		r_buffer[i + 1] = value_left * _p_right->get()->value + value_right * _p_left->get()->value;
+		(*r_buffer)[i] = value_left * _p_left->get()->value - value_right * _p_right->get()->value;
+		(*r_buffer)[i + 1] = value_left * _p_right->get()->value + value_right * _p_left->get()->value;
 	}
 
 	_p_left->next();

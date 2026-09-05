@@ -106,4 +106,8 @@ public:
 
 } // namespace sion
 
+// Godot exposes these globally; library code uses them unqualified.`r
+using ::sion::RandomNumberGenerator;
+using ::sion::PCG32;
+
 #endif // SION_COMPAT_RANDOM_H

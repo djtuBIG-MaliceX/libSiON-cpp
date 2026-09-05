@@ -14,7 +14,7 @@ std::vector<sion::String> split_string_by_regex(const sion::String &p_string, co
 	std::vector<sion::String> arr;
 
 	Ref<RegEx> re_split = RegEx::create_from_string(p_regex);
-	std::vector<RegExMatch> matches = re_split->search_all(p_string);
+	std::vector<Ref<RegExMatch>> matches = re_split->search_all(p_string);
 
 	int last_index = 0;
 	for (int i = 0; i < matches.size(); i++) {

@@ -17,7 +17,7 @@ void TransformerUtil::_amplify_log_data(std::vector<int> *r_src, int p_gain) {
 	int gain = p_gain & ~1;
 
 	for (int i = 0; i < r_src->size(); i++) {
-		r_src[i] -= gain;
+		(*r_src)[i] -= gain;
 	}
 }
 

@@ -36,7 +36,7 @@ public:
 	// NOTE: Original code can implicitly create the destination vector and return it. We require creating it ahead of the call.
 	void to_vector(int p_length, std::vector<int> *r_destination, int p_min = -65536, int p_max = 65536);
 
-	void copy_from(const SiMMLEnvelopeTable &p_source);
+	void copy_from(const Ref<SiMMLEnvelopeTable> &p_source);
 
 	SiMMLEnvelopeTable(std::vector<int> p_table = std::vector<int>(), int p_loop_point = -1);
 	virtual ~SiMMLEnvelopeTable();

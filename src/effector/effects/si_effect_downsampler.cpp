@@ -30,7 +30,7 @@ void SiEffectDownsampler::_process_mono(std::vector<double> *r_buffer, int p_sta
 		value = (int)(value * bc0) * _bit_conv1;
 
 		for (int j = 0; j < sample_size; j++) {
-			r_buffer[i + j] = value;
+			(*r_buffer)[i + j] = value;
 		}
 	}
 }
@@ -51,8 +51,8 @@ void SiEffectDownsampler::_process_stereo(std::vector<double> *r_buffer, int p_s
 		value_right = (int)(value_right * bc0) * _bit_conv1;
 
 		for (int j = 0; j < sample_size; j++) {
-			r_buffer[i + 2 * j] = value_left;
-			r_buffer[i + 2 * j + 1] = value_right;
+			(*r_buffer)[i + 2 * j] = value_left;
+			(*r_buffer)[i + 2 * j + 1] = value_right;
 		}
 	}
 }

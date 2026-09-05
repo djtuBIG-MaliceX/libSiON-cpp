@@ -8,7 +8,7 @@
 
 void SiFilterHighBoost::set_params(double p_frequency, double p_slope, double p_gain) {
 	// TODO: Pick better names for these variables.
-	double slope = std::max(p_slope, 1);
+	double slope = std::max(p_slope, 1.0);
 
 	double A   = Math::pow(10, p_gain * 0.025);
 	double omg = p_frequency * 0.00014247585730565955; // 2*pi/44100

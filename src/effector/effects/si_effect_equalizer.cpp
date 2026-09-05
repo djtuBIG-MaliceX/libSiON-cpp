@@ -48,18 +48,18 @@ void SiEffectEqualizer::_process_mono(std::vector<double> *r_buffer, int p_start
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value = _process_channel(&_left, (*r_buffer)[i]);
 
-		r_buffer[i] = value;
-		r_buffer[i + 1] = value;
+		(*r_buffer)[i] = value;
+		(*r_buffer)[i + 1] = value;
 	}
 }
 
 void SiEffectEqualizer::_process_stereo(std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = p_start_index; i < (p_start_index + p_length); i += 2) {
 		double value_left = _process_channel(&_left, (*r_buffer)[i]);
-		r_buffer[i] = value_left;
+		(*r_buffer)[i] = value_left;
 
 		double value_right = _process_channel(&_right, (*r_buffer)[i + 1]);
-		r_buffer[i + 1] = value_right;
+		(*r_buffer)[i + 1] = value_right;
 	}
 }
 

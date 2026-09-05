@@ -85,7 +85,7 @@ MMLEvent *MMLEvent::get_parameters(std::vector<int> *r_params, int p_length) con
 
 	int i = 0;
 	while (i < p_length) {
-		r_params[i] = event->data;
+		(*r_params)[i] = event->data;
 		i++;
 
 		if (event->next == nullptr || event->next->id != EventID::PARAMETER) {
@@ -95,7 +95,7 @@ MMLEvent *MMLEvent::get_parameters(std::vector<int> *r_params, int p_length) con
 		event = event->next;
 	}
 	while (i < p_length) {
-		r_params[i] = INT32_MIN;
+		(*r_params)[i] = INT32_MIN;
 		i++;
 	}
 

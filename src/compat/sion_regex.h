@@ -20,11 +20,11 @@
 class RegExMatch {
 	friend class RegEx;
 
+public:
+	// Populated by the matching code in sion_regex.cpp.
 	std::vector<int> _starts; // Byte offsets of group starts (-1 if unmatched).
 	std::vector<int> _ends;   // Byte offsets of group ends.
 	std::string _subject;
-
-public:
 	int get_group_count() const { return _starts.empty() ? 0 : static_cast<int>(_starts.size()) - 1; }
 
 	bool is_empty() const { return _starts.empty(); }

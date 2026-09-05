@@ -73,7 +73,7 @@ protected:
 	SiOPMRefTable *_table = nullptr;
 	SiOPMSoundChip *_sound_chip = nullptr;
 
-	Callable _process_function;
+	std::function<void(int)> _process_function;
 
 	void _no_process(int p_length);
 

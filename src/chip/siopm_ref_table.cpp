@@ -573,8 +573,7 @@ void SiOPMRefTable::_create_wave_samples() {
 		no_wave_table_opm_wave.resize(table_size); // TODO zeroed
 		no_wave_table_opm = Ref<SiOPMWaveTable>(new SiOPMWaveTable(no_wave_table_opm_wave, SiONPitchTableType::PITCH_TABLE_OPM));
 
-		wave_tables.resize(DEFAULT_PG_MAX); // TODO zeroed
-		wave_tables.fill(no_wave_table);
+		wave_tables.assign(DEFAULT_PG_MAX, no_wave_table);
 		sampler_tables.resize(SAMPLER_TABLE_MAX); // TODO zeroed
 		for (int i = 0; i < SAMPLER_TABLE_MAX; i++) {
 			Ref<SiOPMWaveSamplerTable> sampler = new SiOPMWaveSamplerTable;
@@ -582,10 +581,8 @@ void SiOPMRefTable::_create_wave_samples() {
 			sampler_tables[i] = sampler;
 		}
 
-		_custom_wave_tables.resize(WAVE_TABLE_MAX); // TODO zeroed
-		_custom_wave_tables.fill(nullptr);
-		_pcm_voices.resize(PCM_DATA_MAX); // TODO zeroed
-		_pcm_voices.fill(Ref<SiMMLVoice>());
+		_custom_wave_tables.assign(WAVE_TABLE_MAX, Ref<SiOPMWaveTable>());
+		_pcm_voices.assign(PCM_DATA_MAX, Ref<SiMMLVoice>());
 	}
 
 	// Sine wave tables.

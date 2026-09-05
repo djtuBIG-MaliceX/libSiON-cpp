@@ -16,13 +16,13 @@ void SiControllableFilterHighPass::_process_lfo(std::vector<double> *r_buffer, i
 		double value_left = (*r_buffer)[i];
 		_p0_left += cutoff * (value_left - _p0_left + feedback * (_p0_left - _p1_left));
 		_p1_left += cutoff * (_p0_left - _p1_left);
-		r_buffer[i] = value_left - _p0_left;
+		(*r_buffer)[i] = value_left - _p0_left;
 		i++;
 
 		double value_right = (*r_buffer)[i];
 		_p0_right += cutoff * (value_right - _p0_right + feedback * (_p0_right - _p1_right));
 		_p1_right += cutoff * (_p0_right - _p1_right);
-		r_buffer[i] = value_right - _p0_right;
+		(*r_buffer)[i] = value_right - _p0_right;
 		i++;
 	}
 }
