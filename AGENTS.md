@@ -120,12 +120,43 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
   SinglyLinkedList<int/double>::initialize_pool/finalize_pool (+ SiOPMChannelFM::finalize_pool).
   Smoke test currently calls initialize_pool by hand.)
 
-## Status: Phase 1 COMPILE DONE; smoke test debugging IN PROGRESS (session 3 paused)
-Error-line trend: 3000 → 733 → 363 → 342 (log 06) → 88 (07) → 13 (08) → 3 (09) → **0** (log 10).
-`gdsion.lib` + smoke exe build with ZERO errors/warnings. Residue grep (`Object|ClassDB|GDCLASS|
-Variant|Callable|memnew`) outside compat/driver/register_types = COMMENT-ONLY hits.
-Build dir is already configured with `-DGDSION_BUILD_TESTS=ON` (tests/ target `smoke_mml_compile`).
-KNOWN ACTIVE BUG: smoke test crashes (0xC0000005 AV) inside `data->clear()` — see next task #1.
+## Status: Phase 1 COMPLETE — smoke test green (session 4). Phase 2 driver work NEXT.
+Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 1/1 Passed.
+
+### DONE — session 4
+- HEAD moved: c417362 "WIP libify" (earlier work committed). Working tree now has session-4 changes
+  (sion_core.{h,cpp} new, singly_linked_list.h, simml_track.cpp, tests/smoke_mml_compile.cpp).
+- NEW `src/sion_core.{h,cpp}`: `sion::initialize()/finalize()` — standalone replacements for
+  register_types module init (pool init + MMLParser/MMLSequencer/SiOPMRefTable/SiMMLRefTable/
+  SiMMLTrack statics; finalize mirrors main's exact order incl. SiOPMChannelFM::finalize_pool).
+  ALL consumers must call sion::initialize() first; release all Ref'd objects BEFORE sion::finalize()
+  (parser singleton dies there; ~MMLSequence calls free_all_events through it → AV if data outlives it —
+  bit us once; tests scope their objects in a block).
+- LATENT UPSTREAM UAF FIXED: `SinglyLinkedList<T>::finalize_pool()` left `_element_pool` DANGLING
+  (main relies on Godot pooled allocator silently tolerating writes to freed pool from late list
+  destructions e.g. SiMMLTrack zero-table in SiMMLTrack::finalize; MSVC debug heap = feeefeee AV).
+  Our copy nulls the static after delete → late releases just leak (process exiting). DSP untouched.
+  SiMMLTrack::finalize now also nulls `_envelope_zero_table` (double-finalize safety).
+- Smoke test CRASH chain was: MMLParser singleton never initialized (get_instance()→null in
+  MMLData::clear→initialize→alloc_event); then second data freed after finalize. Test rewritten:
+  compile_mml() uses stack `SiMMLSequencer(&chip)` — ctor REQUIRES SiOPMSoundChip* (null → AV in
+  _reset_initial_operator_params; driver always passes one, tests must too). Checks: valid MML compiles
+  clean + ≥1 sequence; error-sink capture = substring of global sink since last call.
+- GOLDEN TRIGGER DECISION: `$unknown_event` CANNOT error (regex group [6] only matches REGISTERED user
+  event names; '$' alone is a default token). Use `o20` → golden "ERROR: MMLParser: Command 'o' has
+  argument (20) outside of valid range (0 : 9)." VERIFIED matching via compat error format. Range
+  triggers available: length/q/@q/o/v/@v/[/] per OP_ERR_FAIL_RANGE sites mml_parser.cpp:365-756.
+- Debug tooling: cdb at "C:\Program Files (x86)\Windows Kits\10\Debuggers\x64\cdb.exe" works great:
+  `& cdb -G -c "sxe -c \`"k 25; q\`" av; g" exe`. NOTE stdout is fully buffered under pipes —
+  test sets setvbuf(_IONBF) to keep checkpoint prints visible.
+
+## IMMEDIATE NEXT (Phase 2 kickoff)
+1. sion_driver.{h,cpp}: fresh sed debris (`std::stringName` ~519 etc.), delete Node/AudioStreamPlayer
+   lifecycle, `_notification` called explicitly or inlined, `render_chunk()` exposing internal
+   `_streaming()` ring, update() pump, std::function signals (see Phase 2 plan above), then delete
+   Variant placeholder + sion_callable.h entirely. GDSION_DRIVER_EXPERIMENTAL flag: flip ON when builds.
+2. cdb debugging pattern above if new AVs.
+3. Phase 1 leftovers otherwise: NONE. tests/CMakeLists.txt gdsion_add_test() helper in place; CTest works.
 
 ### DONE this session (session 3 — compile-green push)
 - 4 agent waves, max 2 concurrent (ref_table+sequencer / chip+utils / effector; orchestrator fixed
@@ -201,23 +232,11 @@ KNOWN ACTIVE BUG: smoke test crashes (0xC0000005 AV) inside `data->clear()` — 
 - Compat List: operator[]/get(int)/reverse()/sort_custom<C>()(stable)/relink; Element::set().
 
 ### IMMEDIATE NEXT TASKS (in order)
-1. DEBUG SMOKE CRASH (active bug): `tests/smoke_mml_compile.cpp` prints "[step] data instantiated"
-   then AVs inside `data->clear()` (sequencer NOT yet constructed). MMLData ctor/dtor verified OK
-   vs main. Debug the chain: SiONData/SiMMLData::clear (src/sequencer/simml_data.cpp:119) and what
-   it touches (stencil refs / static ref tables / pool objects of types other than int/double?).
-   Also audit MMLSequenceGroup::clear + MMLSequence::clear bodies vs `git show main:` for remaining
-   sed damage (pointer-indexing `x[i]` where x is a pointer, .get/.set on std containers).
-   Build target: `cmake --build build --config Debug --target smoke_mml_compile`; run
-   `& build\tests\Debug\smoke_mml_compile.exe`. Checkpoint prints + fflush are IN the file —
-   remove when fixed.
-2. The broken-MML case uses `$unknown_event` — UNVERIFIED that REX_USER_EVENT actually matches
-   `$name` syntax; if errors come back empty pick another golden trigger (range message sites at
-   mml_parser.cpp:42/45, or key-signature site ~261).
-3. Consider asking user about a checkpoint commit (tree currently dirty vs f209d12).
-4. Phase 2 (headless driver): update()/render_chunk/std::function callbacks; delete Variant/
-   Callable stubs; add sion::initialize()/finalize() library entry points (pool init — see compat
-   note); NOTE sion_driver.cpp has fresh sed debris, e.g. `std::stringName` (~line 519 = StringName).
-5. Phase 3 CLI (`cli/` dir does not exist yet), Phase 4 tests + CI per plan above.
+1. Phase 2 driver libification — see "IMMEDIATE NEXT (Phase 2 kickoff)" above. sion_driver.{h,cpp}
+   were never sed-passed cleanly: expect Object/Node/Callable/Variant debris; the compat Variant
+   placeholder + sion_callable.h exist ONLY to keep sion_driver.h parsing today — kill them in
+   Phase 2. Flip GDSION_DRIVER_EXPERIMENTAL ON when it builds.
+2. Phase 3 CLI (`cli/` dir does not exist yet), Phase 4 tests + CI per plan above.
 
 ## sed debris / gotcha checklist (still relevant in residual passes)
 - `.empty()()` gone ✓; `std::ector` fixed ✓ but watch for NEW mangled tokens — compiler error text

@@ -7,78 +7,86 @@
 // Phase 1 milestone check: compile MML through the sequencer without any
 // Godot runtime, capturing the Godot-parity error sink.
 
+#include "chip/siopm_sound_chip.h"
+#include "sequencer/base/mml_sequence_group.h"
 #include "sequencer/simml_data.h"
 #include "sequencer/simml_sequencer.h"
+#include "sion_core.h"
 #include "sion_data.h"
-#include "templates/singly_linked_list.h"
 
 #include <cstdio>
 #include <string>
 
 static std::string g_error_capture;
 
-static Ref<SiONData> compile_mml(const char *p_mml, std::string &r_errors) {
-	r_errors.clear();
+// Runs a full compile cycle the way SiONDriver does: data + sequencer over a
+// shared sound chip. All objects must be released before sion::finalize().
+static bool compile_mml(SiOPMSoundChip *p_chip, const char *p_mml, std::string &r_errors, int *r_sequences = nullptr) {
+	const size_t capture_start = g_error_capture.size();
+	bool prepared = false;
+	int sequence_count = 0;
 
-	Ref<SiONData> data;
-	data.instantiate();
-	std::printf("[step] data instantiated\n");
-	std::fflush(stdout);
-	data->clear();
-	std::printf("[step] data cleared\n");
-	std::fflush(stdout);
+	{
+		Ref<SiONData> data;
+		data.instantiate();
+		data->clear();
 
-	Ref<SiMMLSequencer> sequencer;
-	sequencer.instantiate();
-	std::printf("[step] sequencer instantiated\n");
-	std::fflush(stdout);
-
-	if (!sequencer->prepare_compile(data, sion::String(p_mml))) {
-		return nullptr;
+		SiMMLSequencer sequencer(p_chip);
+		prepared = sequencer.prepare_compile(data, sion::String(p_mml));
+		if (prepared) {
+			sequencer.compile(0);
+			sequence_count = data->get_sequence_group()->get_sequence_count();
+		}
 	}
-	std::printf("[step] prepared\n");
-	std::fflush(stdout);
-	sequencer->compile(0);
-	std::printf("[step] compiled\n");
-	std::fflush(stdout);
 
-	return data;
+	if (r_sequences) {
+		*r_sequences = sequence_count;
+	}
+	r_errors = g_error_capture.substr(capture_start);
+	return prepared;
 }
 
 int main() {
+	setvbuf(stdout, nullptr, _IONBF, 0);
 	sion::error_output() = [](const std::string &p_output) { g_error_capture += p_output; };
-
-	SinglyLinkedList<int>::initialize_pool();
-	SinglyLinkedList<double>::initialize_pool();
 
 	int failures = 0;
 
-	// A well-formed tune must compile without emitting any errors.
-	std::string errors;
-	Ref<SiONData> good = compile_mml("t150 l8 o4 cdefgab>c<", errors);
-	if (good.is_null()) {
-		std::printf("FAIL: valid MML did not produce data\n");
-		failures++;
-	} else if (!errors.empty()) {
-		std::printf("FAIL: valid MML emitted errors:\n%s", errors.c_str());
-		failures++;
-	} else {
-		std::printf("PASS: valid MML compiled clean\n");
-	}
+	{
+		sion::initialize();
 
-	// An unknown user-defined event must report the golden error text and
-	// keep the parser alive (no crash, error captured).
-	Ref<SiONData> bad = compile_mml("t150 l8 o4 $unknown_event c", errors);
-	if (errors.find("ERROR: MMLParser: Unknown user-defined event: '$unknown_event'.") == std::string::npos) {
-		std::printf("FAIL: broken MML did not report the expected error, got:\n%s", errors.c_str());
-		failures++;
-	} else {
-		std::printf("PASS: broken MML reported the golden error (data=%s)\n",
-				bad.is_null() ? "null as expected after prepare fail" : "produced");
-	}
+		SiOPMSoundChip chip;
 
-	SinglyLinkedList<int>::finalize_pool();
-	SinglyLinkedList<double>::finalize_pool();
+		// A well-formed tune must compile without emitting any errors and
+		// produce at least one track with events.
+		std::string errors;
+		int sequences = 0;
+		bool ok = compile_mml(&chip, "t150 l8 o4 cdefgab>c<", errors, &sequences);
+		if (!ok) {
+			std::printf("FAIL: valid MML was rejected by the parser\n");
+			failures++;
+		} else if (sequences < 1) {
+			std::printf("FAIL: valid MML produced no sequences (%d)\n", sequences);
+			failures++;
+		} else if (!errors.empty()) {
+			std::printf("FAIL: valid MML emitted errors:\n%s", errors.c_str());
+			failures++;
+		} else {
+			std::printf("PASS: valid MML compiled clean\n");
+		}
+
+		// An out-of-range command argument must report the golden error text
+		// and keep the parser alive (no crash, error captured).
+		compile_mml(&chip, "t150 l8 o20 c", errors);
+		if (errors.find("ERROR: MMLParser: Command 'o' has argument (20) outside of valid range (0 : 9).") == std::string::npos) {
+			std::printf("FAIL: broken MML did not report the expected error, got:\n%s", errors.c_str());
+			failures++;
+		} else {
+			std::printf("PASS: broken MML reported the golden error\n");
+		}
+
+		sion::finalize();
+	}
 
 	if (failures > 0) {
 		std::printf("SMOKE: %d failure(s)\n", failures);

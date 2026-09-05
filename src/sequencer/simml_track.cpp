@@ -30,6 +30,7 @@ void SiMMLTrack::initialize() {
 void SiMMLTrack::finalize() {
 	if (_envelope_zero_table) {
 		delete _envelope_zero_table;
+		_envelope_zero_table = nullptr;
 	}
 }
 

@@ -78,6 +78,9 @@ public:
 		}
 
 		delete _element_pool;
+		// Upstream left this dangling (harmless-only UAF under Godot's pooled
+		// allocator). Clear it so late list destruction skips pool reinsertion.
+		_element_pool = nullptr;
 	}
 
 	//
