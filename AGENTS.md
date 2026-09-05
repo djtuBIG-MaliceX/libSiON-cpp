@@ -1,14 +1,17 @@
 # GDSiON standalone C++ libification — working notes
 
 GOAL: refactor this Godot GDExtension (SiON synth emulator) into a standalone C++17
-library buildable with CMake, with a command-line tool (`gdsion-play`) that plays
-MML via PortAudio, and native tests (CTest). Branch: `cpp-libify`. HEAD = f209d12
-"WIP libify" — ALL session-3 work is UNCOMMITTED in the working tree (checkpoint
-commit not requested yet; tree is dirty, do not revert). main branch = clean GDExtension
-reference for behavior parity checks — use `git show main:<path>` as ground truth.
+library buildable with CMake, with a command-line tool that plays MML via PortAudio,
+and native tests (CTest). RENAMED 2026-09-06 (session 8): project = `libSiON-cpp`,
+library target `SiONcpp` (artifacts libSiONcpp.a / SiONcpp.lib), CLI `sion-cpp-play`
+(target sion_cpp_play), options LIBSION_BUILD_CLI / LIBSION_BUILD_TESTS /
+LIBSION_DRIVER_EXPERIMENTAL — old gdsion* names are gone from all build files.
+Branch: `cpp-libify`. main branch = clean GDExtension reference for behavior parity
+checks — use `git show main:<path>` as ground truth (old session notes below still say
+"gdsion-play"/"GDSION_*" where they predate the rename).
 
 ## Locked decisions (agreed with user)
-- C++17, MSVC/GCC/Clang. Library target `gdsion` (static), `GDSION_BUILD_CLI`, `GDSION_BUILD_TESTS`.
+- C++17, MSVC/GCC/Clang. Library target `SiONcpp` (static; renamed from `gdsion` in session 8), `LIBSION_BUILD_CLI`, `LIBSION_BUILD_TESTS`.
 - Regex: PCRE2 via FetchContent (Godot parity). Shim in src/compat/sion_regex.{h,cpp}. VERIFIED WORKING.
 - Audio backend: PortAudio via FetchContent (+ find_package fallback). WAV export headless.
 - Godot glue: REMOVE FULLY at FINAL CLEANUP once C++ tests pass (register_types, SConstruct,
@@ -54,10 +57,10 @@ Milestones/verification: cmake build; run gdsion-play demo → audio audible; vo
 - Generator "Visual Studio 18 2026" -A x64; cmake 4.2. Configure DONE and works:
   `cmake -S . -B build` (PCRE2 FetchContent builds fine; CMAKE_POLICY_VERSION_MINIMUM handled).
 - Build: `cmake --build build --config Debug 2>&1 | Tee-Object build_log_NN.txt` then group errors.
-- CLI later: `-DGDSION_BUILD_CLI=ON`; tests `-DGDSION_BUILD_TESTS=ON` (already ON in current build
-  dir); driver stays OUT (GDSION_DRIVER_EXPERIMENTAL=OFF; sion_driver.cpp excluded from glob; but
-  sion_driver.h IS pulled in by events/*.cpp → must keep parseable via compat stubs: Variant
-  placeholder, AudioStream*, PackedVector2Array etc.).
+- CLI: `-DLIBSION_BUILD_CLI=ON`; tests `-DLIBSION_BUILD_TESTS=ON` (both ON in current build
+  dir); driver IN by default (LIBSION_DRIVER_EXPERIMENTAL=ON; when OFF sion_driver.cpp is
+  excluded from the glob but sion_driver.h is still pulled in by events/*.cpp → must stay
+  parseable via compat).
 - src/ is include root; compat umbrella FORCE-INCLUDED everywhere (`/FI...sion_compat.h`);
   add same force-include to future cli/tests targets.
 
@@ -124,7 +127,40 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
 
 ## Status: Phases 1-4 COMPLETE incl. goldens + Godot glue removed. ctest 4/4 green.
 Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 4/4 Passed (~7s).
-Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_CLI=ON`.
+Full dev configure: `cmake -S . -B build -DLIBSION_BUILD_TESTS=ON -DLIBSION_BUILD_CLI=ON`.
+
+### DONE — session 8 (rename, pitch-bend fix, CLI unicode/codepage)
+- RENAMED (user request): project libSiON-cpp; library target `gdsion` → `SiONcpp`
+  (Linux/macOS artifacts libSiONcpp.a/.so, Windows SiONcpp.lib; alias SiONcpp::SiONcpp);
+  CLI `gdsion-play` → target `sion_cpp_play`, OUTPUT_NAME `sion-cpp-play`; options now
+  LIBSION_BUILD_CLI/LIBSION_BUILD_TESTS/LIBSION_DRIVER_EXPERIMENTAL; tests helper
+  libsion_add_test + LIBSION_*_DIR compile defs; CI workflow options updated. Targets
+  use underscores (VS project filenames); user-facing exe keeps hyphens. Source-file
+  copyright headers still say GDSiON ON PURPOSE (upstream credit). Reconfigure with the
+  new option names (stale GDSION_* cache entries are inert).
+- PITCH BEND `*` FIXED (was broken in upstream GDSiON AND original AS3 SiON): the sweep
+  step `(Δ<<16) * _envelope_interval / term` overflows int32 for ANY bend wider than ~half
+  a semitone at fps 60 (448<<16 × 735 = 2.16e10 wraps → step ~200× too small → glide
+  inaudible, note just jumps). Fix = 64-bit intermediate + `std::max(term,1)` guard. THE
+  term==0 case was a hard divide-by-zero crash — this is what killed DRAGON_SAVER
+  (stage1) playback at ~90 s (user-confirmed both). simml_track.cpp:handle_pitch_bend.
+  DSP-safe for goldens (no preset voice path touches the sweep; voices test still 654/654).
+  Regression test added in smoke_driver_render.cpp: zero-crossing-rate mid-glide check
+  (bent 97 vs held 79 crossings, threshold 1.10) + c0* zero-term no-crash render.
+- FB GOLDENS: commit 541c919 (user's deliberate clamp-vs-loop fix) changed the Translator
+  error wording for 'FB' only; regenerated tests/run/mml-compilation/outputs/*.txt FB
+  lines "looped"→"clamped" (13 files). mml_compilation green again. NOTE: goldens are
+  pinned to OUR intended behavior now for that one message, not to Godot main.
+- CLI UTF-8/codepage: "garbage usage printout" = UTF-8 em-dash rendered by an OEM-CP
+  Windows console + ANSI-CP argv/file paths. Fixed: cli/cli_util.h (SetConsoleOutputCP
+  CP_UTF8; CommandLineToArgvW → UTF-8 argv [ANSI CRT argv mangles unicode]; _wfopen via
+  cli_fopen for -f/-o), all PRINTED strings pure ASCII now (hyphens, no em-dashes).
+  Verified: loads "20100519_keim_at_Si_水没都市_DRAGON_SAVER_(stage1).sionmml" by its real
+  unicode name and renders clean. windows.h gotchas hit again: need <shellapi.h> for
+  CommandLineToArgvW and NOMINMAX for std::max (WIN32_LEAN_AND_MEAN doesn't strip windef.h).
+- README.md REWRITTEN as libSiON-cpp (standalone usage, sion-cpp-play, build options,
+  library snippet, test descriptions, provenance/licenses). Godot-era install/download/
+  Patreon content removed.
 
 ### DONE — session 7 (Phase 4 golden tests + final Godot-glue cleanup)
 - voices_sound_consistency.cpp = THE determinism gate: 654/654 preset voices byte-identical vs

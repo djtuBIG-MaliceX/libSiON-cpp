@@ -28,8 +28,8 @@
 #include <string>
 #include <vector>
 
-#ifndef GDSION_VOICES_DATA_DIR
-	#error "GDSION_VOICES_DATA_DIR must be defined by the build system"
+#ifndef LIBSION_VOICES_DATA_DIR
+	#error "LIBSION_VOICES_DATA_DIR must be defined by the build system"
 #endif
 
 static std::string g_error_capture;
@@ -80,7 +80,7 @@ int main() {
 		SiONVoicePresetUtil *voice_preset_util = SiONVoicePresetUtil::generate_voices();
 		std::vector<sion::String> voice_list = voice_preset_util->get_voice_preset_keys();
 
-		const std::string data_dir = GDSION_VOICES_DATA_DIR;
+		const std::string data_dir = LIBSION_VOICES_DATA_DIR;
 
 		SiONDriver driver(2048, 2, 44100, 0);
 		std::vector<float> chunk(BLOCK_FRAMES * 2);

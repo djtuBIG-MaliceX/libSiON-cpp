@@ -26,14 +26,14 @@
 #include <string>
 #include <vector>
 
-#ifndef GDSION_MML_MANIFEST
-	#error "GDSION_MML_MANIFEST must be defined by the build system"
+#ifndef LIBSION_MML_MANIFEST
+	#error "LIBSION_MML_MANIFEST must be defined by the build system"
 #endif
-#ifndef GDSION_MML_INPUT_DIR
-	#error "GDSION_MML_INPUT_DIR must be defined by the build system"
+#ifndef LIBSION_MML_INPUT_DIR
+	#error "LIBSION_MML_INPUT_DIR must be defined by the build system"
 #endif
-#ifndef GDSION_MML_GOLDEN_DIR
-	#error "GDSION_MML_GOLDEN_DIR must be defined by the build system"
+#ifndef LIBSION_MML_GOLDEN_DIR
+	#error "LIBSION_MML_GOLDEN_DIR must be defined by the build system"
 #endif
 
 static std::string g_error_capture;
@@ -79,16 +79,16 @@ int main() {
 	int checked = 0;
 
 	std::string manifest;
-	if (!read_file(GDSION_MML_MANIFEST, manifest)) {
-		std::printf("MML: cannot read manifest %s\n", GDSION_MML_MANIFEST);
+	if (!read_file(LIBSION_MML_MANIFEST, manifest)) {
+		std::printf("MML: cannot read manifest %s\n", LIBSION_MML_MANIFEST);
 		return 1;
 	}
 
 	{
 		sion::initialize();
 
-		const std::string input_dir = GDSION_MML_INPUT_DIR;
-		const std::string golden_dir = GDSION_MML_GOLDEN_DIR;
+		const std::string input_dir = LIBSION_MML_INPUT_DIR;
+		const std::string golden_dir = LIBSION_MML_GOLDEN_DIR;
 
 		std::istringstream lines(manifest);
 		std::string row;

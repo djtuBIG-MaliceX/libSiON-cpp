@@ -4,10 +4,10 @@
 /* Provided under MIT                              */
 /***************************************************/
 
-#ifndef GDSION_WAV_WRITER_H
-#define GDSION_WAV_WRITER_H
+#ifndef LIBSION_WAV_WRITER_H
+#define LIBSION_WAV_WRITER_H
 
-#include <algorithm>
+#include "cli_util.h"\n\n#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>
@@ -34,7 +34,7 @@ class WavWriter {
 public:
 	// p_samples is interleaved multi-channel float audio in [-1, +1].
 	static bool write(const std::string &p_path, const double *p_samples, size_t p_sample_count, int p_channels, int p_sample_rate) {
-		FILE *file = fopen(p_path.c_str(), "wb");
+		FILE *file = cli_fopen(p_path, "wb");
 		if (!file) {
 			return false;
 		}
@@ -71,4 +71,4 @@ public:
 	}
 };
 
-#endif // GDSION_WAV_WRITER_H
+#endif // LIBSION_WAV_WRITER_H

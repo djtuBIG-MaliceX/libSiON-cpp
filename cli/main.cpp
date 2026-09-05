@@ -4,11 +4,12 @@
 /* Provided under MIT                              */
 /***************************************************/
 
-// gdsion-play — Phase 3 command-line tool: render MML offline to WAV, or play
+// sion-cpp-play - Phase 3 command-line tool: render MML offline to WAV, or play
 // it back in realtime through PortAudio.
 
 #include "portaudio.h"
 
+#include "cli_util.h"
 #include "sequencer/base/mml_sequence_group.h"
 #include "sequencer/base/mml_system_command.h"
 #include "sion_core.h"
@@ -25,9 +26,7 @@
 #include <csignal>
 #include <cstdio>
 #include <cstring>
-#include <fstream>
 #include <mutex>
-#include <sstream>
 #include <string>
 #include <thread>
 #include <vector>
@@ -76,7 +75,7 @@ static const Demo DEMOS[] = {
 
 static void print_usage(const char *p_argv0) {
 	std::printf(
-			"gdsion-play — play or render SiON MML music\n"
+			"sion-cpp-play - play or render SiON MML music\n"
 			"\n"
 			"usage: %s [-f file.mml | -m \"MML\" | --demo name] [options]\n"
 			"\n"
@@ -111,13 +110,24 @@ static void list_demos() {
 }
 
 static bool read_file(const std::string &p_path, std::string &r_out) {
-	std::ifstream file(p_path, std::ios::binary);
+	FILE *file = cli_fopen(p_path, "rb");
 	if (!file) {
 		return false;
 	}
-	std::ostringstream contents;
-	contents << file.rdbuf();
-	r_out = contents.str();
+	if (fseek(file, 0, SEEK_END) != 0) {
+		fclose(file);
+		return false;
+	}
+	long size = ftell(file);
+	if (size < 0) {
+		fclose(file);
+		return false;
+	}
+	fseek(file, 0, SEEK_SET);
+	r_out.resize((size_t)size);
+	size_t read = fread(r_out.data(), 1, (size_t)size, file);
+	fclose(file);
+	r_out.resize(read);
 	return true;
 }
 
@@ -145,6 +155,10 @@ static void print_event(const Ref<SiONEvent> &p_event) {
 }
 
 int main(int argc, char **argv) {
+#ifdef _WIN32
+	// Make the tool's UTF-8 output render correctly regardless of the OEM code page.
+	SetConsoleOutputCP(CP_UTF8);
+#endif
 	setvbuf(stdout, nullptr, _IOLBF, 4096);
 
 	std::string mml_file;
@@ -160,14 +174,17 @@ int main(int argc, char **argv) {
 	bool show_events = false;
 	bool list_devices = false;
 
-	for (int i = 1; i < argc; i++) {
-		std::string arg = argv[i];
-		auto next_value = [&](const char *p_option) -> const char * {
-			if (i + 1 >= argc) {
+	std::vector<std::string> args = cli_build_arguments(argc, argv);
+	const char *argv0 = args.empty() ? "sion-cpp-play" : args[0].c_str();
+
+	for (size_t i = 1; i < args.size(); i++) {
+		const std::string &arg = args[i];
+		auto next_value = [&](const char *p_option) -> std::string {
+			if (i + 1 >= args.size()) {
 				std::printf("error: %s requires a value\n", p_option);
 				exit(1);
 			}
-			return argv[++i];
+			return args[++i];
 		};
 
 		if (arg == "-f") {
@@ -182,13 +199,13 @@ int main(int argc, char **argv) {
 		} else if (arg == "-o") {
 			out_path = next_value("-o");
 		} else if (arg == "-t") {
-			time_limit = std::atof(next_value("-t"));
+			time_limit = std::atof(next_value("-t").c_str());
 		} else if (arg == "-r") {
-			sample_rate = std::atoi(next_value("-r"));
+			sample_rate = std::atoi(next_value("-r").c_str());
 		} else if (arg == "-c") {
-			channels = std::atoi(next_value("-c"));
+			channels = std::atoi(next_value("-c").c_str());
 		} else if (arg == "-b") {
-			block_size = std::atoi(next_value("-b"));
+			block_size = std::atoi(next_value("-b").c_str());
 		} else if (arg == "--repeat") {
 			repeat = true;
 		} else if (arg == "--events") {
@@ -198,11 +215,11 @@ int main(int argc, char **argv) {
 		} else if (arg == "--list-devices") {
 			list_devices = true;
 		} else if (arg == "-h" || arg == "--help") {
-			print_usage(argv[0]);
+			print_usage(argv0);
 			return 0;
 		} else {
 			std::printf("error: unknown option '%s'\n\n", arg.c_str());
-			print_usage(argv[0]);
+			print_usage(argv0);
 			return 1;
 		}
 	}
@@ -231,7 +248,7 @@ int main(int argc, char **argv) {
 	{
 		sion::initialize();
 
-		// NOTE: the driver (and every Ref'd object) must die before sion::finalize() —
+		// NOTE: the driver (and every Ref'd object) must die before sion::finalize() -
 		// ~MMLSequence frees events through the parser singleton which finalize kills.
 		{
 			SiONDriver driver(block_size, channels, sample_rate, 0);
@@ -274,7 +291,7 @@ int main(int argc, char **argv) {
 				return 1;
 			}
 		} else {
-			print_usage(argv[0]);
+			print_usage(argv0);
 			Pa_Terminate();
 			return 1;
 		}

@@ -457,7 +457,11 @@ void SiMMLTrack::handle_pitch_bend(int p_next_note, int p_term) {
 		return;
 	}
 
-	_sweep_step = ((end_pitch - start_pitch) << FIXED_BITS) * _envelope_interval / p_term;
+	// The intermediate value overflows a 32-bit int for any bend wider than
+	// roughly half a semitone (upstream AS3 SiON had the same wrap), so keep the
+	// product in 64 bits. A zero term (zero-length host note) must not divide by zero.
+	int term = std::max(p_term, 1);
+	_sweep_step = (int)(((int64_t)(end_pitch - start_pitch) << FIXED_BITS) * _envelope_interval / term);
 	_sweep_end  = end_pitch << FIXED_BITS;
 	_sweep_pitch = start_pitch << FIXED_BITS;
 	_envelope_pitch_active = true;

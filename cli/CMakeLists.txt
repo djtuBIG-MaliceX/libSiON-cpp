@@ -4,7 +4,7 @@
 # Provided under MIT                               #
 ####################################################
 
-# gdsion-play: play MML via PortAudio or export rendered audio to WAV.
+# sion-cpp-play: play MML via PortAudio or export rendered audio to WAV.
 
 include(FetchContent)
 
@@ -23,26 +23,26 @@ if(NOT PortAudio_FOUND)
 	FetchContent_MakeAvailable(portaudio)
 endif()
 
-add_executable(gdsion-play main.cpp wav_writer.h)
-target_link_libraries(gdsion-play PRIVATE gdsion::gdsion)
+add_executable(sion_cpp_play main.cpp cli_util.h wav_writer.h)
+target_link_libraries(sion_cpp_play PRIVATE SiONcpp::SiONcpp)
 
 # Prefer the static PortAudio flavor for a self-contained CLI binary.
 if(TARGET portaudio_static)
-	target_link_libraries(gdsion-play PRIVATE portaudio_static)
+	target_link_libraries(sion_cpp_play PRIVATE portaudio_static)
 elseif(TARGET PortAudio::PortAudioStatic)
-	target_link_libraries(gdsion-play PRIVATE PortAudio::PortAudioStatic)
+	target_link_libraries(sion_cpp_play PRIVATE PortAudio::PortAudioStatic)
 elseif(TARGET portaudio)
-	target_link_libraries(gdsion-play PRIVATE portaudio)
+	target_link_libraries(sion_cpp_play PRIVATE portaudio)
 elseif(TARGET PortAudio::PortAudio)
-	target_link_libraries(gdsion-play PRIVATE PortAudio::PortAudio)
+	target_link_libraries(sion_cpp_play PRIVATE PortAudio::PortAudio)
 else()
 	message(FATAL_ERROR "PortAudio target not found.")
 endif()
 
 if(MSVC)
-	target_compile_options(gdsion-play PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
+	target_compile_options(sion_cpp_play PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
 else()
-	target_compile_options(gdsion-play PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
+	target_compile_options(sion_cpp_play PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
 endif()
 
-set_target_properties(gdsion-play PROPERTIES OUTPUT_NAME "gdsion-play")
+set_target_properties(sion_cpp_play PROPERTIES OUTPUT_NAME "sion-cpp-play")

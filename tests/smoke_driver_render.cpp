@@ -11,6 +11,7 @@
 #include "sion_data.h"
 #include "sion_driver.h"
 
+#include <algorithm>
 #include <cmath>
 #include <cstdio>
 #include <string>
@@ -140,6 +141,61 @@ int main() {
 			failures++;
 		} else {
 			std::printf("PASS: stream stop bookkeeping\n");
+		}
+
+		// --- The '*' portamento must actually glide. Regression guard for the
+		//     32-bit overflow of the sweep step (broke every bend wider than half
+		//     a semitone) and the divide-by-zero when the host note has length 0.
+		auto render_mono = [&](const char *p_mml, int p_seconds) {
+			std::vector<double> out;
+			Ref<SiONData> d = driver.compile(p_mml);
+			if (d.is_valid()) {
+				PackedFloat64Array buf = driver.render(d, 44100 * p_seconds, 2, true);
+				for (size_t i = 0; i + 1 < buf.size(); i += 2) {
+					out.push_back(buf[i]);
+				}
+			}
+			return out;
+		};
+		auto zero_crossings = [](const std::vector<double> &p_x, int p_from_ms, int p_to_ms) {
+			size_t from = (size_t)p_from_ms * 44100 / 1000;
+			size_t to = std::min((size_t)p_to_ms * 44100 / 1000, p_x.size());
+			int n = 0;
+			for (size_t i = from + 1; i < to; i++) {
+				if ((p_x[i - 1] < 0) != (p_x[i] < 0)) {
+					n++;
+				}
+			}
+			return n > 0 ? (double)n : 0.0;
+		};
+
+		std::vector<double> bent = render_mono("t60 l4 o4 c* g4", 3);
+		std::vector<double> plain = render_mono("t60 l4 o4 c4 g4", 3);
+		if (bent.empty() || plain.empty()) {
+			std::printf("FAIL: portamento test render returned no audio\n");
+			failures++;
+		} else {
+			double bent_crossings = zero_crossings(bent, 400, 700); // Mid-glide pitch sits well above C.
+			double plain_crossings = zero_crossings(plain, 400, 700);
+			if (!(bent_crossings > plain_crossings * 1.10)) {
+				std::printf("FAIL: portamento did not glide (crossings %f vs held-note %f)\n",
+						bent_crossings, plain_crossings);
+				failures++;
+			} else {
+				std::printf("PASS: '*' portamento glides (%f > %f crossings)\n", bent_crossings, plain_crossings);
+			}
+		}
+
+		std::vector<double> zero_term = render_mono("t60 l4 o4 c0* g4", 2);
+		double zt_peak = 0;
+		for (double value : zero_term) {
+			zt_peak = std::max(zt_peak, std::abs(value));
+		}
+		if (zero_term.empty() || zt_peak < 0.01) {
+			std::printf("FAIL: zero-length portamento host note produced no audio (peak %f)\n", zt_peak);
+			failures++;
+		} else {
+			std::printf("PASS: zero-length portamento host note survives (peak %f)\n", peak);
 		}
 
 		if (failures == 0) {
