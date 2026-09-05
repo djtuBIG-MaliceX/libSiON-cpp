@@ -100,9 +100,10 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
   Type incl NIL/STRING/OBJECT/PACKED_*; get_type()) ONLY so sion_driver.h parses — kill in Phase 2.
 - sion_regex.h/.cpp: PCRE2. RegExMatch::get_string->sion::String, get_index/get_start/get_end/
   get_group/is_empty; RegEx::create_from_string/search/search_all return Ref<>; `sub(subject,
-  repl, int64_t count=-1)` — IMPORTANT Godot parity: GDSiON calls sub(x,"",true) and old binding
-  took count as int64 ⇒ true→1 = replace exactly ONE match (not all!). Implemented literal-replace
-  loop w/ empty-match advance. subn not implemented (unused). PCRE2-10.44 API gotchas:
+   repl, int64_t count=-1)` + BOOL overload — USER OVERRIDE 2026-09-06: sub(x,"",true) replaces ALL
+   matches (Godot parity NOT required; upstream true→count=1 was a parser bug that left every
+   `//` comment after the first one in the MML stream). Implemented literal-replace
+   loop w/ empty-match advance. subn not implemented (unused). PCRE2-10.44 API gotchas:
   pcre2_get_error_message_8(errcode, buffer, size) — width arg REMOVED vs older docs; unmatched
   ovector sentinel is PCRE2_UNSET (PCRE2_NOMATCH does not exist); RegExMatch fields are public
   (a free helper in the cpp fills them).
@@ -306,7 +307,8 @@ Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_
 ## Known Godot-parity facts (verified this session; keep!)
 - godot-cpp List (master, fetched): Element::next()/get()/set(), push_back(Element*), find(T)→Element*,
   erase(bool), get(int) random access, sort_custom<C>, NO operator[] — compat adds [i].
-- RegEx::sub(subject, replacement, count:int64=-1) since Godot 4.0: GDSiON's `true` == count 1!
+- RegEx::sub: SUPERSEDED 2026-09-06 by user decision — bool arg means REPLACE ALL (upstream Godot
+  binding ate `true` as count=1, a bug that broke multi-comment MML files; do not re-port it).
   subn handles $0; sub does literal replacement. Empty-match iteration advances 1 char (both search_all
   and sub implemented that way).
 - godot-cpp Ref: implicit ctor/assign from T* raw pointer (shim mirrors); Ref<Derived>↔Ref<Base> via
@@ -318,6 +320,14 @@ Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_
 - ERR macro wording + `ERROR: ` line = golden content (see prior sessions; unchanged).
 
 ## Progress log
+- 2026-09-06 (session 6): USER OVERRIDE — Godot compat NOT required for RegEx::sub bool arg;
+  `true` = replace ALL (SiON semantics: strip every `//...` comment before macro expansion). Added
+  bool overload in sion_regex.h mapping true→-1. Verified with legacy SiON example
+  "D:\MY SHIT\djtbmx_td1.txt" (#OPN@/#OPL@ patches, A-Z macros, `$` segno loops): was 0 sequences +
+  flood of "Unknown standard event '/'" errors → now 11 sequences clean, WAV renders w/ musical
+  content (RMS rises w/ arrangement; dense sections hit full-scale). ctest 2/2. Note: SiON MML ref =
+  https://keim.github.io/SiON/mmlref/sion_mml_reference_e.html (macros #A=.. referenced BARE as A,
+  `^` extension, `|` repeat-break inside [...], `%n,m` module select).
 - 2026-09-05 (session 1): compat v1, CMakeLists, plan (see history above).
 - 2026-09-05 (session 3): Phase 1 COMPILE GREEN — errors 342→0 across build_log_06..10, zero
   warnings; `cmake -S . -B build -DGDSION_BUILD_TESTS=ON` configured. Subagent waves (≤2 concurrent
