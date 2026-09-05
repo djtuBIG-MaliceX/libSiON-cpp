@@ -29,6 +29,34 @@ int main() {
 
 		SiONDriver driver(2048, 2, 44100, 0);
 
+		// --- Lifecycle bookkeeping (port of tests/run/driver-lifecycle.gd; the Godot
+		//     AudioStreamPlayer checks are gone with the Node lifecycle).
+		if (driver.get_buffer_length() != 2048 || driver.get_channel_num() != 2 ||
+				driver.get_sample_rate() != 44100 || driver.get_bitrate() != 0) {
+			std::printf("FAIL: driver defaults (buffer=%d channels=%d rate=%f bitrate=%f)\n",
+					driver.get_buffer_length(), driver.get_channel_num(),
+					driver.get_sample_rate(), driver.get_bitrate());
+			failures++;
+		}
+		driver.set_bpm(120);
+		if (driver.get_bpm() != 120) {
+			std::printf("FAIL: driver bpm roundtrip (got %f)\n", driver.get_bpm());
+			failures++;
+		}
+
+		driver.stream(false);
+		if (!driver.is_streaming() || driver.is_paused()) {
+			std::printf("FAIL: stream() state (streaming=%d paused=%d)\n",
+					(int)driver.is_streaming(), (int)driver.is_paused());
+			failures++;
+		}
+		driver.update(); // Releases the startup suspend, like the first frame did under Godot.
+		driver.stop();
+		if (driver.is_streaming()) {
+			std::printf("FAIL: stop() left driver streaming\n");
+			failures++;
+		}
+
 		const char *mml = "t150 l8 o4 cdefgab>c<";
 
 		// --- Immediate compile through the driver.

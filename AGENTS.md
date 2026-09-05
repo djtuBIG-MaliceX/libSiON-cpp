@@ -110,10 +110,11 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
 - sion_callable.h: `Callable` supporting only std::function<void(double)> — now ONLY used by
   driver remnants; fader uses real std::function already. Phase 2 deletes Callable entirely.
 - sion_random.h: PCG32 (pcg-c XSH-RR 64/32 + bounded rejection) + RandomNumberGenerator facade
-  randi/randi_range(incl, both directions)/randf/randd/set_seed/randomize. `using ::sion::
-  RandomNumberGenerator;` at end (code uses it unqualified in Ref<> — session-3 fix). Default
-  seed=time — noise-LFO table in SiOPMRefTable::initialize() varies per run (Godot was same);
-  presets normally avoid it; goldens will tell.
+   randi/randi_range(incl, both directions)/randf/randd/set_seed/randomize. `using ::sion::
+   RandomNumberGenerator;` at end (code uses it unqualified in Ref<> — session-3 fix). Default
+   seed=time — noise-LFO table in SiOPMRefTable::initialize() varies per run (Godot RNG ctor
+   randomizes too, verified vs godot master header). PROVEN seed-independent: voices test passes
+   654/654 byte-exact across runs → no preset voice touches the LFO-noise table.
 - singly_linked_list.h restored (class SinglyLinkedList, public `value` field on Element,
   cursor get/set/advance/next/next_safe, static pool initialize_pool/finalize_pool — CALLERS OF
   POOL INIT/FINALIZE: only register_types.cpp (excluded target). Library NEEDS an explicit init
@@ -121,9 +122,43 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
   SinglyLinkedList<int/double>::initialize_pool/finalize_pool (+ SiOPMChannelFM::finalize_pool).
   Smoke test currently calls initialize_pool by hand.)
 
-## Status: Phase 1 + Phase 2 COMPLETE; Phase 3 CLI working (offline WAV + realtime PortAudio). Phase 4 test porting NEXT.
-Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 2/2 Passed.
+## Status: Phases 1-4 COMPLETE incl. goldens + Godot glue removed. ctest 4/4 green.
+Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 4/4 Passed (~7s).
 Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_CLI=ON`.
+
+### DONE — session 7 (Phase 4 golden tests + final Godot-glue cleanup)
+- voices_sound_consistency.cpp = THE determinism gate: 654/654 preset voices byte-identical vs
+  data/*.dat goldens (raw LE int32). KEY INSIGHT on what the goldens contain: the GD test's
+  `await timer_interval` resumed SYNCHRONOUSLY inside C1's sequencer phase, so note_on(delay 0)
+  landed BEFORE block A's chip processing → golden = 2×2048 frames of left channel with note ON
+  from frame 0 of a FRESH prepare (stream(false); suspend lifted; key note; render two 2048-blocks).
+  Ported via stream(false)→update()→note_on(60, voice, 2.0)→render_chunk×2, int32 =
+  (int32)((double)left_float * 32767) — matches Godot's float32 push + GDScript int() truncation.
+  Timer-splitting of blocks in main (global WAIT every ~138 samples at bpm120/res1920) is DSP-
+  IRRELEVANT: channels render whole 2048 blocks; sequencer only runs events. Passes first try.
+- mml_compilation.cpp: vendored tests/data/mmltalks_mml.json (from YuriSizov/SiONMML, same repo the
+  gd test fetched) + 212 extracted tests/data/mml/<idx>.mml inputs + data/mml_manifest.tsv
+  (index \t djb2hash \t has_error_golden \t title \t author). Godot `String.hash()` = djb2
+  (h=5381; h=h*33+cp over UTF-32 codepoints), NOT murmur3 — verified all 29 error-goldens in
+  tests/run/mml-compilation/outputs map exactly to JSON entries. No sorting, no hash port at runtime:
+  manifest drives everything. In-process per-tune fresh `new SiONDriver` + compile() with error_output()
+  sink; compare only "ERROR: "-prefixed lines (CRLF-normalized) vs golden txt (missing file = expect
+  empty). 212/212 MATCH — including comment-heavy songs: the sub()-replace-all override changed
+  NOTHING observable vs goldens (error songs' first `//` strip already consumed the erroring text).
+- Driver-lifecycle.gd port folded into smoke_driver_render.cpp (defaults, bpm roundtrip,
+  stream/stop state; Godot AudioStreamPlayer checks dropped with the Node lifecycle).
+- Cleanup EXECUTED: removed register_types.{h,cpp}, SConstruct, .gitmodules+godot-cpp gitlink
+  (git rm --cached), bin/, doc_classes/, example/, tests/*.gd+project.godot+icon.svg, ALL old
+  Godot .github workflows/actions. New .github/workflows/build.yml = CMake matrix (Win/Linux/macOS,
+  Debug, ctest; libasound2-dev on Linux for PortAudio CLI). tests/run/*/data + outputs + tests/data
+  KEPT as goldens/test inputs.
+- Gotcha: Windows SDK stdint.h #defines INT16_MAX — never use it as an identifier (C2059 'constant').
+
+## Remaining optional polish (not blocking)
+1. CLI: --list-voices; driver --events thread caveat.
+2. README.md still describes the GDExtension; rewrite for standalone + gdsion-play.
+3. Session junk in repo root (build_log_*.txt, session-ses_*, configure_log.txt, 'AGENTS - Copy.md')
+   — untracked, delete whenever.
 
 ### DONE — session 5 (Phase 2 driver libification + Phase 3 CLI core)
 - HEAD = a88e050 "WIP libify" (session-4 work committed). Session-5 changes UNCOMMITTED:
@@ -157,14 +192,6 @@ Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_
   deadlock — non-recursive mutex). Mono driver dup L→R in callback (chip output buffer is stereo).
 - VERIFIED: offline WAV peaks non-silent (--demo scale -t 2 → peak 0.176 == smoke test); realtime
   playback through 'Line (Steinberg UR824)' completed w/ progress print; device listing works.
-
-## IMMEDIATE NEXT (Phase 4 kickoff)
-1. voices-sound-consistency native test: render int32 per preset voice, compare data/*.dat goldens
-   byte-identical — THE determinism gate (study tests/*.gd on main for exact render params!).
-2. mml-compilation golden port: mmltalks_mml.json via nlohmann/json; index-named vendored inputs.
-3. CLI polish (optional): --list-voices not implemented yet; driver --events thread caveat.
-4. Godot glue final cleanup (register_types/SConstruct/.gitmodules/godot-cpp/bin/doc_classes/
-   example/tests/*.gd) once Phase 4 goldens pass.
 
 ### Session-5 gotchas learned (keep!)
 - LIFETIME: driver MUST be destroyed BEFORE sion::finalize() (~MMLSequence→free_all_events uses the
@@ -202,7 +229,7 @@ Full dev configure: `cmake -S . -B build -DGDSION_BUILD_TESTS=ON -DGDSION_BUILD_
   `& cdb -G -c "sxe -c \`"k 25; q\`" av; g" exe`. NOTE stdout is fully buffered under pipes —
   test sets setvbuf(_IONBF) to keep checkpoint prints visible.
 
-## ~~IMMEDIATE NEXT (Phase 2 kickoff)~~ — DONE session 5; see "IMMEDIATE NEXT (Phase 4 kickoff)" above.
+## ~~IMMEDIATE NEXT (Phase 2 kickoff)~~ — DONE session 5; Phase 4 also DONE session 7, see top.
 
 ### DONE this session (session 3 — compile-green push)
 - 4 agent waves, max 2 concurrent (ref_table+sequencer / chip+utils / effector; orchestrator fixed
