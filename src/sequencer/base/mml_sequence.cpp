@@ -75,7 +75,7 @@ bool MMLSequence::is_system_command() const {
 	return _head_event->get_next()->get_id() == MMLEvent::SYSTEM_EVENT;
 }
 
-std::string MMLSequence::get_system_command() const {
+sion::String MMLSequence::get_system_command() const {
 	return MMLParser::get_instance()->get_system_event_string(_head_event->get_next());
 }
 
@@ -86,7 +86,7 @@ MMLEvent *MMLSequence::append_new_event(int p_event_id, int p_data, int p_length
 	return event;
 }
 
-MMLEvent *MMLSequence::append_new_callback(const Callable &p_callback, int p_data) {
+MMLEvent *MMLSequence::append_new_callback(const std::function<MMLEvent *(int)> &p_callback, int p_data) {
 	_callbacks_for_internal_call.push_back(p_callback);
 	MMLEvent *event = MMLParser::get_instance()->alloc_event(MMLEvent::INTERNAL_CALL, _callbacks_for_internal_call.size() - 1, p_data);
 	push_back(event);
@@ -299,13 +299,13 @@ void MMLSequence::clear() {
 	_mml_string = "";
 }
 
-std::string MMLSequence::_to_string() const {
+sion::String MMLSequence::_to_string() const {
 	if (_is_terminal) {
 		return "MMLSequence: terminator";
 	}
 
 	MMLEvent *event = _head_event->get_next();
-	std::string str;
+	sion::String str;
 
 	// Print first 32 events in the sequence.
 	for (int i = 0; i < 32 && event; i++) {
@@ -317,47 +317,6 @@ std::string MMLSequence::_to_string() const {
 	}
 
 	return vformat("MMLSequence: chain=(%s)", str);
-}
-
-void MMLSequence::_bind_methods() {
-	// Sequence chains.
-	ClassDB::bind_method(D_METHOD("chain_get_prev"), &MMLSequence::get_prev_sequence);
-	ClassDB::bind_method(D_METHOD("chain_get_next"), &MMLSequence::get_next_sequence);
-
-	ClassDB::bind_method(D_METHOD("chain_insert_before", "next"), &MMLSequence::insert_before);
-	ClassDB::bind_method(D_METHOD("chain_insert_after", "prev"), &MMLSequence::insert_after);
-	ClassDB::bind_method(D_METHOD("chain_remove"), &MMLSequence::remove_from_chain);
-
-	// Sequence events.
-
-	ClassDB::bind_method(D_METHOD("is_empty"), &MMLSequence::is_empty);
-	ClassDB::bind_method(D_METHOD("is_active"), &MMLSequence::is_active);
-	ClassDB::bind_method(D_METHOD("set_active", "active"), &MMLSequence::set_active);
-
-	ClassDB::bind_method(D_METHOD("is_system_command"), &MMLSequence::is_system_command);
-	ClassDB::bind_method(D_METHOD("get_system_command"), &MMLSequence::get_system_command);
-
-	ClassDB::bind_method(D_METHOD("get_head_event"), &MMLSequence::get_head_event);
-	ClassDB::bind_method(D_METHOD("set_head_event", "event"), &MMLSequence::set_head_event);
-	ClassDB::bind_method(D_METHOD("get_tail_event"), &MMLSequence::get_tail_event);
-	ClassDB::bind_method(D_METHOD("set_tail_event", "event"), &MMLSequence::set_tail_event);
-
-	ClassDB::bind_method(D_METHOD("append_new_event", "event_id", "data", "length"), &MMLSequence::append_new_event, DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("append_new_callback", "callback", "data"), &MMLSequence::append_new_callback);
-	ClassDB::bind_method(D_METHOD("prepend_new_event", "event_id", "data", "length"), &MMLSequence::prepend_new_event, DEFVAL(0));
-
-	ClassDB::bind_method(D_METHOD("push_back", "event"), &MMLSequence::push_back);
-	ClassDB::bind_method(D_METHOD("push_front", "event"), &MMLSequence::push_front);
-	ClassDB::bind_method(D_METHOD("pop_back"), &MMLSequence::pop_back);
-	ClassDB::bind_method(D_METHOD("pop_front"), &MMLSequence::pop_front);
-	ClassDB::bind_method(D_METHOD("cutout", "head"), &MMLSequence::cutout);
-
-	ClassDB::bind_method(D_METHOD("get_event_length"), &MMLSequence::get_event_length);
-	ClassDB::bind_method(D_METHOD("has_repeat_all"), &MMLSequence::has_repeat_all);
-
-	ClassDB::add_property("MMLSequence", PropertyInfo(Variant::BOOL, "active"), "set_active", "is_active");
-	ClassDB::add_property("MMLSequence", PropertyInfo(Variant::OBJECT, "head_event", PROPERTY_HINT_RESOURCE_TYPE, "MMLEvent"), "set_head_event", "get_head_event");
-	ClassDB::add_property("MMLSequence", PropertyInfo(Variant::OBJECT, "tail_event", PROPERTY_HINT_RESOURCE_TYPE, "MMLEvent"), "set_tail_event", "get_tail_event");
 }
 
 MMLSequence::MMLSequence(bool p_terminal) {

@@ -23,14 +23,14 @@ void SiOPMWaveTable::initialize(std::vector<int> p_wavelet, SiONPitchTableType p
 	_fixed_bits = SiOPMRefTable::PHASE_BITS - bits;
 }
 
-void SiOPMWaveTable::copy_from(const std::shared_ptr<SiOPMWaveTable> &p_source) {
+void SiOPMWaveTable::copy_from(const Ref<SiOPMWaveTable> &p_source) {
 	_fixed_bits = p_source->_fixed_bits;
 	_default_pitch_table_type = p_source->_default_pitch_table_type;
 	_wavelet.clear();
 
 	int wavelet_size = p_source->_wavelet.size();
 	for (int i = 0; i < wavelet_size; i++) {
-		_wavelet.append(p_source->_wavelet[i]);
+		_wavelet.push_back(p_source->_wavelet[i]);
 	}
 }
 

@@ -69,10 +69,6 @@ void SiEffectStereoReverb::reset() {
 	set_params();
 }
 
-void SiEffectStereoReverb::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_params", "delay1", "delay2", "feedback", "wet"), &SiEffectStereoReverb::set_params, DEFVAL(0.7), DEFVAL(0.4), DEFVAL(0.8), DEFVAL(0.3));
-}
-
 SiEffectStereoReverb::SiEffectStereoReverb(double p_delay1, double p_delay2, double p_feedback, double p_wet) :
 		SiEffectBase() {
 	_delay_buffer_left.resize(1 << DELAY_BUFFER_BITS); // TODO zeroed

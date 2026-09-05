@@ -23,14 +23,14 @@ bool FaderUtil::execute() {
 
 		if (_counter == 0) {
 			_value = _end; // Ensure there is no imprecision.
-			if (_callback.is_valid()) {
-				_callback.call(_value);
+			if (_callback) {
+				_callback(_value);
 			}
 
 			return true;
 		} else {
-			if (_callback.is_valid()) {
-				_callback.call(_value);
+			if (_callback) {
+				_callback(_value);
 			}
 		}
 	}
@@ -45,7 +45,7 @@ void FaderUtil::stop() {
 void FaderUtil::set_fade(double p_value_from, double p_value_to, int p_frames) {
 	_value = p_value_from;
 
-	if (p_frames == 0 || !_callback.is_valid()) {
+	if (p_frames == 0 || !_callback) {
 		_counter = 0;
 		return;
 	}
@@ -53,10 +53,10 @@ void FaderUtil::set_fade(double p_value_from, double p_value_to, int p_frames) {
 	_end = p_value_to;
 	_step = (p_value_to - p_value_from) / p_frames;
 	_counter = p_frames;
-	_callback.call(_value);
+	_callback(_value);
 }
 
-FaderUtil::FaderUtil(const Callable &p_callback, double p_value_from, double p_value_to, int p_frames) {
+FaderUtil::FaderUtil(const std::function<void(double)> &p_callback, double p_value_from, double p_value_to, int p_frames) {
 	set_callback(p_callback);
 	set_fade(p_value_from, p_value_to, p_frames);
 }

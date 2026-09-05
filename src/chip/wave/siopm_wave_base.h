@@ -22,7 +22,7 @@ class SiOPMWaveBase {
 protected:
 	static void _bind_methods() {}
 
-	std::vector<double> _extract_wave_data(const std::shared_ptr<AudioStream> &p_stream, int *r_channel_count);
+	std::vector<double> _extract_wave_data(const Ref<AudioStream> &p_stream, int *r_channel_count);
 
 public:
 	SiONModuleType get_module_type() const { return _module_type; }

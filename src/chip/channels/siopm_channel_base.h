@@ -24,7 +24,7 @@ class SiOPMWaveBase;
 
 // SiOPM sound channel base class.
 // Sound channels generate wave data and write it into streaming buffer.
-class SiOPMChannelBase : public Object {
+class SiOPMChannelBase {
 	//GDCLASS(SiOPMChannelBase, Object)
 
 	friend class SiOPMChannelManager;
@@ -65,9 +65,8 @@ private:
 	SiOPMChannelBase *_prev = nullptr;
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 	//
 
@@ -87,10 +86,10 @@ protected:
 	double _ringmod_level = 0;
 	InputMode _input_mode = InputMode::INPUT_ZERO;
 	OutputMode _output_mode = OutputMode::OUTPUT_STANDARD;
-	std::forward_list<int> *_in_pipe = nullptr;
-	std::forward_list<int> *_ring_pipe = nullptr;
-	std::forward_list<int> *_base_pipe = nullptr;
-	std::forward_list<int> *_out_pipe = nullptr;
+	SinglyLinkedList<int> *_in_pipe = nullptr;
+	SinglyLinkedList<int> *_ring_pipe = nullptr;
+	SinglyLinkedList<int> *_base_pipe = nullptr;
+	SinglyLinkedList<int> *_out_pipe = nullptr;
 
 	// Volume and stream.
 
@@ -130,9 +129,9 @@ protected:
 	std::vector<int> _lfo_wave_table;
 	int _lfo_wave_shape = 0;
 
-	void _apply_ring_modulation(std::forward_list<int>::Element *p_buffer_start, int p_length);
+	void _apply_ring_modulation(SinglyLinkedList<int>::Element *p_buffer_start, int p_length);
 	// NOTE: Original code would implicitly use the filter variables if nothing was passed as the 3rd argument. We make this explicit.
-	void _apply_sv_filter(std::forward_list<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]);
+	void _apply_sv_filter(SinglyLinkedList<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]);
 	void _reset_sv_filter_state();
 	bool _try_shift_sv_filter_state(int p_state);
 	void _shift_sv_filter_state(int p_state);
@@ -140,10 +139,10 @@ protected:
 public:
 	SiOPMChannelManager::ChannelType get_channel_type() const { return _channel_type; }
 
-	virtual void get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {}
-	virtual void set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) {}
+	virtual void get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {}
+	virtual void set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) {}
 
-	virtual void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {}
+	virtual void set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {}
 	virtual void set_channel_number(int p_value) {}
 	virtual void set_register(int p_address, int p_data) {}
 

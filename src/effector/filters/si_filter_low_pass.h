@@ -13,7 +13,6 @@ class SiFilterLowPass : public SiFilterBase {
 	//GDCLASS(SiFilterLowPass, SiFilterBase)
 
 protected:
-	static void _bind_methods();
 
 public:
 	void set_params(double p_frequency = 800, double p_band = 1);

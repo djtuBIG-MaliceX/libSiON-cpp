@@ -26,16 +26,16 @@ class MMLParser {
 	// Settings.
 
 	MMLParserSettings *_settings = nullptr;
-	std::string _mml_string;
+	sion::String _mml_string;
 
-	HashMap<std::string, int> _user_defined_event_map;
+	HashMap<sion::String, int> _user_defined_event_map;
 	std::vector<bool> _event_global_flags;
 
-	std::vector<std::string> _system_event_strings;
-	std::vector<std::string> _sequence_mml_strings;
+	std::vector<sion::String> _system_event_strings;
+	std::vector<sion::String> _sequence_mml_strings;
 
-	int _register_system_event_string(std::string p_event);
-	int _register_sequence_mml_strings(std::string p_mml);
+	int _register_system_event_string(sion::String p_event);
+	int _register_sequence_mml_strings(sion::String p_mml);
 
 	// This is just a helper to make the code clearer when we access
 	// substrings parsed by the regex.
@@ -52,7 +52,7 @@ class MMLParser {
         REX_PERIOD     = 10,
 	};
 
-	std::shared_ptr<RegEx> _mml_regex;
+	Ref<RegEx> _mml_regex;
 	// Starting offset for subsequent searches. In the original code it's a part of the RegExp object.
 	int _mml_regex_last_index = 0;
 
@@ -102,9 +102,9 @@ class MMLParser {
 	void _reset_state();
 	void _reset_state_track();
 
-	int _parse_length(const std::shared_ptr<RegExMatch> &p_res);
-	int _parse_param(const std::shared_ptr<RegExMatch> &p_res, int p_default = INT32_MIN);
-	int _parse_period(const std::shared_ptr<RegExMatch> &p_res);
+	int _parse_length(const Ref<RegExMatch> &p_res);
+	int _parse_param(const Ref<RegExMatch> &p_res, int p_default = INT32_MIN);
+	int _parse_period(const Ref<RegExMatch> &p_res);
 
 	// Timers.
 
@@ -174,23 +174,23 @@ public:
 
 	// Settings.
 
-	void set_user_defined_event_map(HashMap<std::string, int> p_event_map);
+	void set_user_defined_event_map(HashMap<sion::String, int> p_event_map);
 	void set_global_event_flags(std::vector<bool> p_event_flags);
 
-	void get_command_letters(HashMap<int, std::string> *r_letter_map);
-	std::string get_system_event_string(MMLEvent *p_event);
-	std::string get_sequence_mml(MMLEvent *p_event);
+	void get_command_letters(HashMap<int, sion::String> *r_letter_map);
+	sion::String get_system_event_string(MMLEvent *p_event);
+	sion::String get_sequence_mml(MMLEvent *p_event);
 
 	// Key.
 
 	// The string for the signature is expected in the following format: /[A-G][+\-#b]?m?/.
 	// A custom signature can be set by listing multiple signatures in the same manner,
 	// separated by a space or a comma.
-	void set_key_signature(std::string p_sign);
+	void set_key_signature(sion::String p_sign);
 
 	// Parsing and events.
 
-	void prepare_parse(MMLParserSettings *p_settings, std::string p_mml);
+	void prepare_parse(MMLParserSettings *p_settings, sion::String p_mml);
 	// Takes the interval for interruptions, in msec. 0 means no interruptions. Interruptions occur between sequences.
 	MMLEvent *parse(int p_interrupt = 0);
 	double get_parse_progress();

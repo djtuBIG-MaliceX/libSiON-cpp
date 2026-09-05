@@ -101,13 +101,13 @@ std::vector<int> SiONVoice::get_params_al() const {
 	return make_typed_array_from_vector<int>(data);
 }
 
-std::string SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_postfix) const {
+sion::String SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_append_postfix) const {
 	SiONChipType type = p_chip_type;
 	if (type == SiONChipType::CHIP_AUTO) {
 		type = chip_type;
 	}
 
-	std::string mml;
+	sion::String mml;
 	switch (type) {
 		case SiONChipType::CHIP_SIOPM:
 			mml = "#@"    + itos(p_index) + TranslatorUtil::get_siopm_params_as_mml(channel_params, " ", "\n", _name);
@@ -131,13 +131,13 @@ std::string SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_app
 			mml = "#AL@"  + itos(p_index) + TranslatorUtil::get_al_params_as_mml(channel_params, " ", "\n", _name);
 			break;
 		default:
-			//ERR_FAIL_V_MSG("", vformat("SiONVoice: Chip type %d is unsupported for MML strings.", type));
+			ERR_FAIL_V_MSG("", vformat("SiONVoice: Chip type %d is unsupported for MML strings.", type));
 	}
 
 	if (p_append_postfix) {
-		std::shared_ptr<SiONVoice> this_voice = const_cast<SiONVoice *>(this);
-		std::string postfix = TranslatorUtil::get_voice_setting_as_mml(this_voice);
-		if (!postfix.empty()()) {
+		Ref<SiONVoice> this_voice = const_cast<SiONVoice *>(this);
+		sion::String postfix = TranslatorUtil::get_voice_setting_as_mml(this_voice);
+		if (!postfix.empty()) {
 			mml += "\n" + postfix;
 		}
 	}
@@ -145,19 +145,19 @@ std::string SiONVoice::get_mml(int p_index, SiONChipType p_chip_type, bool p_app
 	return mml + ";";
 }
 
-int SiONVoice::set_by_mml(std::string p_mml) {
+int SiONVoice::set_by_mml(sion::String p_mml) {
 	reset();
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_command = RegEx::create_from_string("(?s)(#[A-Z]*@)\\s*(\\d+)\\s*{(.*?)}(.*?);");
-	std::shared_ptr<RegExMatch> res = re_command->search(p_mml);
+	Ref<RegEx> re_command = RegEx::create_from_string("(?s)(#[A-Z]*@)\\s*(\\d+)\\s*{(.*?)}(.*?);");
+	Ref<RegExMatch> res = re_command->search(p_mml);
 	if (res.is_null()) {
 		return -1;
 	}
 
-	std::string command = res->get_string(1);
-	std::string data = res->get_string(3);
+	sion::String command = res->get_string(1);
+	sion::String data = res->get_string(3);
 
 	if (command == "#@") {
 		TranslatorUtil::parse_siopm_params(channel_params, data);
@@ -184,11 +184,11 @@ int SiONVoice::set_by_mml(std::string p_mml) {
 		return -1;
 	}
 
-	std::string postfix = res->get_string(4);
+	sion::String postfix = res->get_string(4);
 	int voice_index = res->get_string(2).to_int();
 	TranslatorUtil::parse_voice_setting(this, postfix);
 
-	std::shared_ptr<RegEx> re_name = RegEx::create_from_string("^.*?(//\\s*(.+?))?[\\n\\r]");
+	Ref<RegEx> re_name = RegEx::create_from_string("^.*?(//\\s*(.+?))?[\\n\\r]");
 	res = re_name->search(data);
 	if (res.is_valid()) {
 		_name = res->get_string(2);
@@ -199,75 +199,75 @@ int SiONVoice::set_by_mml(std::string p_mml) {
 	return voice_index;
 }
 
-std::shared_ptr<SiOPMWaveTable> SiONVoice::set_wave_table(std::vector<double> *p_data) {
+Ref<SiOPMWaveTable> SiONVoice::set_wave_table(std::vector<double> *p_data) {
 	module_type = SiONModuleType::MODULE_SCC;
 
 	std::vector<int> table;
 	for (int i = 0; i < p_data->size(); i++) {
 		int table_index = SiOPMRefTable::calculate_log_table_index((*p_data)[i]);
-		table.append(table_index);
+		table.push_back(table_index);
 	}
 
-	std::shared_ptr<SiOPMWaveTable> wave_table = memnew(SiOPMWaveTable(table));
+	Ref<SiOPMWaveTable> wave_table = new SiOPMWaveTable(table);
 	wave_data = wave_table;
 
 	return wave_data;
 }
 
-std::shared_ptr<SiOPMWavePCMData> SiONVoice::set_pcm_voice(const Variant &p_data, int p_sampling_note, int p_src_channel_count, int p_channel_count) {
+Ref<SiOPMWavePCMData> SiONVoice::set_pcm_voice(const Ref<SampleData> &p_data, int p_sampling_note, int p_src_channel_count, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_PCM;
 
-	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, p_sampling_note * 64, p_src_channel_count, p_channel_count));
+	Ref<SiOPMWavePCMData> pcm_data = new SiOPMWavePCMData(p_data, p_sampling_note * 64, p_src_channel_count, p_channel_count);
 	wave_data = pcm_data;
 
 	return wave_data;
 }
 
-std::shared_ptr<SiOPMWavePCMData> SiONVoice::set_pcm_wave(int p_index, const Variant &p_data, int p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_count, int p_channel_count) {
+Ref<SiOPMWavePCMData> SiONVoice::set_pcm_wave(int p_index, const Ref<SampleData> &p_data, int p_sampling_note, int p_key_range_from, int p_key_range_to, int p_src_channel_count, int p_channel_count) {
 	if (module_type != SiONModuleType::MODULE_PCM || channel_num != p_index) {
-		wave_data = std::shared_ptr<SiOPMWaveBase>();
+		wave_data = Ref<SiOPMWaveBase>();
 	}
 
 	module_type = SiONModuleType::MODULE_PCM;
 	channel_num = p_index;
 
-	std::shared_ptr<SiOPMWavePCMTable> pcm_table = wave_data;
+	Ref<SiOPMWavePCMTable> pcm_table = wave_data;
 	if (pcm_table.is_null()) {
-		pcm_table = std::shared_ptr<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
+		pcm_table = Ref<SiOPMWavePCMTable>(new SiOPMWavePCMTable);
 		wave_data = pcm_table;
 	}
 
-	std::shared_ptr<SiOPMWavePCMData> pcm_data = memnew(SiOPMWavePCMData(p_data, int(p_sampling_note * 64), p_src_channel_count, p_channel_count));
+	Ref<SiOPMWavePCMData> pcm_data = new SiOPMWavePCMData(p_data, int(p_sampling_note * 64), p_src_channel_count, p_channel_count);
 	pcm_table->set_key_range_data(pcm_data, p_key_range_from, p_key_range_to);
 
 	return pcm_data;
 }
 
-std::shared_ptr<SiOPMWaveSamplerData> SiONVoice::set_sampler_voice(const Variant &p_data, bool p_ignore_note_off, int p_channel_count) {
+Ref<SiOPMWaveSamplerData> SiONVoice::set_sampler_voice(const Ref<SampleData> &p_data, bool p_ignore_note_off, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
-	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, 0, 2, p_channel_count));
+	Ref<SiOPMWaveSamplerData> sampler_data = new SiOPMWaveSamplerData(p_data, p_ignore_note_off, 0, 2, p_channel_count);
 	wave_data = sampler_data;
 
 	return wave_data;
 }
 
-std::shared_ptr<SiOPMWaveSamplerData> SiONVoice::set_sampler_wave(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
+Ref<SiOPMWaveSamplerData> SiONVoice::set_sampler_wave(int p_index, const Ref<SampleData> &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
-	std::shared_ptr<SiOPMWaveSamplerTable> sampler_table = wave_data;
+	Ref<SiOPMWaveSamplerTable> sampler_table = wave_data;
 	if (sampler_table.is_null()) {
-		sampler_table = std::shared_ptr<SiOPMWaveSamplerTable>(memnew(SiOPMWaveSamplerTable));
+		sampler_table = Ref<SiOPMWaveSamplerTable>(new SiOPMWaveSamplerTable);
 		wave_data = sampler_table;
 	}
 
-	std::shared_ptr<SiOPMWaveSamplerData> sampler_data = memnew(SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count));
+	Ref<SiOPMWaveSamplerData> sampler_data = new SiOPMWaveSamplerData(p_data, p_ignore_note_off, p_pan, p_src_channel_count, p_channel_count);
 	sampler_table->set_sample(sampler_data, p_index & (SiOPMRefTable::NOTE_TABLE_SIZE - 1));
 
 	return sampler_data;
 }
 
-void SiONVoice::set_sampler_table(const std::shared_ptr<SiOPMWaveSamplerTable> &p_table) {
+void SiONVoice::set_sampler_table(const Ref<SiOPMWaveSamplerTable> &p_table) {
 	module_type = SiONModuleType::MODULE_SAMPLE;
 
 	wave_data = p_table;
@@ -303,7 +303,7 @@ void SiONVoice::set_analog_like(int p_connection_type, int p_wave_shape1, int p_
 
 void SiONVoice::set_envelope(int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level) {
 	for (int i = 0; i < channel_params->get_operator_count(); i++) {
-		std::shared_ptr<SiOPMOperatorParams> op_params = channel_params->get_operator_params(i);
+		Ref<SiOPMOperatorParams> op_params = channel_params->get_operator_params(i);
 		op_params->set_attack_rate(p_attack_rate);
 		op_params->set_decay_rate(p_decay_rate);
 		op_params->set_sustain_rate(p_sustain_rate);
@@ -345,8 +345,8 @@ void SiONVoice::set_pitch_modulation(int p_depth, int p_end_depth, int p_delay, 
 	pitch_modulation_term = p_term;
 }
 
-std::shared_ptr<SiONVoice> SiONVoice::clone() {
-	std::shared_ptr<SiONVoice> new_voice;
+Ref<SiONVoice> SiONVoice::clone() {
+	Ref<SiONVoice> new_voice;
 	new_voice.instantiate();
 	new_voice->copy_from(this);
 	new_voice->_name = _name;
@@ -361,48 +361,8 @@ void SiONVoice::reset() {
 	set_update_track_parameters(true);
 }
 
-std::shared_ptr<SiONVoice> SiONVoice::create(SiONModuleType p_module_type, int p_channel_num, int p_attack_rate, int p_release_rate, int p_pitch_shift, int p_connection_type, int p_wave_shape2, int p_pitch_shift2) {
-	return memnew(SiONVoice(p_module_type, p_channel_num, p_attack_rate, p_release_rate, p_pitch_shift, p_connection_type, p_wave_shape2, p_pitch_shift2));
-}
-
-void SiONVoice::_bind_methods() {
-	// Factory.
-
-	ClassDB::bind_static_method("SiONVoice", D_METHOD("create", "module_type", "channel_num", "attack_rate", "release_rate", "pitch_shift", "connection_type", "wave_shape2", "pitch_shift2"), &SiONVoice::create, DEFVAL(SiONModuleType::MODULE_GENERIC_PG), DEFVAL(0), DEFVAL(63), DEFVAL(63), DEFVAL(0), DEFVAL(-1), DEFVAL(0), DEFVAL(0));
-
-	// Public API.
-
-	ClassDB::bind_method(D_METHOD("get_name"), &SiONVoice::get_name);
-	ClassDB::bind_method(D_METHOD("set_name", "value"), &SiONVoice::set_name);
-
-	ClassDB::bind_method(D_METHOD("get_params"), &SiONVoice::get_params);
-	ClassDB::bind_method(D_METHOD("get_params_opl"), &SiONVoice::get_params_opl);
-	ClassDB::bind_method(D_METHOD("get_params_opm"), &SiONVoice::get_params_opm);
-	ClassDB::bind_method(D_METHOD("get_params_opn"), &SiONVoice::get_params_opn);
-	ClassDB::bind_method(D_METHOD("get_params_opx"), &SiONVoice::get_params_opx);
-	ClassDB::bind_method(D_METHOD("get_params_ma3"), &SiONVoice::get_params_ma3);
-	ClassDB::bind_method(D_METHOD("get_params_al"), &SiONVoice::get_params_al);
-
-	ClassDB::bind_method(D_METHOD("set_params", "args"), &SiONVoice::set_params);
-	ClassDB::bind_method(D_METHOD("set_params_opl", "args"), &SiONVoice::set_params_opl);
-	ClassDB::bind_method(D_METHOD("set_params_opm", "args"), &SiONVoice::set_params_opm);
-	ClassDB::bind_method(D_METHOD("set_params_opn", "args"), &SiONVoice::set_params_opn);
-	ClassDB::bind_method(D_METHOD("set_params_opx", "args"), &SiONVoice::set_params_opx);
-	ClassDB::bind_method(D_METHOD("set_params_ma3", "args"), &SiONVoice::set_params_ma3);
-	ClassDB::bind_method(D_METHOD("set_params_al", "args"), &SiONVoice::set_params_al);
-
-	ClassDB::bind_method(D_METHOD("get_mml", "index", "chip_type", "append_postfix"), &SiONVoice::get_mml, DEFVAL(SiONChipType::CHIP_AUTO), DEFVAL(true));
-	ClassDB::bind_method(D_METHOD("set_by_mml", "mml"), &SiONVoice::set_by_mml);
-
-	ClassDB::bind_method(D_METHOD("set_pms_guitar", "attack_rate", "decay_rate", "total_level", "fixed_pitch", "wave_shape", "tension"), &SiONVoice::set_pms_guitar, DEFVAL(48), DEFVAL(48), DEFVAL(0), DEFVAL(69), DEFVAL(20), DEFVAL(8));
-	ClassDB::bind_method(D_METHOD("set_analog_like", "connection_type", "wave_shape1", "wave_shape2", "balance", "pitch_difference"), &SiONVoice::set_analog_like, DEFVAL(1), DEFVAL(1), DEFVAL(0), DEFVAL(0));
-
-	ClassDB::bind_method(D_METHOD("set_envelope", "attack_rate", "decay_rate", "sustain_rate", "release_rate", "sustain_level", "total_level"), &SiONVoice::set_envelope);
-	ClassDB::bind_method(D_METHOD("set_filter_envelope", "filter_type", "cutoff", "resonance", "attack_rate", "decay_rate1", "decay_rate2", "release_rate", "decay_cutoff1", "decay_cutoff2", "sustain_cutoff", "release_cutoff"), &SiONVoice::set_filter_envelope, DEFVAL(0), DEFVAL(128), DEFVAL(0), DEFVAL(0), DEFVAL(0), DEFVAL(0), DEFVAL(0), DEFVAL(128), DEFVAL(64), DEFVAL(32), DEFVAL(128));
-	ClassDB::bind_method(D_METHOD("set_amplitude_modulation", "depth", "end_depth", "delay", "term"), &SiONVoice::set_amplitude_modulation, DEFVAL(0), DEFVAL(0), DEFVAL(0), DEFVAL(0));
-	ClassDB::bind_method(D_METHOD("set_pitch_modulation", "depth", "end_depth", "delay", "term"), &SiONVoice::set_pitch_modulation, DEFVAL(0), DEFVAL(0), DEFVAL(0), DEFVAL(0));
-
-	ClassDB::add_property("SiONVoice", PropertyInfo(Variant::STRING, "name"), "set_name", "get_name");
+Ref<SiONVoice> SiONVoice::create(SiONModuleType p_module_type, int p_channel_num, int p_attack_rate, int p_release_rate, int p_pitch_shift, int p_connection_type, int p_wave_shape2, int p_pitch_shift2) {
+	return new SiONVoice(p_module_type, p_channel_num, p_attack_rate, p_release_rate, p_pitch_shift, p_connection_type, p_wave_shape2, p_pitch_shift2);
 }
 
 SiONVoice::SiONVoice(SiONModuleType p_module_type, int p_channel_num, int p_attack_rate, int p_release_rate, int p_pitch_shift, int p_connection_type, int p_wave_shape2, int p_pitch_shift2) :

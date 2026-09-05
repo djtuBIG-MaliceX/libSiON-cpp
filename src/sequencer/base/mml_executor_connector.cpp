@@ -28,11 +28,11 @@ void MMLExecutorConnector::_free_element(MECElement *p_element) {
 
 MMLExecutorConnector::MECElement *MMLExecutorConnector::_alloc_element(int p_number) {
 	MECElement *element = nullptr;
-	if (!_free_list.empty()()) {
+	if (!_free_list.empty()) {
 		element = _free_list.back()->get();
 		_free_list.pop_back();
 	} else {
-		element = memnew(MECElement);
+		element = new MECElement;
 	}
 
 	element->initialize(p_number);
@@ -85,7 +85,7 @@ MMLSequence *MMLExecutorConnector::connect(MMLSequenceGroup *p_seq_group, MMLSeq
 	_connecting_sequence_list.clear();
 
 	for (int i = 0; i < _sequence_count; i++) {
-		////ERR_FAIL_COND_V_MSG(!_connecting_sequence->get_next_sequence(), nullptr, "MMLExecutorConnector: Not enough sequences to connect.");
+		ERR_FAIL_COND_V_MSG(!_connecting_sequence->get_next_sequence(), nullptr, "MMLExecutorConnector: Not enough sequences to connect.");
 
 		_connecting_sequence_list.push_back(_connecting_sequence->get_next_sequence());
 		_connecting_sequence->get_next_sequence()->remove_from_chain();
@@ -95,20 +95,20 @@ MMLSequence *MMLExecutorConnector::connect(MMLSequenceGroup *p_seq_group, MMLSeq
 	return _connecting_sequence;
 }
 
-void MMLExecutorConnector::parse(std::string p_formula) {
+void MMLExecutorConnector::parse(sion::String p_formula) {
 	clear();
 
 	MECElement *last_elem = nullptr;
 
-	std::shared_ptr<RegEx> re_formula = RegEx::create_from_string("(\\()?([a-zA-Z])([0-7])?(\\)+)?");
+	Ref<RegEx> re_formula = RegEx::create_from_string("(\\()?([a-zA-Z])([0-7])?(\\)+)?");
 	std::vector<RegExMatch> matches = re_formula->search_all(p_formula);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		// We want to have a 0-based index for letters from A to Z.
-		std::string osc_key = res->get_string(2);
+		sion::String osc_key = res->get_string(2);
 		int osc_idx = osc_key.to_lower().unicode_at(0) - 'a';
-		////ERR_FAIL_INDEX_MSG(osc_idx, 26, vformat("MMLExecutorConnector: Invalid oscillator key '%s' in formula: '%s'", osc_key, p_formula));
+		ERR_FAIL_INDEX_MSG(osc_idx, 26, vformat("MMLExecutorConnector: Invalid oscillator key '%s' in formula: '%s'", osc_key, p_formula));
 
 		if (_sequence_count <= osc_idx) {
 			_sequence_count = osc_idx + 1;
@@ -117,7 +117,7 @@ void MMLExecutorConnector::parse(std::string p_formula) {
 
 		MECElement *elem = _alloc_element(osc_idx);
 
-		if (!res->get_string(3).empty()()) {
+		if (!res->get_string(3).empty()) {
 			elem->modulation = res->get_string(3).to_int();
 		} else {
 			elem->modulation = 5;
@@ -125,8 +125,8 @@ void MMLExecutorConnector::parse(std::string p_formula) {
 
 		// Modulation start "(".
 
-		if (!res->get_string(1).empty()()) {
-			////ERR_FAIL_COND_MSG(!last_elem, vformat("MMLExecutorConnector: Invalid modulation start '(' in formula: '%s'", p_formula));
+		if (!res->get_string(1).empty()) {
+			ERR_FAIL_COND_MSG(!last_elem, vformat("MMLExecutorConnector: Invalid modulation start '(' in formula: '%s'", p_formula));
 			last_elem->first_child = elem;
 			elem->parent = last_elem;
 		} else {
@@ -139,11 +139,11 @@ void MMLExecutorConnector::parse(std::string p_formula) {
 		}
 
 		// Modulation end ")+".
-		if (!res->get_string(4).empty()()) {
-			std::string end_string = res->get_string(4);
+		if (!res->get_string(4).empty()) {
+			sion::String end_string = res->get_string(4);
 
 			for (int j = 0; j < end_string.length(); j++) {
-				////ERR_FAIL_COND_MSG(!elem->parent, vformat("MMLExecutorConnector: Invalid modulation end ')' in formula: '%s'", p_formula));
+				ERR_FAIL_COND_MSG(!elem->parent, vformat("MMLExecutorConnector: Invalid modulation end ')' in formula: '%s'", p_formula));
 				elem = elem->parent;
 			}
 		}
@@ -151,7 +151,7 @@ void MMLExecutorConnector::parse(std::string p_formula) {
 		last_elem = elem;
 	}
 
-	////ERR_FAIL_COND_MSG(!last_elem || last_elem->parent, vformat("MMLExecutorConnector: Invalid formula: '%s'", p_formula));
+	ERR_FAIL_COND_MSG(!last_elem || last_elem->parent, vformat("MMLExecutorConnector: Invalid formula: '%s'", p_formula));
 }
 
 void MMLExecutorConnector::clear() {

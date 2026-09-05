@@ -11,7 +11,7 @@
 
 #include <memory>
 
-std::shared_ptr<SiOPMWaveSamplerData> SiOPMWaveSamplerTable::get_sample(int p_sample_number) const {
+Ref<SiOPMWaveSamplerData> SiOPMWaveSamplerTable::get_sample(int p_sample_number) const {
 	//if (_stencil.is_valid() && _stencil->_table[p_sample_number].is_valid()) {
 	if (_stencil->_table.size() < p_sample_number) {
 		return _stencil->_table[p_sample_number];
@@ -20,7 +20,7 @@ std::shared_ptr<SiOPMWaveSamplerData> SiOPMWaveSamplerTable::get_sample(int p_sa
 	return _table[p_sample_number];
 }
 
-void SiOPMWaveSamplerTable::set_sample(const std::shared_ptr<SiOPMWaveSamplerData> &p_sample, int p_key_range_from, int p_key_range_to) {
+void SiOPMWaveSamplerTable::set_sample(const Ref<SiOPMWaveSamplerData> &p_sample, int p_key_range_from, int p_key_range_to) {
 	int key_from = std::max(0, p_key_range_from);
 	int key_to = std::min(SiOPMRefTable::SAMPLER_DATA_MAX - 1, p_key_range_to);
 
@@ -28,9 +28,9 @@ void SiOPMWaveSamplerTable::set_sample(const std::shared_ptr<SiOPMWaveSamplerDat
 		key_to = key_from;
 	}
 
-	////ERR_FAIL_COND_MSG(key_from > (SiOPMRefTable::SAMPLER_DATA_MAX - 1), vformat("SiOPMWaveSamplerTable: Invalid sample key range, left boundary cannot be greater than %d but %d was given.", (SiOPMRefTable::SAMPLER_DATA_MAX - 1), key_from));
-	////ERR_FAIL_COND_MSG(key_to < 0, vformat("SiOPMWaveSamplerTable: Invalid sample key range, right boundary cannot be less than 0 (except -1) but %d was given.", key_to));
-	////ERR_FAIL_COND_MSG(key_to < key_from, vformat("SiOPMWaveSamplerTable: Invalid sample key range, left boundary cannot be greater than right boundary (%d > %d).", key_from, key_to));
+	ERR_FAIL_COND_MSG(key_from > (SiOPMRefTable::SAMPLER_DATA_MAX - 1), vformat("SiOPMWaveSamplerTable: Invalid sample key range, left boundary cannot be greater than %d but %d was given.", (SiOPMRefTable::SAMPLER_DATA_MAX - 1), key_from));
+	ERR_FAIL_COND_MSG(key_to < 0, vformat("SiOPMWaveSamplerTable: Invalid sample key range, right boundary cannot be less than 0 (except -1) but %d was given.", key_to));
+	ERR_FAIL_COND_MSG(key_to < key_from, vformat("SiOPMWaveSamplerTable: Invalid sample key range, left boundary cannot be greater than right boundary (%d > %d).", key_from, key_to));
 
 	for (int i = key_from; i <= key_to; i++) {
 		_table[i] = p_sample;
@@ -39,7 +39,7 @@ void SiOPMWaveSamplerTable::set_sample(const std::shared_ptr<SiOPMWaveSamplerDat
 
 void SiOPMWaveSamplerTable::clear() {
 	for (int i = 0; i < SiOPMRefTable::SAMPLER_DATA_MAX; i++) {
-		_table[i] = std::shared_ptr<SiOPMWaveSamplerData>();
+		_table[i] = Ref<SiOPMWaveSamplerData>();
 	}
 }
 

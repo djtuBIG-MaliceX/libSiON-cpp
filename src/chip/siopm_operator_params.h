@@ -15,7 +15,7 @@
 
 
 // Operator parameters for SiONVoice.
-class SiOPMOperatorParams : public RefCounted {
+class SiOPMOperatorParams {
 	//GDCLASS(SiOPMOperatorParams, RefCounted)
 
 	friend class SiOPMChannelParams;
@@ -90,9 +90,8 @@ private:
 	bool envelope_reset_on_attack = false;
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
 	int get_pulse_generator_type() const { return pulse_generator_type; }
@@ -145,12 +144,11 @@ public:
 	void set_envelope_reset_on_attack(bool p_reset) { envelope_reset_on_attack = p_reset; }
 
 	void initialize();
-	void copy_from(const std::shared_ptr<SiOPMOperatorParams> &p_params);
+	void copy_from(const Ref<SiOPMOperatorParams> &p_params);
 
 	SiOPMOperatorParams();
 	~SiOPMOperatorParams() {}
 };
 
-VARIANT_ENUM_CAST(SiOPMOperatorParams::SSGEnvelopeControl);
 
 #endif // SIOPM_OPERATOR_PARAMS_H

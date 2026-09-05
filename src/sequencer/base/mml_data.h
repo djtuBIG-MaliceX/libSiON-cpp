@@ -35,8 +35,8 @@ private:
 	MMLSequenceGroup *_sequence_group = nullptr;
 	MMLSequence *_global_sequence = nullptr;
 
-	std::string _title;
-	std::string _author;
+	sion::String _title;
+	sion::String _author;
 
 	int _default_fps = 60;
 	TCommandMode _tcommand_mode = TCOMMAND_BPM;
@@ -46,16 +46,15 @@ private:
 	int _default_velocity_mode = 0;
 	int _default_expression_mode = 0;
 
-	std::shared_ptr<BeatsPerMinute> _initial_bpm;
+	Ref<BeatsPerMinute> _initial_bpm;
 	// System commands that cannot be parsed by the system.
-	List<std::shared_ptr<MMLSystemCommand>> _system_commands;
+	List<Ref<MMLSystemCommand>> _system_commands;
 
 protected:
-	static void _bind_methods();
 
 public:
-	std::string get_title() const { return _title; }
-	void set_title(std::string p_title) { _title = p_title; }
+	sion::String get_title() const { return _title; }
+	void set_title(sion::String p_title) { _title = p_title; }
 
 	int get_default_fps() const { return _default_fps; }
 	void set_default_fps(int p_value) { _default_fps = p_value; }
@@ -74,13 +73,13 @@ public:
 	// Setting this to 0 makes data dependent on the driver's BPM.
 	void set_bpm(double p_value);
 
-	std::shared_ptr<BeatsPerMinute> get_bpm_settings() const { return _initial_bpm; }
-	void set_bpm_settings(const std::shared_ptr<BeatsPerMinute> &p_settings) { _initial_bpm = p_settings; }
+	Ref<BeatsPerMinute> get_bpm_settings() const { return _initial_bpm; }
+	void set_bpm_settings(const Ref<BeatsPerMinute> &p_settings) { _initial_bpm = p_settings; }
 
 	double get_bpm_from_tcommand(int p_param);
 
-	List<std::shared_ptr<MMLSystemCommand>> get_system_commands() const { return _system_commands; }
-	void add_system_command(const std::shared_ptr<MMLSystemCommand> &p_command);
+	List<Ref<MMLSystemCommand>> get_system_commands() const { return _system_commands; }
+	void add_system_command(const Ref<MMLSystemCommand> &p_command);
 
 	// Sequences.
 

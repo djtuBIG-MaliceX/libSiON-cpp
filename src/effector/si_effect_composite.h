@@ -18,7 +18,7 @@ class SiEffectComposite : public SiEffectBase {
 	static const int SLOTS_MAX = 8;
 
 	struct SlottedEffect {
-		std::vector<std::shared_ptr<SiEffectBase>> effects;
+		std::vector<Ref<SiEffectBase>> effects;
 		std::vector<double> buffer;
 		double send_level = 1;
 		double mix_level = 1;
@@ -29,10 +29,9 @@ class SiEffectComposite : public SiEffectBase {
 	void _set_slot_effects_bind(int p_slot, std::vector<SiEffectBase> p_effects);
 
 protected:
-	static void _bind_methods();
 
 public:
-	void set_slot_effects(int p_slot, std::vector<std::shared_ptr<SiEffectBase>> p_effects);
+	void set_slot_effects(int p_slot, std::vector<Ref<SiEffectBase>> p_effects);
 	void set_slot_levels(int p_slot, double p_send_level, double p_mix_level);
 
 	virtual int prepare_process() override;

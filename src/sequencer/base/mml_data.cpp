@@ -20,10 +20,10 @@ double MMLData::get_bpm() const {
 
 void MMLData::set_bpm(double p_value) {
 	if (p_value > 0) {
-		std::shared_ptr<BeatsPerMinute> bpm = memnew(BeatsPerMinute(p_value, 44100));
+		Ref<BeatsPerMinute> bpm = new BeatsPerMinute(p_value, 44100);
 		_initial_bpm = bpm;
 	} else {
-		std::shared_ptr<BeatsPerMinute> bpm;
+		Ref<BeatsPerMinute> bpm;
 		bpm.instantiate();
 		_initial_bpm = bpm;
 	}
@@ -42,7 +42,7 @@ double MMLData::get_bpm_from_tcommand(int p_param) {
 	return 0.0;
 }
 
-void MMLData::add_system_command(const std::shared_ptr<MMLSystemCommand> &p_command) {
+void MMLData::add_system_command(const Ref<MMLSystemCommand> &p_command) {
 	_system_commands.push_back(p_command);
 }
 
@@ -73,7 +73,7 @@ void MMLData::clear() {
 	_default_velocity_mode = 0;
 	_default_expression_mode = 0;
 
-	std::shared_ptr<BeatsPerMinute> bpm;
+	Ref<BeatsPerMinute> bpm;
 	bpm.instantiate();
 	_initial_bpm = bpm;
 	_system_commands.clear();
@@ -82,42 +82,12 @@ void MMLData::clear() {
 	_global_sequence->initialize();
 }
 
-void MMLData::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_title"), &MMLData::get_title);
-	ClassDB::bind_method(D_METHOD("set_title", "title"), &MMLData::set_title);
-
-	ClassDB::bind_method(D_METHOD("get_default_fps"), &MMLData::get_default_fps);
-	ClassDB::bind_method(D_METHOD("set_default_fps", "value"), &MMLData::set_default_fps);
-
-	ClassDB::bind_method(D_METHOD("get_default_velocity_shift"), &MMLData::get_default_velocity_shift);
-	ClassDB::bind_method(D_METHOD("set_default_velocity_shift", "value"), &MMLData::set_default_velocity_shift);
-	ClassDB::bind_method(D_METHOD("get_default_velocity_mode"), &MMLData::get_default_velocity_mode);
-	ClassDB::bind_method(D_METHOD("set_default_velocity_mode", "value"), &MMLData::set_default_velocity_mode);
-	ClassDB::bind_method(D_METHOD("get_default_expression_mode"), &MMLData::get_default_expression_mode);
-	ClassDB::bind_method(D_METHOD("set_default_expression_mode", "value"), &MMLData::set_default_expression_mode);
-
-	ClassDB::bind_method(D_METHOD("get_bpm"), &MMLData::get_bpm);
-	ClassDB::bind_method(D_METHOD("set_bpm", "value"), &MMLData::set_bpm);
-
-	ClassDB::bind_method(D_METHOD("get_global_sequence"), &MMLData::get_global_sequence);
-	ClassDB::bind_method(D_METHOD("get_sequence_group"), &MMLData::get_sequence_group);
-
-	//
-
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::STRING, "title"), "set_title", "get_title");
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::INT, "default_fps"), "set_default_fps", "get_default_fps");
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::INT, "default_velocity_shift"), "set_default_velocity_shift", "get_default_velocity_shift");
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::INT, "default_velocity_mode"), "set_default_velocity_mode", "get_default_velocity_mode");
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::INT, "default_expression_mode"), "set_default_expression_mode", "get_default_expression_mode");
-	ClassDB::add_property("MMLData", PropertyInfo(Variant::FLOAT, "bpm"), "set_bpm", "get_bpm");
-}
-
 MMLData::MMLData() {
-	_sequence_group = memnew(MMLSequenceGroup);
-	_global_sequence = memnew(MMLSequence);
+	_sequence_group = new MMLSequenceGroup;
+	_global_sequence = new MMLSequence;
 }
 
 MMLData::~MMLData() {
-	memdelete(_sequence_group);
-	memdelete(_global_sequence);
+	delete _sequence_group;
+	delete _global_sequence;
 }

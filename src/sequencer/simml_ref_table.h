@@ -30,10 +30,10 @@ class SiMMLRefTable {
 	std::vector<SiMMLEnvelopeTable> _stencil_envelopes;
 	std::vector<SiMMLVoice> _stencil_voices;
 
-	void _fill_tss_log_table(std::string (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255);
+	void _fill_tss_log_table(sion::String (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255);
 
 	template <size_t S>
-	std::ector<SiMMLVoice> _setup_ym2413_default_voices(uint32_t (&p_register_map)[S]);
+	std::vector<SiMMLVoice> _setup_ym2413_default_voices(uint32_t (&p_register_map)[S]);
 	void _dump_ym2413_register(const SiMMLVoice &p_voice, uint32_t p_u0, uint32_t p_u1);
 
 public:
@@ -46,13 +46,13 @@ public:
 	HashMap<SiONModuleType, SiMMLChannelSettings *> channel_settings_map;
 
 	// Mapping from tsscp @s command to OPM attack rate.
-	std::string tss_scmd_to_attack_rate[256];
+	sion::String tss_scmd_to_attack_rate[256];
 	// Mapping from tsscp @s command to OPM decay rate.
-	std::string tss_scmd_to_decay_rate[256];
+	sion::String tss_scmd_to_decay_rate[256];
 	// Mapping from tsscp @s command to OPM sustain rate.
-	std::string tss_scmd_to_sustain_rate[256];
+	sion::String tss_scmd_to_sustain_rate[256];
 	// Mapping from tsscp @s command to OPM release rate.
-	std::string tss_scmd_to_release_rate[256];
+	sion::String tss_scmd_to_release_rate[256];
 
 	// Table of OPLL preset voices (from virturenes)
 	uint32_t preset_register_ym2413[32] = {
@@ -73,11 +73,11 @@ public:
 		0x04212800, 0xdff8fff8, 0x23220000, 0xd8f8f8f8, 0x25180000, 0xf8daf855
 	};
 	// Preset voice set of OPLL
-	std::vector<std::shared_ptr<SiMMLVoice>> preset_voice_ym2413;
+	std::vector<Ref<SiMMLVoice>> preset_voice_ym2413;
 	// Preset voice set of VRC7
-	std::vector<std::shared_ptr<SiMMLVoice>> preset_voice_vrc7;
+	std::vector<Ref<SiMMLVoice>> preset_voice_vrc7;
 	// Preset voice set of VRC7/OPLL drum
-	std::vector<std::shared_ptr<SiMMLVoice>> preset_voice_vrc7_drums;
+	std::vector<Ref<SiMMLVoice>> preset_voice_vrc7_drums;
 
 	// Algorithm table for OPM/OPN.
 	int algorithm_opm[4][16] = {
@@ -119,16 +119,16 @@ public:
 	//
 
 	void reset_all_user_tables();
-	void register_master_envelope_table(int p_index, const std::shared_ptr<SiMMLEnvelopeTable> &p_table);
-	void register_master_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_voice);
+	void register_master_envelope_table(int p_index, const Ref<SiMMLEnvelopeTable> &p_table);
+	void register_master_voice(int p_index, const Ref<SiMMLVoice> &p_voice);
 
-	void set_stencil_envelopes(std::vector<std::shared_ptr<SiMMLEnvelopeTable>> p_tables) { _stencil_envelopes = p_tables; }
-	void clear_stencil_envelopes() { _stencil_envelopes = std::vector<std::shared_ptr<SiMMLEnvelopeTable>>(); }
-	void set_stencil_voices(std::vector<std::shared_ptr<SiMMLVoice>> p_tables) { _stencil_voices = p_tables; }
-	void clear_stencil_voices() { _stencil_voices = std::vector<std::shared_ptr<SiMMLVoice>>(); }
+	void set_stencil_envelopes(std::vector<Ref<SiMMLEnvelopeTable>> p_tables) { _stencil_envelopes = p_tables; }
+	void clear_stencil_envelopes() { _stencil_envelopes = std::vector<Ref<SiMMLEnvelopeTable>>(); }
+	void set_stencil_voices(std::vector<Ref<SiMMLVoice>> p_tables) { _stencil_voices = p_tables; }
+	void clear_stencil_voices() { _stencil_voices = std::vector<Ref<SiMMLVoice>>(); }
 
-	std::shared_ptr<SiMMLEnvelopeTable> get_envelope_table(int p_index);
-	std::shared_ptr<SiMMLVoice> get_voice(int p_index);
+	Ref<SiMMLEnvelopeTable> get_envelope_table(int p_index);
+	Ref<SiMMLVoice> get_voice(int p_index);
 
 	int get_pulse_generator_type(SiONModuleType p_module_type, int p_channel_num, int p_tone_num = -1);
 	bool is_suitable_for_fm_voice(SiONModuleType p_module_type);

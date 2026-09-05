@@ -15,26 +15,24 @@
 
 
 
-void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_channel_count, int p_channel_count) {
+void SiOPMWaveSamplerData::_prepare_wave_data(const Ref<SampleData> &p_data, int p_src_channel_count, int p_channel_count) {
 	int source_channels = std::clamp(p_src_channel_count, 1, 2);
 	int target_channels = (p_channel_count == 0 ? source_channels : std::clamp(p_channel_count, 1, 2));
 
-	Variant::Type data_type = p_data.get_type();
+	SampleData::Type data_type = (p_data.is_null() ? SampleData::NIL : p_data->type);
 	switch (data_type) {
-		case Variant::PACKED_FLOAT32_ARRAY: {
-			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
+		case SampleData::FLOAT32_ARRAY: {
 			std::vector<double> raw_data;
-			for (double value : (PackedFloat32Array)p_data) {
-				raw_data.append(value);
+			for (double value : p_data->float_samples) {
+				raw_data.push_back(value);
 			}
 
 			_wave_data = TransformerUtil::transform_sampler_data(raw_data, source_channels, target_channels);
 		} break;
 
-		case Variant::OBJECT: {
-			std::shared_ptr<AudioStream> audio_stream = p_data;
-			if (audio_stream.is_valid()) {
-				std::vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
+		case SampleData::WAVE: {
+			if (p_data->wave.is_valid()) {
+				std::vector<double> raw_data = _extract_wave_data(p_data->wave, &source_channels);
 				if (p_channel_count == 0) { // Update if necessary.
 					target_channels = source_channels;
 				}
@@ -43,15 +41,15 @@ void SiOPMWaveSamplerData::_prepare_wave_data(const Variant &p_data, int p_src_c
 				break;
 			}
 
-			//ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
+			ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
 		} break;
 
-		case Variant::NIL: {
+		case SampleData::NIL: {
 			// Nothing to do.
 		} break;
 
 		default: {
-			//ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
+			ERR_FAIL_MSG("SiOPMWaveSamplerData: Unsupported data type.");
 		} break;
 	}
 
@@ -78,7 +76,7 @@ int SiOPMWaveSamplerData::get_initial_sample_index(double p_phase) const {
 }
 
 int SiOPMWaveSamplerData::_seek_head_silence() {
-	if (_wave_data.empty()()) {
+	if (_wave_data.empty()) {
 		return 0;
 	}
 
@@ -89,7 +87,7 @@ int SiOPMWaveSamplerData::_seek_head_silence() {
 	// This method has been adjusted to fix the code according to the assumed intent. But it's not
 	// tested, and I can't say if the original idea behind the code is wrong somehow.
 
-	std::forward_list<double> *ms_window = memnew(std::forward_list<double>(22, 0.0, true)); // 0.5ms
+	SinglyLinkedList<double> *ms_window = new SinglyLinkedList<double>(22, 0.0, true); // 0.5ms
 	int i = 0;
 
 	if (_channel_count == 1) {
@@ -126,12 +124,12 @@ int SiOPMWaveSamplerData::_seek_head_silence() {
 		i >>= 1;
 	}
 
-	memdelete(ms_window);
+	delete ms_window;
 	return i - 22;
 }
 
 int SiOPMWaveSamplerData::_seek_end_gap() {
-	if (_wave_data.empty()()) {
+	if (_wave_data.empty()) {
 		return 0;
 	}
 
@@ -191,7 +189,7 @@ void SiOPMWaveSamplerData::slice(int p_start_point, int p_end_point, int p_loop_
 
 //
 
-SiOPMWaveSamplerData::SiOPMWaveSamplerData(const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) :
+SiOPMWaveSamplerData::SiOPMWaveSamplerData(const Ref<SampleData> &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count) :
 		SiOPMWaveBase(SiONModuleType::MODULE_SAMPLE) {
 
 	_prepare_wave_data(p_data, p_src_channel_count, p_channel_count);

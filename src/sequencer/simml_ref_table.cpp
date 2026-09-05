@@ -28,12 +28,12 @@ void SiMMLRefTable::initialize() {
 	}
 
 	// Sets the instance internally.
-	memnew(SiMMLRefTable);
+	new SiMMLRefTable;
 }
 
 void SiMMLRefTable::finalize() {
 	if (_instance) {
-		memdelete(_instance);
+		delete _instance;
 		_instance = nullptr;
 	}
 }
@@ -43,27 +43,27 @@ void SiMMLRefTable::finalize() {
 void SiMMLRefTable::reset_all_user_tables() {
 	for (int i = 0; i < ENVELOPE_TABLE_MAX; i++) {
 		if (_master_envelopes[i].is_valid()) {
-			_master_envelopes[i] = std::shared_ptr<SiMMLEnvelopeTable>();
+			_master_envelopes[i] = Ref<SiMMLEnvelopeTable>();
 		}
 	}
 
 	for (int i = 0; i < VOICE_MAX; i++) {
-		_master_voices[i] = std::shared_ptr<SiMMLVoice>();
+		_master_voices[i] = Ref<SiMMLVoice>();
 	}
 }
 
-void SiMMLRefTable::register_master_envelope_table(int p_index, const std::shared_ptr<SiMMLEnvelopeTable> &p_table) {
-	////ERR_FAIL_INDEX(p_index, ENVELOPE_TABLE_MAX);
+void SiMMLRefTable::register_master_envelope_table(int p_index, const Ref<SiMMLEnvelopeTable> &p_table) {
+	ERR_FAIL_INDEX(p_index, ENVELOPE_TABLE_MAX);
 	_master_envelopes[p_index] = p_table;
 }
 
-void SiMMLRefTable::register_master_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_voice) {
-	////ERR_FAIL_INDEX(p_index, VOICE_MAX);
+void SiMMLRefTable::register_master_voice(int p_index, const Ref<SiMMLVoice> &p_voice) {
+	ERR_FAIL_INDEX(p_index, VOICE_MAX);
 	_master_voices[p_index] = p_voice;
 }
 
-std::shared_ptr<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
-	////ERR_FAIL_INDEX_V(p_index, ENVELOPE_TABLE_MAX, nullptr);
+Ref<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_index) {
+	ERR_FAIL_INDEX_V(p_index, ENVELOPE_TABLE_MAX, nullptr);
 
 	if (p_index < _stencil_envelopes.size() && _stencil_envelopes[p_index].is_valid()) {
 		return _stencil_envelopes[p_index];
@@ -71,8 +71,8 @@ std::shared_ptr<SiMMLEnvelopeTable> SiMMLRefTable::get_envelope_table(int p_inde
 	return _master_envelopes[p_index];
 }
 
-std::shared_ptr<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
-	////ERR_FAIL_INDEX_V(p_index, VOICE_MAX, nullptr);
+Ref<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
+	ERR_FAIL_INDEX_V(p_index, VOICE_MAX, nullptr);
 
 	if (p_index < _stencil_voices.size() && _stencil_voices[p_index].is_valid()) {
 		return _stencil_voices[p_index];
@@ -82,7 +82,7 @@ std::shared_ptr<SiMMLVoice> SiMMLRefTable::get_voice(int p_index) {
 
 int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_channel_num, int p_tone_num) {
 	SiMMLChannelSettings *channel_settings = channel_settings_map[p_module_type];
-	////ERR_FAIL_COND_V(!channel_settings, -1);
+	ERR_FAIL_COND_V(!channel_settings, -1);
 
 	if (!channel_settings->is_select_tone_type(SiMMLChannelSettings::SELECT_TONE_NORMAL)) {
 		return -1;
@@ -105,14 +105,14 @@ int SiMMLRefTable::get_pulse_generator_type(SiONModuleType p_module_type, int p_
 
 bool SiMMLRefTable::is_suitable_for_fm_voice(SiONModuleType p_module_type) {
 	SiMMLChannelSettings *channel_settings = channel_settings_map[p_module_type];
-	////ERR_FAIL_COND_V(!channel_settings, false);
+	ERR_FAIL_COND_V(!channel_settings, false);
 
 	return channel_settings->is_suitable_for_fm_voice();
 }
 
 //
 
-void SiMMLRefTable::_fill_tss_log_table(std::string (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255) {
+void SiMMLRefTable::_fill_tss_log_table(sion::String (&r_table)[256], int p_start, int p_step, int p_v0, int p_v255) {
 	int value = p_start << 16;
 	int step = p_step << 16;
 
@@ -131,12 +131,12 @@ void SiMMLRefTable::_fill_tss_log_table(std::string (&r_table)[256], int p_start
 }
 
 template <size_t S>
-std::vector<std::shared_ptr<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_voices(uint32_t (&p_register_map)[S]) {
-	std::vector<std::shared_ptr<SiMMLVoice>> voices;
+std::vector<Ref<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_voices(uint32_t (&p_register_map)[S]) {
+	std::vector<Ref<SiMMLVoice>> voices;
 	voices.resize(S >> 1); // TODO zeroed
 
 	for (int i = 0, j = 0; i < voices.size(); i++, j += 2) {
-		std::shared_ptr<SiMMLVoice> voice;
+		Ref<SiMMLVoice> voice;
 		voice.instantiate();
 		_dump_ym2413_register(voice, p_register_map[j], p_register_map[j + 1]);
 		voices[i] = voice;
@@ -145,8 +145,8 @@ std::vector<std::shared_ptr<SiMMLVoice>> SiMMLRefTable::_setup_ym2413_default_vo
 	return voices;
 }
 
-void SiMMLRefTable::_dump_ym2413_register(const std::shared_ptr<SiMMLVoice> &p_voice, uint32_t p_u0, uint32_t p_u1) {
-	std::shared_ptr<SiOPMChannelParams> channel_params = p_voice->get_channel_params();
+void SiMMLRefTable::_dump_ym2413_register(const Ref<SiMMLVoice> &p_voice, uint32_t p_u0, uint32_t p_u1) {
+	Ref<SiOPMChannelParams> channel_params = p_voice->get_channel_params();
 
 	p_voice->set_module_type(SiONModuleType::MODULE_FM);
 	p_voice->set_channel_num(0);
@@ -157,8 +157,8 @@ void SiMMLRefTable::_dump_ym2413_register(const std::shared_ptr<SiMMLVoice> &p_v
 	channel_params->set_operator_count(2);
 	channel_params->set_algorithm(0);
 
-	std::shared_ptr<SiOPMOperatorParams> op_params0 = channel_params->get_operator_params(0);
-	std::shared_ptr<SiOPMOperatorParams> op_params1 = channel_params->get_operator_params(1);
+	Ref<SiOPMOperatorParams> op_params0 = channel_params->get_operator_params(0);
+	Ref<SiOPMOperatorParams> op_params1 = channel_params->get_operator_params(1);
 
 	op_params0->set_amplitude_modulation_shift(((p_u0 >> 31) & 1) << 1);
 	op_params1->set_amplitude_modulation_shift(((p_u0 >> 23) & 1) << 1);
@@ -201,21 +201,21 @@ SiMMLRefTable::SiMMLRefTable() {
 
 	// Channel module settings map.
 	{
-		channel_settings_map[SiONModuleType::MODULE_PSG]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_PSG,        SiONPulseGeneratorType::PULSE_SQUARE,      3,   1, 4));
-		channel_settings_map[SiONModuleType::MODULE_APU]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_APU,        SiONPulseGeneratorType::PULSE_PULSE,       11,  2, 4));
-		channel_settings_map[SiONModuleType::MODULE_NOISE]      = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_NOISE,      SiONPulseGeneratorType::PULSE_NOISE_WHITE, 16,  1, 16));
-		channel_settings_map[SiONModuleType::MODULE_MA3]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_MA3,        SiONPulseGeneratorType::PULSE_MA3_SINE,    32,  1, 32));
-		channel_settings_map[SiONModuleType::MODULE_SCC]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_SCC,        SiONPulseGeneratorType::PULSE_CUSTOM,      256, 1, 256));
-		channel_settings_map[SiONModuleType::MODULE_GENERIC_PG] = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_GENERIC_PG, SiONPulseGeneratorType::PULSE_SINE,        512, 1, 512));
-		channel_settings_map[SiONModuleType::MODULE_FM]         = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_FM,         SiONPulseGeneratorType::PULSE_SINE,        1,   1, 1));
-		channel_settings_map[SiONModuleType::MODULE_PCM]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_PCM,        SiONPulseGeneratorType::PULSE_PCM,         128, 1, 128));
-		channel_settings_map[SiONModuleType::MODULE_PULSE]      = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_PULSE,      SiONPulseGeneratorType::PULSE_PULSE,       32,  1, 32));
-		channel_settings_map[SiONModuleType::MODULE_RAMP]       = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_RAMP,       SiONPulseGeneratorType::PULSE_RAMP,        128, 1, 128));
-		channel_settings_map[SiONModuleType::MODULE_SAMPLE]     = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_SAMPLE,     SiONPulseGeneratorType::PULSE_SINE,        4,   1, 4));
-		channel_settings_map[SiONModuleType::MODULE_KS]         = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_KS,         SiONPulseGeneratorType::PULSE_SINE,        3,   1, 3));
-		channel_settings_map[SiONModuleType::MODULE_GB]         = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_GB,         SiONPulseGeneratorType::PULSE_PULSE,       11,  2, 4));
-		channel_settings_map[SiONModuleType::MODULE_VRC6]       = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_VRC6,       SiONPulseGeneratorType::PULSE_PULSE,       9,   1, 3));
-		channel_settings_map[SiONModuleType::MODULE_SID]        = memnew(SiMMLChannelSettings(SiONModuleType::MODULE_SID,        SiONPulseGeneratorType::PULSE_PULSE,       12,  1, 3));
+		channel_settings_map[SiONModuleType::MODULE_PSG]        = new SiMMLChannelSettings(SiONModuleType::MODULE_PSG,        SiONPulseGeneratorType::PULSE_SQUARE,      3,   1, 4);
+		channel_settings_map[SiONModuleType::MODULE_APU]        = new SiMMLChannelSettings(SiONModuleType::MODULE_APU,        SiONPulseGeneratorType::PULSE_PULSE,       11,  2, 4);
+		channel_settings_map[SiONModuleType::MODULE_NOISE]      = new SiMMLChannelSettings(SiONModuleType::MODULE_NOISE,      SiONPulseGeneratorType::PULSE_NOISE_WHITE, 16,  1, 16);
+		channel_settings_map[SiONModuleType::MODULE_MA3]        = new SiMMLChannelSettings(SiONModuleType::MODULE_MA3,        SiONPulseGeneratorType::PULSE_MA3_SINE,    32,  1, 32);
+		channel_settings_map[SiONModuleType::MODULE_SCC]        = new SiMMLChannelSettings(SiONModuleType::MODULE_SCC,        SiONPulseGeneratorType::PULSE_CUSTOM,      256, 1, 256);
+		channel_settings_map[SiONModuleType::MODULE_GENERIC_PG] = new SiMMLChannelSettings(SiONModuleType::MODULE_GENERIC_PG, SiONPulseGeneratorType::PULSE_SINE,        512, 1, 512);
+		channel_settings_map[SiONModuleType::MODULE_FM]         = new SiMMLChannelSettings(SiONModuleType::MODULE_FM,         SiONPulseGeneratorType::PULSE_SINE,        1,   1, 1);
+		channel_settings_map[SiONModuleType::MODULE_PCM]        = new SiMMLChannelSettings(SiONModuleType::MODULE_PCM,        SiONPulseGeneratorType::PULSE_PCM,         128, 1, 128);
+		channel_settings_map[SiONModuleType::MODULE_PULSE]      = new SiMMLChannelSettings(SiONModuleType::MODULE_PULSE,      SiONPulseGeneratorType::PULSE_PULSE,       32,  1, 32);
+		channel_settings_map[SiONModuleType::MODULE_RAMP]       = new SiMMLChannelSettings(SiONModuleType::MODULE_RAMP,       SiONPulseGeneratorType::PULSE_RAMP,        128, 1, 128);
+		channel_settings_map[SiONModuleType::MODULE_SAMPLE]     = new SiMMLChannelSettings(SiONModuleType::MODULE_SAMPLE,     SiONPulseGeneratorType::PULSE_SINE,        4,   1, 4);
+		channel_settings_map[SiONModuleType::MODULE_KS]         = new SiMMLChannelSettings(SiONModuleType::MODULE_KS,         SiONPulseGeneratorType::PULSE_SINE,        3,   1, 3);
+		channel_settings_map[SiONModuleType::MODULE_GB]         = new SiMMLChannelSettings(SiONModuleType::MODULE_GB,         SiONPulseGeneratorType::PULSE_PULSE,       11,  2, 4);
+		channel_settings_map[SiONModuleType::MODULE_VRC6]       = new SiMMLChannelSettings(SiONModuleType::MODULE_VRC6,       SiONPulseGeneratorType::PULSE_PULSE,       9,   1, 3);
+		channel_settings_map[SiONModuleType::MODULE_SID]        = new SiMMLChannelSettings(SiONModuleType::MODULE_SID,        SiONPulseGeneratorType::PULSE_PULSE,       12,  1, 3);
 
 		// PSG settings.
 		{
@@ -368,7 +368,7 @@ SiMMLRefTable::~SiMMLRefTable() {
 	_stencil_voices.clear();
 
 	for (const KeyValue<SiONModuleType, SiMMLChannelSettings *> &kv : channel_settings_map) {
-		memdelete(kv.value);
+		delete kv.value;
 	}
 	channel_settings_map.clear();
 }

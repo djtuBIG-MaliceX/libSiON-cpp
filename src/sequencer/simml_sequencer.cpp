@@ -43,7 +43,7 @@ double SiMMLSequencer::get_effective_bpm() const {
 void SiMMLSequencer::set_effective_bpm(double p_value) {
 	set_default_bpm(p_value);
 
-	////ERR_FAIL_COND_MSG(is_ready_to_process() && !_bpm_change_enabled, "SiMMLSequencer: Cannot change BPM while rendering (SiONTrackEvent::NOTE_*_STREAM).");
+	ERR_FAIL_COND_MSG(is_ready_to_process() && !_bpm_change_enabled, "SiMMLSequencer: Cannot change BPM while rendering (SiONTrackEvent::NOTE_*_STREAM).");
 	set_bpm(p_value);
 }
 
@@ -70,7 +70,7 @@ void SiMMLSequencer::reset_all_tracks() {
 }
 
 void SiMMLSequencer::_initialize_track(SiMMLTrack *p_track, int p_internal_track_id, bool p_disposable) {
-	p_track->initialize(std::shared_ptr<SiMMLData>(), nullptr, 60, (p_internal_track_id >= 0 ? p_internal_track_id : 0), _callback_event_note_on, _callback_event_note_off, p_disposable);
+	p_track->initialize(Ref<SiMMLData>(), nullptr, 60, (p_internal_track_id >= 0 ? p_internal_track_id : 0), _callback_event_note_on, _callback_event_note_off, p_disposable);
 	p_track->reset(_global_buffer_index);
 	p_track->get_channel()->set_master_volume(_parser_settings->default_fine_volume);
 }
@@ -123,11 +123,11 @@ SiMMLTrack *SiMMLSequencer::create_controllable_track(int p_internal_track_id, b
 
 	SiMMLTrack *track = nullptr;
 	if (_tracks.size() < _max_track_count) {
-		if (!_free_tracks.empty()()) {
+		if (!_free_tracks.empty()) {
 			track = _free_tracks.back()->get();
 			_free_tracks.pop_back();
 		} else {
-			track = memnew(SiMMLTrack);
+			track = new SiMMLTrack;
 		}
 
 		track->set_track_number(_tracks.size());
@@ -167,16 +167,16 @@ void SiMMLSequencer::stop_sequence() {
 
 // Compilation and processing.
 
-std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
+sion::String SiMMLSequencer::_on_before_compile(sion::String p_mml) {
 	_reset_parser_parameters();
 
-	std::string mml = p_mml + "\n";
+	sion::String mml = p_mml + "\n";
 
 	// Remove comments.
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
+	Ref<RegEx> re_comments = RegEx::create_from_string("(?s)/\\*.*?\\*/|//.*?[\\r\\n]+");
 	mml = re_comments->sub(mml, "", true);
 
 	// Ensure the string ends with a semicolon.
@@ -199,25 +199,25 @@ std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 
 	// Expand macros.
 
-	std::string expanded_mml;
+	sion::String expanded_mml;
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_sequence = RegEx::create_from_string("(?s)[ \\t\\r\\n]*(#([A-Z@\\-]+)(\\+=|=)?)?([^;{]*({.*?})?[^;]*);");
-	std::shared_ptr<RegEx> re_macro_id = RegEx::create_from_string("([A-Z])?(-([A-Z])?)?");
+	Ref<RegEx> re_sequence = RegEx::create_from_string("(?s)[ \\t\\r\\n]*(#([A-Z@\\-]+)(\\+=|=)?)?([^;{]*({.*?})?[^;]*);");
+	Ref<RegEx> re_macro_id = RegEx::create_from_string("([A-Z])?(-([A-Z])?)?");
 
 	std::vector<RegExMatch> matches = re_sequence->search_all(mml);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		// Normal sequence.
-		if (res->get_string(1).empty()()) {
+		if (res->get_string(1).empty()) {
 			expanded_mml += _expand_macro(res->get_string(4)) + ";";
 			continue;
 		}
 
 		// System command.
-		if (res->get_string(3).empty()()) {
+		if (res->get_string(3).empty()) {
 			if (res->get_string(2) == "END") {
 				break; // The #END command.
 			}
@@ -230,25 +230,25 @@ std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 
 		// Macro definition.
 
-		std::string macro_id = res->get_string(2);
+		sion::String macro_id = res->get_string(2);
 		bool concat = (res->get_string(3) == "+=");
 
 		// Parse macro IDs.
 		std::vector<RegExMatch> mid_matches = re_macro_id->search_all(macro_id);
 		for (int j = 0; j < mid_matches.size(); j++) {
-			std::shared_ptr<RegExMatch> mid_res = mid_matches[j];
-			if (mid_res->get_string().empty()()) {
+			Ref<RegExMatch> mid_res = mid_matches[j];
+			if (mid_res->get_string().empty()) {
 				continue; // Regex can have empty matches, which we should filter out.
 			}
 
 			int start_id = 0;
-			if (!mid_res->get_string(1).empty()()) {
+			if (!mid_res->get_string(1).empty()) {
 				start_id = mid_res->get_string(1).unicode_at(0) - 'A';
 			}
 
 			int end_id = start_id;
-			if (!mid_res->get_string(2).empty()()) {
-				if (!mid_res->get_string(3).empty()()) {
+			if (!mid_res->get_string(2).empty()) {
+				if (!mid_res->get_string(3).empty()) {
 					end_id = mid_res->get_string(3).unicode_at(0) - 'A';
 				} else {
 					end_id = MACRO_SIZE - 1;
@@ -256,7 +256,7 @@ std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 			}
 
 			for (int k = start_id; k <= end_id; k++) {
-				std::string value = (_macro_expand_dynamic ? res->get_string(4) : _expand_macro(res->get_string(4)));
+				sion::String value = (_macro_expand_dynamic ? res->get_string(4) : _expand_macro(res->get_string(4)));
 
 				if (concat) {
 					_macro_strings[k] += value;
@@ -271,16 +271,16 @@ std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_repeat = RegEx::create_from_string("(?s)!\\[(\\d*)(.*?)(!\\|(.*?))?!\\](\\d*)");
+	Ref<RegEx> re_repeat = RegEx::create_from_string("(?s)!\\[(\\d*)(.*?)(!\\|(.*?))?!\\](\\d*)");
 	matches = re_repeat->search_all(expanded_mml);
 	// Iterate backwards so we can do in-place replacements without disturbing indices.
 	for (int i = matches.size() - 1; i >= 0; i--) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		int repeat_count = 1;
-		if (!res->get_string(1).empty()()) {
+		if (!res->get_string(1).empty()) {
 			repeat_count = res->get_string(1).to_int() - 1;
-		} else if (!res->get_string(5).empty()()) {
+		} else if (!res->get_string(5).empty()) {
 			repeat_count = res->get_string(5).to_int() - 1;
 		}
 
@@ -288,12 +288,12 @@ std::string SiMMLSequencer::_on_before_compile(std::string p_mml) {
 			repeat_count = 256;
 		}
 
-		std::string rep = res->get_string(2);
-		if (!res->get_string(3).empty()()) {
+		sion::String rep = res->get_string(2);
+		if (!res->get_string(3).empty()) {
 			rep += res->get_string(4);
 		}
 
-		std::string replacement = rep.repeat(repeat_count) + res->get_string(2);
+		sion::String replacement = rep.repeat(repeat_count) + res->get_string(2);
 
 		// Take the rest of the string (around the match) and insert the replaced substring.
 		expanded_mml = expanded_mml.substr(0, res->get_start()) + replacement + expanded_mml.substr(res->get_end() + 1);
@@ -322,8 +322,8 @@ void SiMMLSequencer::_on_timer_interruption() {
 		return;
 	}
 
-	if (_callback_timer.is_valid()) {
-		_callback_timer.call();
+	if (_callback_timer) {
+		_callback_timer();
 	}
 }
 
@@ -332,29 +332,29 @@ void SiMMLSequencer::_on_beat(int p_delay_samples, int p_beat_counter) {
 		return;
 	}
 
-	if (_callback_beat.is_valid()) {
-		_callback_beat.call(p_delay_samples, p_beat_counter);
+	if (_callback_beat) {
+		_callback_beat(p_delay_samples, p_beat_counter);
 	}
 }
 
-void SiMMLSequencer::_on_table_parse(MMLEvent *p_prev, std::string p_table) {
-	////ERR_FAIL_COND_MSG(p_prev->get_id() < _envelope_event_id || p_prev->get_id() > _envelope_event_id + 10, "SiMMLSequencer : Internal table is available only for envelope commands.");
+void SiMMLSequencer::_on_table_parse(MMLEvent *p_prev, sion::String p_table) {
+	ERR_FAIL_COND_MSG(p_prev->get_id() < _envelope_event_id || p_prev->get_id() > _envelope_event_id + 10, "SiMMLSequencer : Internal table is available only for envelope commands.");
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_table = RegEx::create_from_string("(?s)\\{([^}]*)\\}(.*)");
+	Ref<RegEx> re_table = RegEx::create_from_string("(?s)\\{([^}]*)\\}(.*)");
 
-	std::shared_ptr<RegExMatch> res = re_table->search(p_table);
-	////ERR_FAIL_COND_MSG(!res.is_valid(), "SiMMLSequencer: Invalid table format.");
+	Ref<RegExMatch> res = re_table->search(p_table);
+	ERR_FAIL_COND_MSG(!res.is_valid(), "SiMMLSequencer: Invalid table format.");
 
-	std::string data = res->get_string(1);
-	std::string postfix = res->get_string(2);
+	sion::String data = res->get_string(1);
+	sion::String postfix = res->get_string(2);
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
+	Ref<SiMMLEnvelopeTable> env_table = new SiMMLEnvelopeTable;
 	env_table->parse_mml(data, postfix);
-	////ERR_FAIL_COND_MSG(!env_table->get_data(), vformat("SiMMLSequencer: Invalid table parameter '%s' in the {..} command.", data));
+	ERR_FAIL_COND_MSG(!env_table->get_data(), vformat("SiMMLSequencer: Invalid table parameter '%s' in the {..} command.", data));
 
-	std::shared_ptr<SiMMLData> simml_data = mml_data;
+	Ref<SiMMLData> simml_data = mml_data;
 	simml_data->set_envelope_table(_internal_table_index, env_table);
 
 	p_prev->set_data(_internal_table_index);
@@ -368,8 +368,8 @@ void SiMMLSequencer::_on_tempo_changed(double p_tempo_ratio) {
 		}
 	}
 
-	if (_callback_tempo_changed.is_valid()) {
-		_callback_tempo_changed.call(_global_buffer_index, _dummy_process);
+	if (_callback_tempo_changed) {
+		_callback_tempo_changed(_global_buffer_index, _dummy_process);
 	}
 }
 
@@ -393,12 +393,12 @@ void SiMMLSequencer::process_dummy(int p_sample_count) {
 	_register_process_events();
 }
 
-bool SiMMLSequencer::prepare_compile(const std::shared_ptr<MMLData> &p_data, std::string p_mml) {
+bool SiMMLSequencer::prepare_compile(const Ref<MMLData> &p_data, sion::String p_mml) {
 	_free_all_tracks();
 	return MMLSequencer::prepare_compile(p_data, p_mml);
 }
 
-void SiMMLSequencer::prepare_process(const std::shared_ptr<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
+void SiMMLSequencer::prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
 	_free_all_tracks();
 	_processed_sample_count = 0;
 	_bpm_change_enabled = true;
@@ -412,11 +412,11 @@ void SiMMLSequencer::prepare_process(const std::shared_ptr<MMLData> &p_data, int
 		while (sequence) {
 			if (sequence->is_active()) {
 				SiMMLTrack *track = nullptr;
-				if (!_free_tracks.empty()()) {
+				if (!_free_tracks.empty()) {
 					track = _free_tracks.back()->get();
 					_free_tracks.pop_back();
 				} else {
-					track = memnew(SiMMLTrack);
+					track = new SiMMLTrack;
 				}
 
 				int internal_track_id = index | SiMMLTrack::MML_TRACK;
@@ -472,22 +472,22 @@ void SiMMLSequencer::process() {
 
 // Parser.
 
-std::string SiMMLSequencer::_expand_macro(std::string p_macro, uint32_t p_macro_flags) {
+sion::String SiMMLSequencer::_expand_macro(sion::String p_macro, uint32_t p_macro_flags) {
 	// Note that the original code has a broken circular call check. It never updates the flag
 	// storage, and the check is written incorrectly too. We attempt to fix it here based on the
 	// intention of the original code rather than the actual implementation.
 
-	if (p_macro.empty()()) {
+	if (p_macro.empty()) {
 		return "";
 	}
 
-	std::string expanded_macro = p_macro;
+	sion::String expanded_macro = p_macro;
 
-	std::shared_ptr<RegEx> re_macro = RegEx::create_from_string("([A-Z])(\\(([\\-\\d]+)\\))?");
+	Ref<RegEx> re_macro = RegEx::create_from_string("([A-Z])(\\(([\\-\\d]+)\\))?");
 	std::vector<RegExMatch> matches = re_macro->search_all(expanded_macro);
 	// Iterate backwards so we can do in-place replacements without disturbing indices.
 	for (int i = matches.size() - 1; i >= 0; i--) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 		int index = res->get_string(1).unicode_at(0) - 'A';
 
 		// Check for circular calls.
@@ -497,20 +497,20 @@ std::string SiMMLSequencer::_expand_macro(std::string p_macro, uint32_t p_macro_
 		uint32_t expanded_macro_flags = p_macro_flags;
 
 		int flag = 1 << index;
-		////ERR_FAIL_COND_V_MSG(expanded_macro_flags & flag, p_macro, vformat("SiMMLSequencer: Failed to expand a macro due to a circular reference, '%s'.", res->get_string()));
+		ERR_FAIL_COND_V_MSG(expanded_macro_flags & flag, p_macro, vformat("SiMMLSequencer: Failed to expand a macro due to a circular reference, '%s'.", res->get_string()));
 		expanded_macro_flags |= flag;
 
 		// Find the replacement string.
 
-		std::string replacement;
-		if (!_macro_strings[index].empty()()) {
-			const std::string macro_string = _macro_strings[index];
+		sion::String replacement;
+		if (!_macro_strings[index].empty()) {
+			const sion::String macro_string = _macro_strings[index];
 			replacement = (_macro_expand_dynamic ? _expand_macro(macro_string, expanded_macro_flags) : macro_string);
 
 			// Apply a note shift to the expanded macro.
-			if (!res->get_string(2).empty()()) {
+			if (!res->get_string(2).empty()) {
 				int note_shift = 0;
-				if (!res->get_string(3).empty()()) {
+				if (!res->get_string(3).empty()) {
 					note_shift = res->get_string(3).to_int();
 				}
 
@@ -519,8 +519,8 @@ std::string SiMMLSequencer::_expand_macro(std::string p_macro, uint32_t p_macro_
 		}
 
 		// Take the rest of the string (around the match) and insert the replaced substring.
-		const std::string prefix = expanded_macro.substr(0, res->get_start());
-		const std::string suffix = expanded_macro.substr(res->get_end());
+		const sion::String prefix = expanded_macro.substr(0, res->get_start());
+		const sion::String suffix = expanded_macro.substr(res->get_end());
 		expanded_macro = prefix + replacement + suffix;
 	}
 
@@ -544,7 +544,7 @@ void SiMMLSequencer::_reset_parser_parameters() {
 	}
 }
 
-void SiMMLSequencer::_parse_command_init_sequence(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_postfix) {
+void SiMMLSequencer::_parse_command_init_sequence(const Ref<SiOPMChannelParams> &p_params, sion::String p_postfix) {
 	MMLSequence *sequence = p_params->get_init_sequence();
 
 	MMLParser::get_instance()->prepare_parse(_parser_settings, p_postfix);
@@ -557,8 +557,8 @@ void SiMMLSequencer::_parse_command_init_sequence(const std::shared_ptr<SiOPMCha
 	MMLEvent *prev = sequence->get_head_event();
 	while (prev->get_next()) {
 		MMLEvent *next = prev->get_next();
-		////ERR_FAIL_COND_MSG(next->get_length() != 0, vformat("SiMMLSequencer: Initializing sequence cannot contain processing events, '%s'.", p_postfix));
-		////ERR_FAIL_COND_MSG(next->get_id() == MMLEvent::MOD_TYPE || next->get_id() == MMLEvent::MOD_PARAM, vformat("SiMMLSequencer: Initializing sequence cannot contain '%%' or '@', '%s'.", p_postfix));
+		ERR_FAIL_COND_MSG(next->get_length() != 0, vformat("SiMMLSequencer: Initializing sequence cannot contain processing events, '%s'.", p_postfix));
+		ERR_FAIL_COND_MSG(next->get_id() == MMLEvent::MOD_TYPE || next->get_id() == MMLEvent::MOD_PARAM, vformat("SiMMLSequencer: Initializing sequence cannot contain '%%' or '@', '%s'.", p_postfix));
 
 		if (next->get_id() == MMLEvent::TABLE_EVENT) {
 			// Parse table events and keep the pointer.
@@ -570,11 +570,11 @@ void SiMMLSequencer::_parse_command_init_sequence(const std::shared_ptr<SiOPMCha
 	}
 }
 
-void SiMMLSequencer::_parse_tmode_command(std::string p_mml) {
-	std::shared_ptr<RegEx> re_tcommand = RegEx::create_from_string("(unit|timerb|fps)=?([\\d.]*)");
-	std::shared_ptr<RegExMatch> res = re_tcommand->search(p_mml);
+void SiMMLSequencer::_parse_tmode_command(sion::String p_mml) {
+	Ref<RegEx> re_tcommand = RegEx::create_from_string("(unit|timerb|fps)=?([\\d.]*)");
+	Ref<RegExMatch> res = re_tcommand->search(p_mml);
 
-	std::string value_string = res->get_string(2);
+	sion::String value_string = res->get_string(2);
 	double value = value_string.is_valid_float() ? value_string.to_float() : 0;
 
 	if (res->get_string(1) == "unit") {
@@ -591,18 +591,18 @@ void SiMMLSequencer::_parse_tmode_command(std::string p_mml) {
 	}
 }
 
-void SiMMLSequencer::_parse_vmode_command(std::string p_mml) {
-	std::shared_ptr<RegEx> re_vcommand = RegEx::create_from_string("(n88|mdx|psg|mck|tss|%[xv])(\\d*)(\\s*,?\\s*(\\d?))");
+void SiMMLSequencer::_parse_vmode_command(sion::String p_mml) {
+	Ref<RegEx> re_vcommand = RegEx::create_from_string("(n88|mdx|psg|mck|tss|%[xv])(\\d*)(\\s*,?\\s*(\\d?))");
 	std::vector<RegExMatch> matches = re_vcommand->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == "%v") {
 			int mode = res->get_string(2).to_int();
 			mml_data->set_default_velocity_mode((mode >= 0 && mode < SiOPMRefTable::VM_MAX) ? mode : 0);
 
 			int shift = 4;
-			if (!res->get_string(4).empty()()) {
+			if (!res->get_string(4).empty()) {
 				shift = res->get_string(4).to_int();
 			}
 			mml_data->set_default_velocity_shift((shift >= 0 && shift < 8) ? shift : 0);
@@ -626,27 +626,27 @@ void SiMMLSequencer::_parse_vmode_command(std::string p_mml) {
 	}
 }
 
-bool SiMMLSequencer::_try_set_sampler_wave(int p_index, std::string p_mml) {
-	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
+bool SiMMLSequencer::_try_set_sampler_wave(int p_index, sion::String p_mml) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()) {
 		return false;
 	}
 
 	int bank = (p_index >> SiOPMRefTable::NOTE_BITS) & (SiOPMRefTable::SAMPLER_TABLE_MAX - 1);
 	int index = p_index & (SiOPMRefTable::NOTE_TABLE_SIZE - 1);
 
-	std::shared_ptr<SiMMLData> simml_data = mml_data;
-	std::shared_ptr<SiOPMWaveSamplerTable> table = simml_data->get_sampler_table(bank);
+	Ref<SiMMLData> simml_data = mml_data;
+	Ref<SiOPMWaveSamplerTable> table = simml_data->get_sampler_table(bank);
 	return TranslatorUtil::parse_sampler_wave(table, index, p_mml, SiOPMRefTable::get_instance()->sound_reference);
 }
 
-bool SiMMLSequencer::_try_set_pcm_wave(int p_index, std::string p_mml) {
-	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
+bool SiMMLSequencer::_try_set_pcm_wave(int p_index, sion::String p_mml) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()) {
 		return false;
 	}
 
-	std::shared_ptr<SiMMLData> simml_data = mml_data;
-	std::shared_ptr<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
-	std::shared_ptr<SiOPMWavePCMTable> table = voice->get_wave_data();
+	Ref<SiMMLData> simml_data = mml_data;
+	Ref<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
+	Ref<SiOPMWavePCMTable> table = voice->get_wave_data();
 	if (table.is_null()) {
 		return false;
 	}
@@ -654,13 +654,13 @@ bool SiMMLSequencer::_try_set_pcm_wave(int p_index, std::string p_mml) {
 	return TranslatorUtil::parse_pcm_wave(table, p_mml, SiOPMRefTable::get_instance()->sound_reference);
 }
 
-bool SiMMLSequencer::_try_set_pcm_voice(int p_index, std::string p_mml, std::string p_postfix) {
-	if (SiOPMRefTable::get_instance()->sound_reference.empty()()) {
+bool SiMMLSequencer::_try_set_pcm_voice(int p_index, sion::String p_mml, sion::String p_postfix) {
+	if (SiOPMRefTable::get_instance()->sound_reference.empty()) {
 		return false;
 	}
 
-	std::shared_ptr<SiMMLData> simml_data = mml_data;
-	std::shared_ptr<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
+	Ref<SiMMLData> simml_data = mml_data;
+	Ref<SiMMLVoice> voice = simml_data->get_pcm_voice(p_index);
 	if (voice.is_null()) {
 		return false;
 	}
@@ -668,17 +668,17 @@ bool SiMMLSequencer::_try_set_pcm_voice(int p_index, std::string p_mml, std::str
 	return TranslatorUtil::parse_pcm_voice(voice, p_mml, p_postfix, simml_data->get_envelope_tables());
 }
 
-void SiMMLSequencer::_try_process_command_callback(std::string p_command, int p_number, std::string p_content, std::string p_postfix) {
-	std::shared_ptr<MMLSystemCommand> command_obj;
+void SiMMLSequencer::_try_process_command_callback(sion::String p_command, int p_number, sion::String p_content, sion::String p_postfix) {
+	Ref<MMLSystemCommand> command_obj;
 	command_obj.instantiate();
 	command_obj->command = p_command;
 	command_obj->number = p_number;
 	command_obj->content = p_content;
 	command_obj->postfix = p_postfix;
 
-	if (_callback_parse_system_command.is_valid()) {
-		std::shared_ptr<SiMMLData> simml_data = mml_data;
-		bool parsed = _callback_parse_system_command.call(simml_data, command_obj);
+	if (_callback_parse_system_command) {
+		Ref<SiMMLData> simml_data = mml_data;
+		bool parsed = _callback_parse_system_command(simml_data, command_obj);
 		if (parsed) {
 			return;
 		}
@@ -688,25 +688,25 @@ void SiMMLSequencer::_try_process_command_callback(std::string p_command, int p_
 	mml_data->add_system_command(command_obj);
 }
 
-bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::string p_param) {
+bool SiMMLSequencer::_parse_system_command_before(sion::String p_command, sion::String p_param) {
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::shared_ptr<RegEx> re_param = RegEx::create_from_string("(?s)\\s*(\\d*)\\s*(\\{(.*?)\\})?(.*)");
-	std::shared_ptr<RegExMatch> res = re_param->search(p_param);
+	Ref<RegEx> re_param = RegEx::create_from_string("(?s)\\s*(\\d*)\\s*(\\{(.*?)\\})?(.*)");
+	Ref<RegExMatch> res = re_param->search(p_param);
 
 	int number = res->get_string(1).to_int();
-	bool has_content = (!res->get_string(2).empty()());
-	std::string content = res->get_string(3);
-	std::string postfix = res->get_string(4);
+	bool has_content = (!res->get_string(2).empty());
+	sion::String content = res->get_string(3);
+	sion::String postfix = res->get_string(4);
 
 	// Tone settings.
 
 #define PARSE_TONE_PARAMS(m_func)                                  \
-	std::shared_ptr<SiMMLData> simml_data = mml_data;                          \
-	std::shared_ptr<SiMMLVoice> voice = simml_data->initialize_voice(number);  \
-	std::shared_ptr<SiOPMChannelParams> params = voice->get_channel_params();  \
+	Ref<SiMMLData> simml_data = mml_data;                          \
+	Ref<SiMMLVoice> voice = simml_data->initialize_voice(number);  \
+	Ref<SiOPMChannelParams> params = voice->get_channel_params();  \
 	m_func(params, content);                                       \
-	if (!postfix.empty()()) {                                     \
+	if (!postfix.empty()) {                                     \
 		_parse_command_init_sequence(params, postfix);             \
 	}
 
@@ -756,13 +756,13 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 		return true;
 	}
 	if (p_command == "#MACRO") {
-		std::string data = (has_content ? content : postfix);
+		sion::String data = (has_content ? content : postfix);
 		if (data == "dynamic") {
 			_macro_expand_dynamic = true;
 		} else if (data == "static") {
 			_macro_expand_dynamic = false;
 		} else {
-			//ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
+			ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
 		}
 		return true;
 	}
@@ -782,7 +782,7 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 		return true;
 	}
 	if (p_command == "#REV") { // Reverse
-		std::string data = (has_content ? content : postfix);
+		sion::String data = (has_content ? content : postfix);
 		if (data == "") {
 			_parser_settings->octave_polarization = -1;
 			_parser_settings->volume_polarization = -1;
@@ -791,7 +791,7 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 		} else if (data == "volume") {
 			_parser_settings->volume_polarization = -1;
 		} else {
-			//ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
+			ERR_FAIL_V_MSG(true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", data, p_command));
 		}
 		return true;
 	}
@@ -799,29 +799,29 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 	// Tables.
 
 	if (p_command == "#TABLE") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 254), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 254));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 254), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 254));
 
-		std::shared_ptr<SiMMLEnvelopeTable> env_table = memnew(SiMMLEnvelopeTable);
+		Ref<SiMMLEnvelopeTable> env_table = new SiMMLEnvelopeTable;
 		env_table->parse_mml(content, postfix);
-		////ERR_FAIL_COND_V_MSG(!env_table->get_data(), true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", content, p_command));
+		ERR_FAIL_COND_V_MSG(!env_table->get_data(), true, vformat("SiMMLSequencer: Invalid parameter '%s' for command '%s'.", content, p_command));
 
-		std::shared_ptr<SiMMLData> simml_data = mml_data;
+		Ref<SiMMLData> simml_data = mml_data;
 		simml_data->set_envelope_table(number, env_table);
 		return true;
 	}
 	if (p_command == "#WAV") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
-		std::shared_ptr<SiMMLData> simml_data = mml_data;
+		Ref<SiMMLData> simml_data = mml_data;
 		std::vector<double> wave_data;
 		TranslatorUtil::parse_wav(content, postfix, &wave_data);
 		simml_data->set_wave_table(number, &wave_data);
 		return true;
 	}
 	if (p_command == "#WAVB") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
-		std::shared_ptr<SiMMLData> simml_data = mml_data;
+		Ref<SiMMLData> simml_data = mml_data;
 		std::vector<double> wave_data;
 		TranslatorUtil::parse_wavb(has_content ? content : postfix, &wave_data);
 		simml_data->set_wave_table(number, &wave_data);
@@ -831,7 +831,7 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 	// PCM voices.
 
 	if (p_command == "#SAMPLER") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_sampler_wave(number, content)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -839,7 +839,7 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 		return true;
 	}
 	if (p_command == "#PCMWAVE") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_pcm_wave(number, content)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -847,7 +847,7 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 		return true;
 	}
 	if (p_command == "#PCMVOICE") {
-		////ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
+		ERR_FAIL_COND_V_MSG((number < 0 || number > 255), true, vformat("SiMMLSequencer: Parameter '%d' for command '%s' is outside of valid range (%d : %d).", number, p_command, 0, 255));
 
 		if (!_try_set_pcm_voice(number, content, postfix)) {
 			_try_process_command_callback(p_command, number, content, postfix);
@@ -872,18 +872,18 @@ bool SiMMLSequencer::_parse_system_command_before(std::string p_command, std::st
 }
 
 MMLSequence *SiMMLSequencer::_parse_system_command_after(MMLSequenceGroup *p_seq_group, MMLSequence *p_command_seq) {
-	std::string command = p_command_seq->get_system_command();
+	sion::String command = p_command_seq->get_system_command();
 
-	std::shared_ptr<RegEx> re_command = RegEx::create_from_string("#(FM)[{ \\t\\r\\n]*([^}]*)");
-	std::shared_ptr<RegExMatch> res = re_command->search(command);
+	Ref<RegEx> re_command = RegEx::create_from_string("#(FM)[{ \\t\\r\\n]*([^}]*)");
+	Ref<RegExMatch> res = re_command->search(command);
 
 	// Remove it from the chain to skip.
 	MMLSequence *sequence = p_command_seq->remove_from_chain();
 
 	// Parse the command.
 	if (res.is_valid()) {
-		////ERR_FAIL_COND_V_MSG(res->get_string(1) != "FM", nullptr, vformat("SiMMLSequencer: Invalid system command letter, '%s'.", command));
-		////ERR_FAIL_COND_V_MSG(res->get_string(2).empty()(), nullptr, vformat("SiMMLSequencer: Invalid system command syntax, '%s'.", command));
+		ERR_FAIL_COND_V_MSG(res->get_string(1) != "FM", nullptr, vformat("SiMMLSequencer: Invalid system command letter, '%s'.", command));
+		ERR_FAIL_COND_V_MSG(res->get_string(2).empty(), nullptr, vformat("SiMMLSequencer: Invalid system command syntax, '%s'.", command));
 
 		_connector->parse(res->get_string(2));
 		sequence = _connector->connect(p_seq_group, sequence);
@@ -900,7 +900,7 @@ MMLSequence *SiMMLSequencer::_parse_system_command_after(MMLSequenceGroup *p_seq
 
 #define GET_EV_PARAMS(m_count)                                           \
 	std::vector<int> ev_params;                                               \
-	ev_params.resize_zeroed(MAX_PARAM_COUNT);                            \
+	ev_params.assign(MAX_PARAM_COUNT, 0);                            \
 	MMLEvent *next_event = p_event->get_parameters(&ev_params, m_count);
 
 #define BIND_EV_PARAM(m_var, m_index, m_default)                                    \
@@ -1027,7 +1027,7 @@ MMLEvent *SiMMLSequencer::_on_mml_tone_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1045,7 +1045,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1063,7 +1063,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_envelope_tsscp(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1081,7 +1081,7 @@ MMLEvent *SiMMLSequencer::_on_mml_pitch_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1099,7 +1099,7 @@ MMLEvent *SiMMLSequencer::_on_mml_note_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1117,7 +1117,7 @@ MMLEvent *SiMMLSequencer::_on_mml_filter_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1135,7 +1135,7 @@ MMLEvent *SiMMLSequencer::_on_mml_tone_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1153,7 +1153,7 @@ MMLEvent *SiMMLSequencer::_on_mml_amplitude_release_envelope(MMLEvent *p_event) 
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1171,7 +1171,7 @@ MMLEvent *SiMMLSequencer::_on_mml_pitch_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1189,7 +1189,7 @@ MMLEvent *SiMMLSequencer::_on_mml_note_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1207,7 +1207,7 @@ MMLEvent *SiMMLSequencer::_on_mml_filter_release_envelope(MMLEvent *p_event) {
 		return next_event->get_next(); // Check the mask.
 	}
 
-	std::shared_ptr<SiMMLEnvelopeTable> env_table;
+	Ref<SiMMLEnvelopeTable> env_table;
 	if (idx >= 0) {
 		env_table = SiMMLRefTable::get_instance()->get_envelope_table(idx);
 	}
@@ -1248,7 +1248,7 @@ MMLEvent *SiMMLSequencer::_on_mml_lf_oscillator(MMLEvent *p_event) {
 	cycle_time *= 1000/60; // Convert to ms.
 
 	if (waveform > 7 && waveform < 255) { // Custom table.
-		std::shared_ptr<SiMMLEnvelopeTable> ev_table = SiMMLRefTable::get_instance()->get_envelope_table(ev_params[1]);
+		Ref<SiMMLEnvelopeTable> ev_table = SiMMLRefTable::get_instance()->get_envelope_table(ev_params[1]);
 		if (ev_table.is_valid()) {
 			std::vector<int> table_vector;
 			ev_table->to_vector(256, &table_vector, 0, 255);
@@ -1616,101 +1616,101 @@ MMLEvent *SiMMLSequencer::_on_mml_register_update(MMLEvent *p_event) {
 //
 
 void SiMMLSequencer::_register_process_events() {
-	_set_mml_event_listener(MMLEvent::NO_OP,     Callable((MMLSequencer *)this, "_default_on_no_operation"));
-	_set_mml_event_listener(MMLEvent::PROCESS,   Callable((MMLSequencer *)this, "_default_on_process"));
-	_set_mml_event_listener(MMLEvent::REST,      Callable(this, "_on_mml_rest"));
-	_set_mml_event_listener(MMLEvent::NOTE,      Callable(this, "_on_mml_note"));
-	_set_mml_event_listener(MMLEvent::SLUR,      Callable(this, "_on_mml_slur"));
-	_set_mml_event_listener(MMLEvent::SLUR_WEAK, Callable(this, "_on_mml_slur_weak"));
-	_set_mml_event_listener(MMLEvent::PITCHBEND, Callable(this, "_on_mml_pitch_bend"));
+	_set_default_listener(MMLEvent::NO_OP,     &MMLSequencer::_default_on_no_operation);
+	_set_default_listener(MMLEvent::PROCESS,   &MMLSequencer::_default_on_process);
+	_set_mml_event_listener(MMLEvent::REST,      [this](MMLEvent *p_event) { return _on_mml_rest(p_event); });
+	_set_mml_event_listener(MMLEvent::NOTE,      [this](MMLEvent *p_event) { return _on_mml_note(p_event); });
+	_set_mml_event_listener(MMLEvent::SLUR,      [this](MMLEvent *p_event) { return _on_mml_slur(p_event); });
+	_set_mml_event_listener(MMLEvent::SLUR_WEAK, [this](MMLEvent *p_event) { return _on_mml_slur_weak(p_event); });
+	_set_mml_event_listener(MMLEvent::PITCHBEND, [this](MMLEvent *p_event) { return _on_mml_pitch_bend(p_event); });
 }
 
 void SiMMLSequencer::_register_dummy_process_events() {
-	_set_mml_event_listener(MMLEvent::NO_OP,     Callable((MMLSequencer *)this, "_no_process"));
-	_set_mml_event_listener(MMLEvent::PROCESS,   Callable((MMLSequencer *)this, "_dummy_on_process"));
-	_set_mml_event_listener(MMLEvent::REST,      Callable((MMLSequencer *)this, "_dummy_on_process_event"));
-	_set_mml_event_listener(MMLEvent::NOTE,      Callable((MMLSequencer *)this, "_dummy_on_process_event"));
-	_set_mml_event_listener(MMLEvent::SLUR,      Callable((MMLSequencer *)this, "_dummy_on_process_event"));
-	_set_mml_event_listener(MMLEvent::SLUR_WEAK, Callable((MMLSequencer *)this, "_dummy_on_process_event"));
-	_set_mml_event_listener(MMLEvent::PITCHBEND, Callable((MMLSequencer *)this, "_dummy_on_process_event"));
+	_set_default_listener(MMLEvent::NO_OP,     &MMLSequencer::_no_process);
+	_set_default_listener(MMLEvent::PROCESS,   &MMLSequencer::_dummy_on_process);
+	_set_default_listener(MMLEvent::REST,      &MMLSequencer::_dummy_on_process_event);
+	_set_default_listener(MMLEvent::NOTE,      &MMLSequencer::_dummy_on_process_event);
+	_set_default_listener(MMLEvent::SLUR,      &MMLSequencer::_dummy_on_process_event);
+	_set_default_listener(MMLEvent::SLUR_WEAK, &MMLSequencer::_dummy_on_process_event);
+	_set_default_listener(MMLEvent::PITCHBEND, &MMLSequencer::_dummy_on_process_event);
 }
 
 void SiMMLSequencer::_register_event_listeners() {
 	// Pitch.
-	_create_mml_event_listener("k",    Callable(this, "_on_mml_detune"));
-	_create_mml_event_listener("kt",   Callable(this, "_on_mml_key_transition"));
-	_create_mml_event_listener("!@kr", Callable(this, "_on_mml_relative_detune"));
+	_create_mml_event_listener("k",    [this](MMLEvent *p_event) { return _on_mml_detune(p_event); });
+	_create_mml_event_listener("kt",   [this](MMLEvent *p_event) { return _on_mml_key_transition(p_event); });
+	_create_mml_event_listener("!@kr", [this](MMLEvent *p_event) { return _on_mml_relative_detune(p_event); });
 
 	// Track settings.
-	_create_mml_event_listener("@mask", Callable(this, "_on_mml_event_mask"));
-	_set_mml_event_listener(MMLEvent::QUANT_RATIO,  Callable(this, "_on_mml_quant_ratio"));
-	_set_mml_event_listener(MMLEvent::QUANT_COUNT,  Callable(this, "_on_mml_quant_count"));
+	_create_mml_event_listener("@mask", [this](MMLEvent *p_event) { return _on_mml_event_mask(p_event); });
+	_set_mml_event_listener(MMLEvent::QUANT_RATIO,  [this](MMLEvent *p_event) { return _on_mml_quant_ratio(p_event); });
+	_set_mml_event_listener(MMLEvent::QUANT_COUNT,  [this](MMLEvent *p_event) { return _on_mml_quant_count(p_event); });
 
 	// Volume.
-	_create_mml_event_listener("p",  Callable(this, "_on_mml_pan"));
-	_create_mml_event_listener("@p", Callable(this, "_on_mml_fine_pan"));
-	_create_mml_event_listener("@f", Callable(this, "_on_mml_filter"));
-	_create_mml_event_listener("x",  Callable(this, "_on_mml_expression"));
-	_set_mml_event_listener(MMLEvent::VOLUME,       Callable(this, "_on_mml_volume"));
-	_set_mml_event_listener(MMLEvent::VOLUME_SHIFT, Callable(this, "_on_mml_volume_shift"));
-	_set_mml_event_listener(MMLEvent::FINE_VOLUME,  Callable(this, "_on_mml_master_volume"));
-	_create_mml_event_listener("%v",  Callable(this, "_on_mml_volume_setting"));
-	_create_mml_event_listener("%x",  Callable(this, "_on_mml_expression_setting"));
-	_create_mml_event_listener("%f",  Callable(this, "_on_mml_filter_mode"));
+	_create_mml_event_listener("p",  [this](MMLEvent *p_event) { return _on_mml_pan(p_event); });
+	_create_mml_event_listener("@p", [this](MMLEvent *p_event) { return _on_mml_fine_pan(p_event); });
+	_create_mml_event_listener("@f", [this](MMLEvent *p_event) { return _on_mml_filter(p_event); });
+	_create_mml_event_listener("x",  [this](MMLEvent *p_event) { return _on_mml_expression(p_event); });
+	_set_mml_event_listener(MMLEvent::VOLUME,       [this](MMLEvent *p_event) { return _on_mml_volume(p_event); });
+	_set_mml_event_listener(MMLEvent::VOLUME_SHIFT, [this](MMLEvent *p_event) { return _on_mml_volume_shift(p_event); });
+	_set_mml_event_listener(MMLEvent::FINE_VOLUME,  [this](MMLEvent *p_event) { return _on_mml_master_volume(p_event); });
+	_create_mml_event_listener("%v",  [this](MMLEvent *p_event) { return _on_mml_volume_setting(p_event); });
+	_create_mml_event_listener("%x",  [this](MMLEvent *p_event) { return _on_mml_expression_setting(p_event); });
+	_create_mml_event_listener("%f",  [this](MMLEvent *p_event) { return _on_mml_filter_mode(p_event); });
 
 	// Channel settings.
-	_create_mml_event_listener("@clock", Callable(this, "_on_mml_clock"));
-	_create_mml_event_listener("@al", Callable(this, "_on_mml_algorithm"));
-	_create_mml_event_listener("@fb", Callable(this, "_on_mml_feedback"));
-	_create_mml_event_listener("@r",  Callable(this, "_on_mml_ring_modulation"));
-	_set_mml_event_listener(MMLEvent::MOD_TYPE,    Callable(this, "_on_mml_module_type"));
-	_set_mml_event_listener(MMLEvent::INPUT_PIPE,  Callable(this, "_on_mml_input"));
-	_set_mml_event_listener(MMLEvent::OUTPUT_PIPE, Callable(this, "_on_mml_output"));
-	_create_mml_event_listener("%t",  Callable(this, "_on_mml_event_trigger"));
-	_create_mml_event_listener("%e",  Callable(this, "_on_mml_dispatch_event"));
+	_create_mml_event_listener("@clock", [this](MMLEvent *p_event) { return _on_mml_clock(p_event); });
+	_create_mml_event_listener("@al", [this](MMLEvent *p_event) { return _on_mml_algorithm(p_event); });
+	_create_mml_event_listener("@fb", [this](MMLEvent *p_event) { return _on_mml_feedback(p_event); });
+	_create_mml_event_listener("@r",  [this](MMLEvent *p_event) { return _on_mml_ring_modulation(p_event); });
+	_set_mml_event_listener(MMLEvent::MOD_TYPE,    [this](MMLEvent *p_event) { return _on_mml_module_type(p_event); });
+	_set_mml_event_listener(MMLEvent::INPUT_PIPE,  [this](MMLEvent *p_event) { return _on_mml_input(p_event); });
+	_set_mml_event_listener(MMLEvent::OUTPUT_PIPE, [this](MMLEvent *p_event) { return _on_mml_output(p_event); });
+	_create_mml_event_listener("%t",  [this](MMLEvent *p_event) { return _on_mml_event_trigger(p_event); });
+	_create_mml_event_listener("%e",  [this](MMLEvent *p_event) { return _on_mml_dispatch_event(p_event); });
 
 	// Operator settings.
-	_create_mml_event_listener("i",   Callable(this, "_on_mml_slot_index"));
-	_create_mml_event_listener("@rr", Callable(this, "_on_mml_operator_release_rate"));
-	_create_mml_event_listener("@tl", Callable(this, "_on_mml_operator_total_level"));
-	_create_mml_event_listener("@ml", Callable(this, "_on_mml_operator_multiple"));
-	_create_mml_event_listener("@dt", Callable(this, "_on_mml_operator_detune"));
-	_create_mml_event_listener("@ph", Callable(this, "_on_mml_operator_phase"));
-	_create_mml_event_listener("@fx", Callable(this, "_on_mml_operator_fixed_note"));
-	_create_mml_event_listener("@se", Callable(this, "_on_mml_operator_ssg_envelope"));
-	_create_mml_event_listener("@er", Callable(this, "_on_mml_operator_envelope_reset"));
-	_set_mml_event_listener(MMLEvent::MOD_PARAM, Callable(this, "_on_mml_operator_parameter"));
-	_create_mml_event_listener("s",   Callable(this, "_on_mml_sustain"));
+	_create_mml_event_listener("i",   [this](MMLEvent *p_event) { return _on_mml_slot_index(p_event); });
+	_create_mml_event_listener("@rr", [this](MMLEvent *p_event) { return _on_mml_operator_release_rate(p_event); });
+	_create_mml_event_listener("@tl", [this](MMLEvent *p_event) { return _on_mml_operator_total_level(p_event); });
+	_create_mml_event_listener("@ml", [this](MMLEvent *p_event) { return _on_mml_operator_multiple(p_event); });
+	_create_mml_event_listener("@dt", [this](MMLEvent *p_event) { return _on_mml_operator_detune(p_event); });
+	_create_mml_event_listener("@ph", [this](MMLEvent *p_event) { return _on_mml_operator_phase(p_event); });
+	_create_mml_event_listener("@fx", [this](MMLEvent *p_event) { return _on_mml_operator_fixed_note(p_event); });
+	_create_mml_event_listener("@se", [this](MMLEvent *p_event) { return _on_mml_operator_ssg_envelope(p_event); });
+	_create_mml_event_listener("@er", [this](MMLEvent *p_event) { return _on_mml_operator_envelope_reset(p_event); });
+	_set_mml_event_listener(MMLEvent::MOD_PARAM, [this](MMLEvent *p_event) { return _on_mml_operator_parameter(p_event); });
+	_create_mml_event_listener("s",   [this](MMLEvent *p_event) { return _on_mml_sustain(p_event); });
 
 	// Modulation.
-	_create_mml_event_listener("@lfo", Callable(this, "_on_mml_lf_oscillator"));
-	_create_mml_event_listener("mp", Callable(this, "_on_mml_pitch_modulation"));
-	_create_mml_event_listener("ma", Callable(this, "_on_mml_amplitude_modulation"));
+	_create_mml_event_listener("@lfo", [this](MMLEvent *p_event) { return _on_mml_lf_oscillator(p_event); });
+	_create_mml_event_listener("mp", [this](MMLEvent *p_event) { return _on_mml_pitch_modulation(p_event); });
+	_create_mml_event_listener("ma", [this](MMLEvent *p_event) { return _on_mml_amplitude_modulation(p_event); });
 
 	// Envelope.
-	_create_mml_event_listener("@fps", Callable(this, "_on_mml_envelope_fps"));
-	_envelope_event_id = _create_mml_event_listener("@@", Callable(this, "_on_mml_tone_envelope"));
-	_create_mml_event_listener("na", Callable(this, "_on_mml_amplitude_envelope"));
-	_create_mml_event_listener("np", Callable(this, "_on_mml_pitch_envelope"));
-	_create_mml_event_listener("nt", Callable(this, "_on_mml_note_envelope"));
-	_create_mml_event_listener("nf", Callable(this, "_on_mml_filter_envelope"));
-	_create_mml_event_listener("_@@", Callable(this, "_on_mml_tone_release_envelope"));
-	_create_mml_event_listener("_na", Callable(this, "_on_mml_amplitude_release_envelope"));
-	_create_mml_event_listener("_np", Callable(this, "_on_mml_pitch_release_envelope"));
-	_create_mml_event_listener("_nt", Callable(this, "_on_mml_note_release_envelope"));
-	_create_mml_event_listener("_nf", Callable(this, "_on_mml_filter_release_envelope"));
-	_create_mml_event_listener("!na", Callable(this, "_on_mml_amplitude_envelope_tsscp"));
-	_create_mml_event_listener("po",  Callable(this, "_on_mml_portament"));
+	_create_mml_event_listener("@fps", [this](MMLEvent *p_event) { return _on_mml_envelope_fps(p_event); });
+	_envelope_event_id = _create_mml_event_listener("@@", [this](MMLEvent *p_event) { return _on_mml_tone_envelope(p_event); });
+	_create_mml_event_listener("na", [this](MMLEvent *p_event) { return _on_mml_amplitude_envelope(p_event); });
+	_create_mml_event_listener("np", [this](MMLEvent *p_event) { return _on_mml_pitch_envelope(p_event); });
+	_create_mml_event_listener("nt", [this](MMLEvent *p_event) { return _on_mml_note_envelope(p_event); });
+	_create_mml_event_listener("nf", [this](MMLEvent *p_event) { return _on_mml_filter_envelope(p_event); });
+	_create_mml_event_listener("_@@", [this](MMLEvent *p_event) { return _on_mml_tone_release_envelope(p_event); });
+	_create_mml_event_listener("_na", [this](MMLEvent *p_event) { return _on_mml_amplitude_release_envelope(p_event); });
+	_create_mml_event_listener("_np", [this](MMLEvent *p_event) { return _on_mml_pitch_release_envelope(p_event); });
+	_create_mml_event_listener("_nt", [this](MMLEvent *p_event) { return _on_mml_note_release_envelope(p_event); });
+	_create_mml_event_listener("_nf", [this](MMLEvent *p_event) { return _on_mml_filter_release_envelope(p_event); });
+	_create_mml_event_listener("!na", [this](MMLEvent *p_event) { return _on_mml_amplitude_envelope_tsscp(p_event); });
+	_create_mml_event_listener("po",  [this](MMLEvent *p_event) { return _on_mml_portament(p_event); });
 
 	// These can be swapped for dummy processing.
 	_register_process_events();
 
-	_set_mml_event_listener(MMLEvent::DRIVER_NOTE, Callable(this, "_on_mml_driver_note_on"));
-	_set_mml_event_listener(MMLEvent::REGISTER,    Callable(this, "_on_mml_register_update"));
+	_set_mml_event_listener(MMLEvent::DRIVER_NOTE, [this](MMLEvent *p_event) { return _on_mml_driver_note_on(p_event); });
+	_set_mml_event_listener(MMLEvent::REGISTER,    [this](MMLEvent *p_event) { return _on_mml_register_update(p_event); });
 }
 
 void SiMMLSequencer::_reset_initial_operator_params() {
-	std::shared_ptr<SiOPMOperatorParams> op_params = _sound_chip->get_init_operator_params();
+	Ref<SiOPMOperatorParams> op_params = _sound_chip->get_init_operator_params();
 
 	op_params->set_attack_rate(63);
 	op_params->set_decay_rate(0);
@@ -1742,74 +1742,10 @@ void SiMMLSequencer::_reset_parser_settings() {
 	_parser_settings->default_fine_volume = 64;
 }
 
-void SiMMLSequencer::_bind_methods() {
-	// To be used as callables.
-
-	ClassDB::bind_method(D_METHOD("_on_mml_rest", "event"),                       &SiMMLSequencer::_on_mml_rest);
-	ClassDB::bind_method(D_METHOD("_on_mml_note", "event"),                       &SiMMLSequencer::_on_mml_note);
-	ClassDB::bind_method(D_METHOD("_on_mml_slur", "event"),                       &SiMMLSequencer::_on_mml_slur);
-	ClassDB::bind_method(D_METHOD("_on_mml_slur_weak", "event"),                  &SiMMLSequencer::_on_mml_slur_weak);
-	ClassDB::bind_method(D_METHOD("_on_mml_pitch_bend", "event"),                 &SiMMLSequencer::_on_mml_pitch_bend);
-	ClassDB::bind_method(D_METHOD("_on_mml_detune", "event"),                     &SiMMLSequencer::_on_mml_detune);
-	ClassDB::bind_method(D_METHOD("_on_mml_key_transition", "event"),             &SiMMLSequencer::_on_mml_key_transition);
-	ClassDB::bind_method(D_METHOD("_on_mml_relative_detune", "event"),            &SiMMLSequencer::_on_mml_relative_detune);
-	ClassDB::bind_method(D_METHOD("_on_mml_event_mask", "event"),                 &SiMMLSequencer::_on_mml_event_mask);
-	ClassDB::bind_method(D_METHOD("_on_mml_quant_ratio", "event"),                &SiMMLSequencer::_on_mml_quant_ratio);
-	ClassDB::bind_method(D_METHOD("_on_mml_quant_count", "event"),                &SiMMLSequencer::_on_mml_quant_count);
-	ClassDB::bind_method(D_METHOD("_on_mml_pan", "event"),                        &SiMMLSequencer::_on_mml_pan);
-	ClassDB::bind_method(D_METHOD("_on_mml_fine_pan", "event"),                   &SiMMLSequencer::_on_mml_fine_pan);
-	ClassDB::bind_method(D_METHOD("_on_mml_filter", "event"),                     &SiMMLSequencer::_on_mml_filter);
-	ClassDB::bind_method(D_METHOD("_on_mml_expression", "event"),                 &SiMMLSequencer::_on_mml_expression);
-	ClassDB::bind_method(D_METHOD("_on_mml_volume", "event"),                     &SiMMLSequencer::_on_mml_volume);
-	ClassDB::bind_method(D_METHOD("_on_mml_volume_shift", "event"),               &SiMMLSequencer::_on_mml_volume_shift);
-	ClassDB::bind_method(D_METHOD("_on_mml_master_volume", "event"),              &SiMMLSequencer::_on_mml_master_volume);
-	ClassDB::bind_method(D_METHOD("_on_mml_volume_setting", "event"),             &SiMMLSequencer::_on_mml_volume_setting);
-	ClassDB::bind_method(D_METHOD("_on_mml_expression_setting", "event"),         &SiMMLSequencer::_on_mml_expression_setting);
-	ClassDB::bind_method(D_METHOD("_on_mml_filter_mode", "event"),                &SiMMLSequencer::_on_mml_filter_mode);
-	ClassDB::bind_method(D_METHOD("_on_mml_clock", "event"),                      &SiMMLSequencer::_on_mml_clock);
-	ClassDB::bind_method(D_METHOD("_on_mml_algorithm", "event"),                  &SiMMLSequencer::_on_mml_algorithm);
-	ClassDB::bind_method(D_METHOD("_on_mml_feedback", "event"),                   &SiMMLSequencer::_on_mml_feedback);
-	ClassDB::bind_method(D_METHOD("_on_mml_ring_modulation", "event"),            &SiMMLSequencer::_on_mml_ring_modulation);
-	ClassDB::bind_method(D_METHOD("_on_mml_module_type", "event"),                &SiMMLSequencer::_on_mml_module_type);
-	ClassDB::bind_method(D_METHOD("_on_mml_input", "event"),                      &SiMMLSequencer::_on_mml_input);
-	ClassDB::bind_method(D_METHOD("_on_mml_output", "event"),                     &SiMMLSequencer::_on_mml_output);
-	ClassDB::bind_method(D_METHOD("_on_mml_event_trigger", "event"),              &SiMMLSequencer::_on_mml_event_trigger);
-	ClassDB::bind_method(D_METHOD("_on_mml_dispatch_event", "event"),             &SiMMLSequencer::_on_mml_dispatch_event);
-	ClassDB::bind_method(D_METHOD("_on_mml_slot_index", "event"),                 &SiMMLSequencer::_on_mml_slot_index);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_release_rate", "event"),      &SiMMLSequencer::_on_mml_operator_release_rate);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_total_level", "event"),       &SiMMLSequencer::_on_mml_operator_total_level);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_multiple", "event"),          &SiMMLSequencer::_on_mml_operator_multiple);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_detune", "event"),            &SiMMLSequencer::_on_mml_operator_detune);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_phase", "event"),             &SiMMLSequencer::_on_mml_operator_phase);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_fixed_note", "event"),        &SiMMLSequencer::_on_mml_operator_fixed_note);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_ssg_envelope", "event"),      &SiMMLSequencer::_on_mml_operator_ssg_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_envelope_reset", "event"),    &SiMMLSequencer::_on_mml_operator_envelope_reset);
-	ClassDB::bind_method(D_METHOD("_on_mml_operator_parameter", "event"),         &SiMMLSequencer::_on_mml_operator_parameter);
-	ClassDB::bind_method(D_METHOD("_on_mml_sustain", "event"),                    &SiMMLSequencer::_on_mml_sustain);
-	ClassDB::bind_method(D_METHOD("_on_mml_lf_oscillator", "event"),              &SiMMLSequencer::_on_mml_lf_oscillator);
-	ClassDB::bind_method(D_METHOD("_on_mml_pitch_modulation", "event"),           &SiMMLSequencer::_on_mml_pitch_modulation);
-	ClassDB::bind_method(D_METHOD("_on_mml_amplitude_modulation", "event"),       &SiMMLSequencer::_on_mml_amplitude_modulation);
-	ClassDB::bind_method(D_METHOD("_on_mml_envelope_fps", "event"),               &SiMMLSequencer::_on_mml_envelope_fps);
-	ClassDB::bind_method(D_METHOD("_on_mml_tone_envelope", "event"),              &SiMMLSequencer::_on_mml_tone_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_amplitude_envelope", "event"),         &SiMMLSequencer::_on_mml_amplitude_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_pitch_envelope", "event"),             &SiMMLSequencer::_on_mml_pitch_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_note_envelope", "event"),              &SiMMLSequencer::_on_mml_note_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_filter_envelope", "event"),            &SiMMLSequencer::_on_mml_filter_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_tone_release_envelope", "event"),      &SiMMLSequencer::_on_mml_tone_release_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_amplitude_release_envelope", "event"), &SiMMLSequencer::_on_mml_amplitude_release_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_pitch_release_envelope", "event"),     &SiMMLSequencer::_on_mml_pitch_release_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_note_release_envelope", "event"),      &SiMMLSequencer::_on_mml_note_release_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_filter_release_envelope", "event"),    &SiMMLSequencer::_on_mml_filter_release_envelope);
-	ClassDB::bind_method(D_METHOD("_on_mml_amplitude_envelope_tsscp", "event"),   &SiMMLSequencer::_on_mml_amplitude_envelope_tsscp);
-	ClassDB::bind_method(D_METHOD("_on_mml_portament", "event"),                  &SiMMLSequencer::_on_mml_portament);
-	ClassDB::bind_method(D_METHOD("_on_mml_driver_note_on", "event"),             &SiMMLSequencer::_on_mml_driver_note_on);
-	ClassDB::bind_method(D_METHOD("_on_mml_register_update", "event"),            &SiMMLSequencer::_on_mml_register_update);
-}
-
 SiMMLSequencer::SiMMLSequencer(SiOPMSoundChip *p_chip) :
 		MMLSequencer() {
 	_sound_chip = p_chip;
-	_connector = memnew(MMLExecutorConnector);
+	_connector = new MMLExecutorConnector;
 
 	_macro_strings.resize(MACRO_SIZE); // TODO zeroed
 
@@ -1821,17 +1757,17 @@ SiMMLSequencer::SiMMLSequencer(SiOPMSoundChip *p_chip) :
 SiMMLSequencer::~SiMMLSequencer() {
 	_sound_chip = nullptr;
 
-	memdelete(_connector);
+	delete _connector;
 
 	_current_track = nullptr;
 
 	for (SiMMLTrack *track : _free_tracks) {
-		memdelete(track);
+		delete track;
 	}
 	_free_tracks.clear();
 
 	for (SiMMLTrack *track : _tracks) {
-		memdelete(track);
+		delete track;
 	}
 	_tracks.clear();
 }

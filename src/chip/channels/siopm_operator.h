@@ -27,7 +27,7 @@ class SiOPMWaveTable;
 // 3) You can set the key scale level;
 // 4) You can fix the pitch;
 // 5) You can set SGG envelope control in OPNA.
-class SiOPMOperator : public Object {
+class SiOPMOperator {
 	//GDCLASS(SiOPMOperator, Object)
 
 public:
@@ -159,15 +159,15 @@ private:
 	// Pipes.
 
 	bool _final = false;
-	std::forward_list<int> *_in_pipe = nullptr;
-	std::forward_list<int> *_base_pipe = nullptr;
-	std::forward_list<int> *_out_pipe = nullptr;
-	std::forward_list<int> *_feed_pipe = nullptr;
+	SinglyLinkedList<int> *_in_pipe = nullptr;
+	SinglyLinkedList<int> *_base_pipe = nullptr;
+	SinglyLinkedList<int> *_out_pipe = nullptr;
+	SinglyLinkedList<int> *_feed_pipe = nullptr;
 
 protected:
 	static void _bind_methods() {}
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
 	static const int PCM_WAVE_FIXED_BITS = 11;
@@ -297,20 +297,20 @@ public:
 
 	bool is_final() const { return _final; }
 
-	std::forward_list<int> *get_in_pipe() const { return _in_pipe; }
-	std::forward_list<int> *get_base_pipe() const { return _base_pipe; }
-	std::forward_list<int> *get_out_pipe() const { return _out_pipe; }
-	std::forward_list<int> *get_feed_pipe() const { return _feed_pipe; }
+	SinglyLinkedList<int> *get_in_pipe() const { return _in_pipe; }
+	SinglyLinkedList<int> *get_base_pipe() const { return _base_pipe; }
+	SinglyLinkedList<int> *get_out_pipe() const { return _out_pipe; }
+	SinglyLinkedList<int> *get_feed_pipe() const { return _feed_pipe; }
 
-	void set_pipes(std::forward_list<int> *p_out_pipe, std::forward_list<int> *p_in_pipe = nullptr, bool p_final = false);
-	void set_base_pipe(std::forward_list<int> *p_pipe) { _base_pipe = p_pipe; }
+	void set_pipes(SinglyLinkedList<int> *p_out_pipe, SinglyLinkedList<int> *p_in_pipe = nullptr, bool p_final = false);
+	void set_base_pipe(SinglyLinkedList<int> *p_pipe) { _base_pipe = p_pipe; }
 
 	//
 
-	void set_operator_params(const std::shared_ptr<SiOPMOperatorParams> &p_params);
-	void get_operator_params(const std::shared_ptr<SiOPMOperatorParams> &r_params);
-	void set_wave_table(const std::shared_ptr<SiOPMWaveTable> &p_wave_table);
-	void set_pcm_data(const std::shared_ptr<SiOPMWavePCMData> &p_pcm_data);
+	void set_operator_params(const Ref<SiOPMOperatorParams> &p_params);
+	void get_operator_params(const Ref<SiOPMOperatorParams> &r_params);
+	void set_wave_table(const Ref<SiOPMWaveTable> &p_wave_table);
+	void set_pcm_data(const Ref<SiOPMWavePCMData> &p_pcm_data);
 
 	void note_on();
 	void note_off();

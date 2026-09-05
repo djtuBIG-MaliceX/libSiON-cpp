@@ -822,22 +822,22 @@ void SiONVoicePresetUtil::_generate_single_drum_voices() {
 	_create_single_drum_voice("svmidi.drum84",  "Bell Tree",       18,63,38,16,16, 6,4,0,4.5);
 }
 
-void SiONVoicePresetUtil::_create_basic_voice(const std::string &p_key, const std::string &p_name, int p_channel_num) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_channel_num));
+void SiONVoicePresetUtil::_create_basic_voice(const sion::String &p_key, const sion::String &p_name, int p_channel_num) {
+	Ref<SiONVoice> voice = new SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_channel_num);
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_percussive_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_release_rate, int p_release_sweep, int p_cutoff, int p_resonance) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape, p_attack_rate, p_release_rate));
+void SiONVoicePresetUtil::_create_percussive_voice(const sion::String &p_key, const sion::String &p_name, int p_wave_shape, int p_attack_rate, int p_release_rate, int p_release_sweep, int p_cutoff, int p_resonance) {
+	Ref<SiONVoice> voice = new SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape, p_attack_rate, p_release_rate);
 
 	if (p_attack_rate == 63) {
 		// gate time = 0
 		voice->set_default_gate_time(0);
 	} else {
 		// gate time != 0
-		std::shared_ptr<SiOPMOperatorParams> op_params = voice->get_channel_params()->get_operator_params(0);
+		Ref<SiOPMOperatorParams> op_params = voice->get_channel_params()->get_operator_params(0);
 		op_params->set_decay_rate(p_release_rate);
 		op_params->set_sustain_rate(p_release_rate);
 		op_params->set_release_rate(p_release_rate);
@@ -851,16 +851,16 @@ void SiONVoicePresetUtil::_create_percussive_voice(const std::string &p_key, con
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_analog_voice(const std::string &p_key, const std::string &p_name, int p_connection_type, int p_wave_shape1, int p_wave_shape2, int p_balance, int p_pitch_diff) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
+void SiONVoicePresetUtil::_create_analog_voice(const sion::String &p_key, const sion::String &p_name, int p_connection_type, int p_wave_shape1, int p_wave_shape2, int p_balance, int p_pitch_diff) {
+	Ref<SiONVoice> voice = new SiONVoice;
 	voice->set_analog_like(p_connection_type, p_wave_shape1, p_wave_shape2, p_balance, p_pitch_diff);
 
 	voice->set_name(p_name);
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_opn_voice(const std::string &p_key, const std::string &p_name, std::vector<int> p_params) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
+void SiONVoicePresetUtil::_create_opn_voice(const sion::String &p_key, const sion::String &p_name, std::vector<int> p_params) {
+	Ref<SiONVoice> voice = new SiONVoice;
 	std::vector<int> params = make_typed_array_from_vector<int>(p_params);
 	voice->set_params_opn(params);
 
@@ -868,8 +868,8 @@ void SiONVoicePresetUtil::_create_opn_voice(const std::string &p_key, const std:
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_ma3_voice(const std::string &p_key, const std::string &p_name, std::vector<int> p_params) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice);
+void SiONVoicePresetUtil::_create_ma3_voice(const sion::String &p_key, const sion::String &p_name, std::vector<int> p_params) {
+	Ref<SiONVoice> voice = new SiONVoice;
 	std::vector<int> params = make_typed_array_from_vector<int>(p_params);
 	voice->set_params_ma3(params);
 
@@ -877,8 +877,8 @@ void SiONVoicePresetUtil::_create_ma3_voice(const std::string &p_key, const std:
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_wave_table_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_multiple) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_SCC, p_wave_shape));
+void SiONVoicePresetUtil::_create_wave_table_voice(const sion::String &p_key, const sion::String &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_multiple) {
+	Ref<SiONVoice> voice = new SiONVoice(SiONModuleType::MODULE_SCC, p_wave_shape);
 	voice->set_wave_data(_wave_tables[p_wave_shape]);
 	voice->set_envelope(p_attack_rate, p_decay_rate, p_sustain_rate, p_release_rate, p_sustain_level, p_total_level + 4);
 	voice->get_channel_params()->get_operator_params(0)->set_multiple(p_multiple);
@@ -887,8 +887,8 @@ void SiONVoicePresetUtil::_create_wave_table_voice(const std::string &p_key, con
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_create_single_drum_voice(const std::string &p_key, const std::string &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_release_sweep, double p_fine_multiple) {
-	std::shared_ptr<SiONVoice> voice = memnew(SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape));
+void SiONVoicePresetUtil::_create_single_drum_voice(const sion::String &p_key, const sion::String &p_name, int p_wave_shape, int p_attack_rate, int p_decay_rate, int p_sustain_rate, int p_release_rate, int p_sustain_level, int p_total_level, int p_release_sweep, double p_fine_multiple) {
+	Ref<SiONVoice> voice = new SiONVoice(SiONModuleType::MODULE_GENERIC_PG, p_wave_shape);
 	voice->set_envelope(p_attack_rate, p_decay_rate, p_sustain_rate, p_release_rate, p_sustain_level, p_total_level);
 	voice->get_channel_params()->get_operator_params(0)->set_fine_multiple((int)(p_fine_multiple * 128));
 	voice->set_release_sweep(p_release_sweep);
@@ -901,64 +901,50 @@ void SiONVoicePresetUtil::_create_single_drum_voice(const std::string &p_key, co
 	_register_voice(p_key, voice);
 }
 
-void SiONVoicePresetUtil::_begin_category(const std::string &p_key) {
-	////ERR_FAIL_COND(_category_map.has(p_key));
+void SiONVoicePresetUtil::_begin_category(const sion::String &p_key) {
+	ERR_FAIL_COND(_category_map.has(p_key));
 
-	List<std::shared_ptr<SiONVoice>> category;
+	List<Ref<SiONVoice>> category;
 	_current_category = category;
 	_category_map[p_key] = category;
 }
 
-void SiONVoicePresetUtil::_register_voice(const std::string &p_key, const std::shared_ptr<SiONVoice> &p_voice) {
-	////ERR_FAIL_COND(_voice_map.has(p_key));
+void SiONVoicePresetUtil::_register_voice(const sion::String &p_key, const Ref<SiONVoice> &p_voice) {
+	ERR_FAIL_COND(_voice_map.has(p_key));
 
 	_current_category.push_back(p_voice);
 	_voice_map[p_key] = p_voice;
 }
 
 void SiONVoicePresetUtil::_register_wave_table(std::vector<int> p_wavelet) {
-	_wave_tables.push_back(memnew(SiOPMWaveTable(p_wavelet)));
+	_wave_tables.push_back(new SiOPMWaveTable(p_wavelet));
 }
 
 //
 
 SiONVoicePresetUtil *SiONVoicePresetUtil::generate_voices(uint32_t p_flags) {
-	SiONVoicePresetUtil *instance = memnew(SiONVoicePresetUtil);
+	SiONVoicePresetUtil *instance = new SiONVoicePresetUtil;
 	instance->_generate_voices(p_flags);
 	return instance;
 }
 
-Packedstd::stringArray SiONVoicePresetUtil::get_voice_preset_keys() const {
-	Packedstd::stringArray keys;
+std::vector<sion::String> SiONVoicePresetUtil::get_voice_preset_keys() const {
+	std::vector<sion::String> keys;
 
-	for (const KeyValue<std::string, std::shared_ptr<SiONVoice>> &E : _voice_map) {
+	for (const KeyValue<sion::String, Ref<SiONVoice>> &E : _voice_map) {
 		keys.push_back(E.key);
 	}
 
 	return keys;
 }
 
-std::shared_ptr<SiONVoice> SiONVoicePresetUtil::get_voice_preset(const std::string &p_key) const {
-	////ERR_FAIL_COND_V_MSG(!_voice_map.has(p_key), nullptr, vformat("SiONVoicePresetUtil: Nonexistent voice preset '%s'.", p_key));
+Ref<SiONVoice> SiONVoicePresetUtil::get_voice_preset(const sion::String &p_key) const {
+	ERR_FAIL_COND_V_MSG(!_voice_map.has(p_key), nullptr, vformat("SiONVoicePresetUtil: Nonexistent voice preset '%s'.", p_key));
 
 	return _voice_map[p_key];
 }
 
 //
-
-void SiONVoicePresetUtil::_bind_methods() {
-	ClassDB::bind_static_method("SiONVoicePresetUtil", D_METHOD("generate_voices", "flags"), &SiONVoicePresetUtil::generate_voices, DEFVAL(GeneratorFlags::INCLUDE_ALL));
-	ClassDB::bind_method(D_METHOD("get_voice_preset_keys"), &SiONVoicePresetUtil::get_voice_preset_keys);
-	ClassDB::bind_method(D_METHOD("get_voice_preset", "key"), &SiONVoicePresetUtil::get_voice_preset);
-
-	BIND_ENUM_CONSTANT(INCLUDE_DEFAULT);
-	BIND_ENUM_CONSTANT(INCLUDE_VALSOUND);
-	BIND_ENUM_CONSTANT(INCLUDE_MIDI);
-	BIND_ENUM_CONSTANT(INCLUDE_MIDIDRUM);
-	BIND_ENUM_CONSTANT(INCLUDE_WAVETABLE);
-	BIND_ENUM_CONSTANT(INCLUDE_SINGLE_DRUM);
-	BIND_ENUM_CONSTANT(INCLUDE_ALL);
-}
 
 SiONVoicePresetUtil::~SiONVoicePresetUtil() {
 	_current_category.clear();

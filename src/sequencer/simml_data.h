@@ -25,12 +25,12 @@ class SiMMLData : public MMLData {
 protected:
 	static void _bind_methods() {}
 
-	std::vector<std::shared_ptr<SiMMLEnvelopeTable>> _envelope_tables;
-	std::vector<std::shared_ptr<SiOPMWaveTable>> _wave_tables;
-	std::vector<std::shared_ptr<SiOPMWaveSamplerTable>> _sampler_tables;
+	std::vector<Ref<SiMMLEnvelopeTable>> _envelope_tables;
+	std::vector<Ref<SiOPMWaveTable>> _wave_tables;
+	std::vector<Ref<SiOPMWaveSamplerTable>> _sampler_tables;
 
-	std::vector<std::shared_ptr<SiMMLVoice>> _fm_voices;
-	std::vector<std::shared_ptr<SiMMLVoice>> _pcm_voices;
+	std::vector<Ref<SiMMLVoice>> _fm_voices;
+	std::vector<Ref<SiMMLVoice>> _pcm_voices;
 
 public:
 	// Static so it can be called when there is no SiMMLData instance available.
@@ -39,20 +39,20 @@ public:
 
 	// Tables.
 
-	std::vector<std::shared_ptr<SiMMLEnvelopeTable>> get_envelope_tables() const { return _envelope_tables; }
+	std::vector<Ref<SiMMLEnvelopeTable>> get_envelope_tables() const { return _envelope_tables; }
 
-	std::shared_ptr<SiMMLEnvelopeTable> get_envelope_table(int p_index) const;
-	void set_envelope_table(int p_index, const std::shared_ptr<SiMMLEnvelopeTable> &p_envelope);
-	std::shared_ptr<SiOPMWaveTable> get_wave_table(int p_index) const;
-	std::shared_ptr<SiOPMWaveTable> set_wave_table(int p_index, std::vector<double> *p_data);
-	std::shared_ptr<SiOPMWaveSamplerTable> get_sampler_table(int p_index) const;
-	void set_sampler_table(int p_index, const std::shared_ptr<SiOPMWaveSamplerTable> &p_sampler);
+	Ref<SiMMLEnvelopeTable> get_envelope_table(int p_index) const;
+	void set_envelope_table(int p_index, const Ref<SiMMLEnvelopeTable> &p_envelope);
+	Ref<SiOPMWaveTable> get_wave_table(int p_index) const;
+	Ref<SiOPMWaveTable> set_wave_table(int p_index, std::vector<double> *p_data);
+	Ref<SiOPMWaveSamplerTable> get_sampler_table(int p_index) const;
+	void set_sampler_table(int p_index, const Ref<SiOPMWaveSamplerTable> &p_sampler);
 
 	// Voices.
 
-	std::shared_ptr<SiMMLVoice> initialize_voice(int p_index);
-	void set_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_voice);
-	std::shared_ptr<SiMMLVoice> get_pcm_voice(int p_index);
+	Ref<SiMMLVoice> initialize_voice(int p_index);
+	void set_voice(int p_index, const Ref<SiMMLVoice> &p_voice);
+	Ref<SiMMLVoice> get_pcm_voice(int p_index);
 
 	//
 

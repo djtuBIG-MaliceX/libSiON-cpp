@@ -22,7 +22,7 @@ class SiOPMWaveSamplerData : public SiOPMWaveBase {
 	// This flag is only available for non-loop samples.
 	bool _ignore_note_off = false;
 
-	void _prepare_wave_data(const Variant &p_data, int p_src_channel_count, int p_channel_count);
+	void _prepare_wave_data(const Ref<SampleData> &p_data, int p_src_channel_count, int p_channel_count);
 
 	//
 
@@ -59,7 +59,7 @@ public:
 
 	//
 
-	SiOPMWaveSamplerData(const Variant &p_data = Variant(), bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_count = 2, int p_channel_count = 0);
+	SiOPMWaveSamplerData(const Ref<SampleData> &p_data = Ref<SampleData>(), bool p_ignore_note_off = false, int p_pan = 0, int p_src_channel_count = 2, int p_channel_count = 0);
 	~SiOPMWaveSamplerData() {}
 };
 

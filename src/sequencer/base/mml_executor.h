@@ -30,7 +30,7 @@ class MMLExecutor {
 
 	int _current_tick_count = 0;
 	// Stack of counters.
-	std::forward_list<int> *_repeat_counters = nullptr;
+	SinglyLinkedList<int> *_repeat_counters = nullptr;
 	int _residue_sample_count = 0;
 	int _decimal_fraction_sample_count = 0;
 

@@ -9,12 +9,15 @@
 
 ////#include <godot_cpp/templates/vector.hpp>
 ////#include <godot_cpp/variant/callable.hpp>
+#include <functional>
+
 #include "sequencer/base/mml_sequencer.h"
 
 
 
 class MMLExecutorConnector;
 class MMLSequenceGroup;
+class SiMMLData;
 class SiMMLRefTable;
 class SiMMLTrack;
 class SiOPMChannelParams;
@@ -32,7 +35,7 @@ class SiMMLSequencer : public MMLSequencer {
 	SiOPMSoundChip *_sound_chip = nullptr;
 	MMLExecutorConnector *_connector = nullptr;
 
-	std::string _title;
+	sion::String _title;
 
 	// Tracks.
 
@@ -54,34 +57,34 @@ class SiMMLSequencer : public MMLSequencer {
 	bool _dummy_process = false;
 	bool _bpm_change_enabled = false;
 
-	virtual std::string _on_before_compile(std::string p_mml) override;
+	virtual sion::String _on_before_compile(sion::String p_mml) override;
 	virtual void _on_after_compile(MMLSequenceGroup *p_group) override;
 	virtual void _on_process(int p_length, MMLEvent *p_event) override;
 	virtual void _on_timer_interruption() override;
 	virtual void _on_beat(int p_delay_samples, int p_beat_counter) override;
-	virtual void _on_table_parse(MMLEvent *p_prev, std::string p_table) override;
+	virtual void _on_table_parse(MMLEvent *p_prev, sion::String p_table) override;
 	virtual void _on_tempo_changed(double p_tempo_ratio) override;
 
 	// Parser.
 
-	std::vector<std::string> _macro_strings;
+	std::vector<sion::String> _macro_strings;
 	bool _macro_expand_dynamic = false;
 
-	std::string _expand_macro(std::string p_macro, uint32_t p_macro_flags = 0);
+	sion::String _expand_macro(sion::String p_macro, uint32_t p_macro_flags = 0);
 
 	int _internal_table_index = 0;
 
 	void _reset_parser_parameters();
 
-	void _parse_command_init_sequence(const std::shared_ptr<SiOPMChannelParams> &p_params, std::string p_postfix);
-	void _parse_tmode_command(std::string p_mml);
-	void _parse_vmode_command(std::string p_mml);
-	bool _try_set_sampler_wave(int p_index, std::string p_mml);
-	bool _try_set_pcm_wave(int p_index, std::string p_mml);
-	bool _try_set_pcm_voice(int p_index, std::string p_mml, std::string p_postfix);
-	void _try_process_command_callback(std::string p_command, int p_number, std::string p_content, std::string p_postfix);
+	void _parse_command_init_sequence(const Ref<SiOPMChannelParams> &p_params, sion::String p_postfix);
+	void _parse_tmode_command(sion::String p_mml);
+	void _parse_vmode_command(sion::String p_mml);
+	bool _try_set_sampler_wave(int p_index, sion::String p_mml);
+	bool _try_set_pcm_wave(int p_index, sion::String p_mml);
+	bool _try_set_pcm_voice(int p_index, sion::String p_mml, sion::String p_postfix);
+	void _try_process_command_callback(sion::String p_command, int p_number, sion::String p_content, sion::String p_postfix);
 
-	bool _parse_system_command_before(std::string p_command, std::string p_param);
+	bool _parse_system_command_before(sion::String p_command, sion::String p_param);
 	MMLSequence *_parse_system_command_after(MMLSequenceGroup *p_seq_group, MMLSequence *p_command_seq);
 
 	// Internal callbacks.
@@ -165,13 +168,13 @@ class SiMMLSequencer : public MMLSequencer {
 
 	// External callbacks.
 
-	Callable _callback_event_note_on;
-	Callable _callback_event_note_off;
-	Callable _callback_tempo_changed;
-	Callable _callback_timer;
-	Callable _callback_beat;
-	// The function signature is bool (const std::shared_ptr<SiMMLData> &, const Variant &). Return false to append the command to SiONData.system_commands.
-	Callable _callback_parse_system_command;
+	std::function<void(SiMMLTrack *)> _callback_event_note_on;
+	std::function<void(SiMMLTrack *)> _callback_event_note_off;
+	std::function<void(int, bool)> _callback_tempo_changed;
+	std::function<void()> _callback_timer;
+	std::function<void(int, int)> _callback_beat;
+	// The function signature is bool (const Ref<SiMMLData> &, const Variant &). Return false to append the command to SiONData.system_commands.
+	std::function<bool(const Ref<SiMMLData> &, const Ref<MMLSystemCommand> &)> _callback_parse_system_command;
 
 	//
 
@@ -185,10 +188,9 @@ class SiMMLSequencer : public MMLSequencer {
 	void _reset_parser_settings();
 
 protected:
-	static void _bind_methods();
 
 public:
-	std::string get_title() const { return _title; }
+	sion::String get_title() const { return _title; }
 
 	double get_effective_bpm() const;
 	void set_effective_bpm(double p_value);
@@ -217,8 +219,8 @@ public:
 	bool is_dummy_process() const { return _dummy_process; }
 	void process_dummy(int p_sample_count);
 
-	virtual bool prepare_compile(const std::shared_ptr<MMLData> &p_data, std::string p_mml) override;
-	virtual void prepare_process(const std::shared_ptr<MMLData> &p_data, int p_sample_rate, int p_buffer_length) override;
+	virtual bool prepare_compile(const Ref<MMLData> &p_data, sion::String p_mml) override;
+	virtual void prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length) override;
 	virtual void process() override;
 
 	// Current writing position in the streaming buffer, always less than length of the buffer.
@@ -226,11 +228,11 @@ public:
 
 	// External callbacks.
 
-	void set_note_on_callback(const Callable &p_func) { _callback_event_note_on = p_func; }
-	void set_note_off_callback(const Callable &p_func) { _callback_event_note_off = p_func; }
-	void set_tempo_changed_callback(const Callable &p_func) { _callback_tempo_changed = p_func; }
-	void set_timer_callback(const Callable &p_func) { _callback_timer = p_func; }
-	void set_beat_callback(const Callable &p_func) { _callback_beat = p_func; }
+	void set_note_on_callback(const std::function<void(SiMMLTrack *)> &p_func = nullptr) { _callback_event_note_on = p_func; }
+	void set_note_off_callback(const std::function<void(SiMMLTrack *)> &p_func = nullptr) { _callback_event_note_off = p_func; }
+	void set_tempo_changed_callback(const std::function<void(int, bool)> &p_func = nullptr) { _callback_tempo_changed = p_func; }
+	void set_timer_callback(const std::function<void()> &p_func = nullptr) { _callback_timer = p_func; }
+	void set_beat_callback(const std::function<void(int, int)> &p_func = nullptr) { _callback_beat = p_func; }
 	void set_beat_callback_filter(int p_filter) { _on_beat_callback_filter = p_filter; }
 
 	//

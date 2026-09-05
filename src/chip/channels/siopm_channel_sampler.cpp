@@ -17,14 +17,14 @@
 #include <memory>
 #include <algorithm>
 
-void SiOPMChannelSampler::get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {
+void SiOPMChannelSampler::get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {
 	for (int i = 0; i < SiOPMSoundChip::STREAM_SEND_SIZE; i++) {
 		p_params->set_master_volume(i, _volumes[i]);
 	}
 	p_params->set_pan(_pan);
 }
 
-void SiOPMChannelSampler::set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
+void SiOPMChannelSampler::set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
 	if (p_params->get_operator_count() == 0) {
 		return;
 	}
@@ -46,7 +46,7 @@ void SiOPMChannelSampler::set_channel_params(const std::shared_ptr<SiOPMChannelP
 	}
 }
 
-void SiOPMChannelSampler::set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {
+void SiOPMChannelSampler::set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {
 	_sampler_table = p_wave_data;
 	_sample_data = p_wave_data;
 }
@@ -101,7 +101,7 @@ void SiOPMChannelSampler::note_off() {
 	_is_idling = true;
 
 	if (_sampler_table.is_valid()) {
-		_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
+		_sample_data = Ref<SiOPMWaveSamplerData>();
 	}
 }
 
@@ -150,7 +150,7 @@ void SiOPMChannelSampler::buffer(int p_length) {
 			} else {
 				_is_idling = true;
 				if (_sampler_table.is_valid()) {
-					_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
+					_sample_data = Ref<SiOPMWaveSamplerData>();
 				}
 				break;
 			}
@@ -180,15 +180,15 @@ void SiOPMChannelSampler::reset() {
 	_expression = 1;
 
 	_sampler_table = _table->sampler_tables[0];
-	_sample_data = std::shared_ptr<SiOPMWaveSamplerData>();
+	_sample_data = Ref<SiOPMWaveSamplerData>();
 
 	_sample_start_phase = 0;
 	_sample_index = 0;
 	_sample_pan = 0;
 }
 
-std::string SiOPMChannelSampler::_to_string() const {
-	std::string params = "";
+sion::String SiOPMChannelSampler::_to_string() const {
+	sion::String params = "";
 
 	params += "vol=" + rtos(_volumes[0] * _expression) + ", ";
 	params += "pan=" + itos(_pan - 64) + "";

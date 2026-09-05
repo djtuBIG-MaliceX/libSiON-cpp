@@ -22,7 +22,6 @@ class SiONTrackEvent : public SiONEvent {
 	int _frame_trigger_timer = 0;
 
 protected:
-	static void _bind_methods();
 
 public:
 	// Event types, doubling as signal names.
@@ -66,7 +65,7 @@ public:
 
 	//
 
-	SiONTrackEvent(std::string p_type = std::string(), SiONDriver *p_driver = nullptr, SiMMLTrack *p_track = nullptr, int p_buffer_index = 0, int p_note = 0, int p_event_trigger_id = 0);
+	SiONTrackEvent(sion::String p_type = sion::String(), SiONDriver *p_driver = nullptr, SiMMLTrack *p_track = nullptr, int p_buffer_index = 0, int p_note = 0, int p_event_trigger_id = 0);
 	~SiONTrackEvent() {}
 };
 

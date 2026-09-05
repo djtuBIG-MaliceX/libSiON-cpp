@@ -13,7 +13,7 @@
 
 
 
-Packedstd::stringArray split_string_by_regex(const std::string &p_string, const std::string &p_regex);
+std::vector<sion::String> split_string_by_regex(const sion::String &p_string, const sion::String &p_regex);
 
 template <class T, size_t S>
 std::vector<T> make_vector(T (&p_array)[S]) {
@@ -34,7 +34,7 @@ std::vector<T> make_vector_from_typed_array(const std::vector<T> &p_array) {
 	std::vector<T> data;
 
 	for (int i = 0; i < p_array.size(); i++) {
-		data.append(p_array[i]);
+		data.push_back(p_array[i]);
 	}
 
 	return data;

@@ -34,7 +34,7 @@ void SiOPMStream::quantize(int p_bitrate) {
 	}
 }
 
-void SiOPMStream::write(std::forward_list<int>::Element *p_data_start, int p_offset, int p_length, double p_volume, int p_pan) {
+void SiOPMStream::write(SinglyLinkedList<int>::Element *p_data_start, int p_offset, int p_length, double p_volume, int p_pan) {
 	double volume = p_volume * SiOPMRefTable::get_instance()->i2n;
 	int buffer_size = (p_offset + p_length) << 1;
 
@@ -43,7 +43,7 @@ void SiOPMStream::write(std::forward_list<int>::Element *p_data_start, int p_off
 		double volume_left = pan_table[128 - p_pan] * volume;
 		double volume_right = pan_table[p_pan] * volume;
 
-		std::forward_list<int>::Element *current = p_data_start;
+		SinglyLinkedList<int>::Element *current = p_data_start;
 		for (int i = p_offset << 1; i < buffer_size;) {
 			buffer[i] += current->value * volume_left;
 			i++;
@@ -53,7 +53,7 @@ void SiOPMStream::write(std::forward_list<int>::Element *p_data_start, int p_off
 			current = current->next();
 		}
 	} else if (channels == 1) { // mono
-		std::forward_list<int>::Element *current = p_data_start;
+		SinglyLinkedList<int>::Element *current = p_data_start;
 		for (int i = p_offset << 1; i < buffer_size;) {
 			buffer[i] += current->value * volume;
 			i++;
@@ -65,7 +65,7 @@ void SiOPMStream::write(std::forward_list<int>::Element *p_data_start, int p_off
 	}
 }
 
-void SiOPMStream::write_stereo(std::forward_list<int>::Element *p_left_start, std::forward_list<int>::Element *p_right_start, int p_offset, int p_length, double p_volume, int p_pan) {
+void SiOPMStream::write_stereo(SinglyLinkedList<int>::Element *p_left_start, SinglyLinkedList<int>::Element *p_right_start, int p_offset, int p_length, double p_volume, int p_pan) {
 	double volume = p_volume * SiOPMRefTable::get_instance()->i2n;
 	int buffer_size = (p_offset + p_length) << 1;
 
@@ -74,8 +74,8 @@ void SiOPMStream::write_stereo(std::forward_list<int>::Element *p_left_start, st
 		double volume_left = pan_table[128 - p_pan] * p_volume;
 		double volume_right = pan_table[p_pan] * p_volume;
 
-		std::forward_list<int>::Element *current_left = p_left_start;
-		std::forward_list<int>::Element *current_right = p_right_start;
+		SinglyLinkedList<int>::Element *current_left = p_left_start;
+		SinglyLinkedList<int>::Element *current_right = p_right_start;
 
 		for (int i = p_offset << 1; i < buffer_size;) {
 			buffer[i] += current_left->value * volume_left;
@@ -89,8 +89,8 @@ void SiOPMStream::write_stereo(std::forward_list<int>::Element *p_left_start, st
 	} else if (channels == 1) { // mono
 		volume *= 0.5;
 
-		std::forward_list<int>::Element *current_left = p_left_start;
-		std::forward_list<int>::Element *current_right = p_right_start;
+		SinglyLinkedList<int>::Element *current_left = p_left_start;
+		SinglyLinkedList<int>::Element *current_right = p_right_start;
 
 		for (int i = p_offset << 1; i < buffer_size;) {
 			buffer[i] += (current_left->value + current_right->value) * volume;

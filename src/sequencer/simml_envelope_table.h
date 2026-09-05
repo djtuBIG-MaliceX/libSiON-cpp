@@ -11,28 +11,27 @@
 ////#include <godot_cpp/templates/vector.hpp>
 ////#include <godot_cpp/variant/string.hpp>
 ////#include "templates/singly_linked_list.h"
-#include <forward_list>
 
 
 
 class SiMMLEnvelopeTable {
 	////GDCLASS(SiMMLEnvelopeTable, RefCounted)
 
-	std::forward_list<int> *_data = nullptr;
+	SinglyLinkedList<int> *_data = nullptr;
 
 protected:
 	static void _bind_methods() {}
 
 public:
-	std::forward_list<int> *get_data() const { return _data; }
-	void set_data(std::forward_list<int> *p_data);
+	SinglyLinkedList<int> *get_data() const { return _data; }
+	void set_data(SinglyLinkedList<int> *p_data);
 
-	std::forward_list<int>::Element *get_head() const;
-	std::forward_list<int>::Element *get_tail() const;
+	SinglyLinkedList<int>::Element *get_head() const;
+	SinglyLinkedList<int>::Element *get_tail() const;
 
 	//
 
-	void parse_mml(std::string p_table_numbers, std::string p_postfix, int p_max_index = 65536);
+	void parse_mml(sion::String p_table_numbers, sion::String p_postfix, int p_max_index = 65536);
 	void from_vector(std::vector<int> p_table, int p_loop_point = -1);
 	// NOTE: Original code can implicitly create the destination vector and return it. We require creating it ahead of the call.
 	void to_vector(int p_length, std::vector<int> *r_destination, int p_min = -65536, int p_max = 65536);

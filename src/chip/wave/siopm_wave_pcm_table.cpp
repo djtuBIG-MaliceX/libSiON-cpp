@@ -9,22 +9,22 @@
 #include "sion_enums.h"
 #include "chip/siopm_ref_table.h"
 
-std::shared_ptr<SiOPMWavePCMData> SiOPMWavePCMTable::get_note_data(int p_note) const {
-	////ERR_FAIL_INDEX_V_MSG(p_note, _note_data_map.size(), nullptr, vformat("SiOPMWavePCMData: Trying to access note data for a note that doesn't exist (%d).", p_note));
+Ref<SiOPMWavePCMData> SiOPMWavePCMTable::get_note_data(int p_note) const {
+	ERR_FAIL_INDEX_V_MSG(p_note, _note_data_map.size(), nullptr, vformat("SiOPMWavePCMData: Trying to access note data for a note that doesn't exist (%d).", p_note));
 	return _note_data_map[p_note];
 }
 
 double SiOPMWavePCMTable::get_note_volume(int p_note) const {
-	////ERR_FAIL_INDEX_V_MSG(p_note, _note_volume_map.size(), 0, vformat("SiOPMWavePCMData: Trying to access note volume for a note that doesn't exist (%d).", p_note));
+	ERR_FAIL_INDEX_V_MSG(p_note, _note_volume_map.size(), 0, vformat("SiOPMWavePCMData: Trying to access note volume for a note that doesn't exist (%d).", p_note));
 	return _note_volume_map[p_note];
 }
 
 int SiOPMWavePCMTable::get_note_pan(int p_note) const {
-	////ERR_FAIL_INDEX_V_MSG(p_note, _note_pan_map.size(), 0, vformat("SiOPMWavePCMData: Trying to access note pan for a note that doesn't exist (%d).", p_note));
+	ERR_FAIL_INDEX_V_MSG(p_note, _note_pan_map.size(), 0, vformat("SiOPMWavePCMData: Trying to access note pan for a note that doesn't exist (%d).", p_note));
 	return _note_pan_map[p_note];
 }
 
-void SiOPMWavePCMTable::set_key_range_data(const std::shared_ptr<SiOPMWavePCMData> &p_pcm_data, int p_key_range_from, int p_key_range_to) {
+void SiOPMWavePCMTable::set_key_range_data(const Ref<SiOPMWavePCMData> &p_pcm_data, int p_key_range_from, int p_key_range_to) {
 	int key_from = std::max(0, p_key_range_from);
 	int key_to = std::min(SiOPMRefTable::NOTE_TABLE_SIZE - 1, p_key_range_to);
 
@@ -32,9 +32,9 @@ void SiOPMWavePCMTable::set_key_range_data(const std::shared_ptr<SiOPMWavePCMDat
 		key_to = key_from;
 	}
 
-	////ERR_FAIL_COND_MSG(key_from > (SiOPMRefTable::NOTE_TABLE_SIZE - 1), vformat("SiOPMWavePCMTable: Invalid sample key range, left boundary cannot be greater than %d but %d was given.", (SiOPMRefTable::NOTE_TABLE_SIZE - 1), key_from));
-	////ERR_FAIL_COND_MSG(key_to < 0, vformat("SiOPMWavePCMTable: Invalid sample key range, right boundary cannot be less than 0 (except -1) but %d was given.", key_to));
-	////ERR_FAIL_COND_MSG(key_to < key_from, vformat("SiOPMWavePCMTable: Invalid sample key range, left boundary cannot be greater than right boundary (%d > %d).", key_from, key_to));
+	ERR_FAIL_COND_MSG(key_from > (SiOPMRefTable::NOTE_TABLE_SIZE - 1), vformat("SiOPMWavePCMTable: Invalid sample key range, left boundary cannot be greater than %d but %d was given.", (SiOPMRefTable::NOTE_TABLE_SIZE - 1), key_from));
+	ERR_FAIL_COND_MSG(key_to < 0, vformat("SiOPMWavePCMTable: Invalid sample key range, right boundary cannot be less than 0 (except -1) but %d was given.", key_to));
+	ERR_FAIL_COND_MSG(key_to < key_from, vformat("SiOPMWavePCMTable: Invalid sample key range, left boundary cannot be greater than right boundary (%d > %d).", key_from, key_to));
 
 	for (int i = key_from; i <= key_to; i++) {
 		_note_data_map[i] = p_pcm_data;
@@ -104,7 +104,7 @@ void SiOPMWavePCMTable::set_key_scale_pan(int p_center_note, double p_key_range,
 
 void SiOPMWavePCMTable::clear() {
 	for (int i = 0; i < SiOPMRefTable::NOTE_TABLE_SIZE; i++) {
-		_note_data_map[i] = std::shared_ptr<SiOPMWavePCMData>();
+		_note_data_map[i] = Ref<SiOPMWavePCMData>();
 		_note_volume_map[i] = 1;
 		_note_pan_map[i] = 0;
 	}

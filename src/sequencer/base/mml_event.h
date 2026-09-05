@@ -76,12 +76,11 @@ private:
 	MMLEvent *jump = nullptr;
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
-	static int get_id_from_mml(std::string p_mml);
+	static int get_id_from_mml(sion::String p_mml);
 
 	int get_id() const { return id; }
 	void set_id(int p_value) { id = p_value; }
@@ -98,7 +97,7 @@ public:
 	MMLEvent *get_parameters(std::vector<int> *r_params, int p_length) const;
 
 	void initialize(int p_id, int p_data, int p_length);
-	std::string as_text() const;
+	sion::String as_text() const;
 
 	MMLEvent(int p_id = 0, int p_data = 0, int p_length = 0);
 	~MMLEvent();

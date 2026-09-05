@@ -17,33 +17,30 @@
 
 std::vector<double> SiOPMWavePCMData::_sin_table;
 
-void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel_count, int p_channel_count) {
+void SiOPMWavePCMData::_prepare_wavelet(const Ref<SampleData> &p_data, int p_src_channel_count, int p_channel_count) {
 	int source_channels = std::clamp(p_src_channel_count, 1, 2);
 	int target_channels = (p_channel_count == 0 ? source_channels : std::clamp(p_channel_count, 1, 2));
 
-	Variant::Type data_type = p_data.get_type();
+	SampleData::Type data_type = (p_data.is_null() ? SampleData::NIL : p_data->type);
 	switch (data_type) {
-		case Variant::PACKED_INT32_ARRAY: {
-			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
-			for (int value : (PackedInt32Array)p_data) {
-				_wavelet.append(value);
+		case SampleData::INT32_ARRAY: {
+			for (int value : p_data->int32_samples) {
+				_wavelet.push_back(value);
 			}
 		} break;
 
-		case Variant::PACKED_FLOAT32_ARRAY: {
-			// TODO: If someday std::vector<T> and Packed*Arrays become friends, this can be simplified.
+		case SampleData::FLOAT32_ARRAY: {
 			std::vector<double> raw_data;
-			for (double value : (PackedFloat32Array)p_data) {
-				raw_data.append(value);
+			for (double value : p_data->float_samples) {
+				raw_data.push_back(value);
 			}
 
 			_wavelet = TransformerUtil::transform_pcm_data(raw_data, source_channels, target_channels);
 		} break;
 
-		case Variant::OBJECT: {
-			std::shared_ptr<AudioStream> audio_stream = p_data;
-			if (audio_stream.is_valid()) {
-				std::vector<double> raw_data = _extract_wave_data(audio_stream, &source_channels);
+		case SampleData::WAVE: {
+			if (p_data->wave.is_valid()) {
+				std::vector<double> raw_data = _extract_wave_data(p_data->wave, &source_channels);
 				if (p_channel_count == 0) { // Update if necessary.
 					target_channels = source_channels;
 				}
@@ -52,15 +49,15 @@ void SiOPMWavePCMData::_prepare_wavelet(const Variant &p_data, int p_src_channel
 				break;
 			}
 
-			//ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
+			ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
 		} break;
 
-		case Variant::NIL: {
+		case SampleData::NIL: {
 			// Nothing to do.
 		} break;
 
 		default: {
-			//ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
+			ERR_FAIL_MSG("SiOPMWavePCMData: Unsupported data type.");
 		} break;
 	}
 
@@ -199,7 +196,7 @@ void SiOPMWavePCMData::loop_tail_samples(int p_sample_count, int p_tail_margin, 
 
 //
 
-SiOPMWavePCMData::SiOPMWavePCMData(const Variant &p_data, int p_sampling_pitch, int p_src_channel_count, int p_channel_count) :
+SiOPMWavePCMData::SiOPMWavePCMData(const Ref<SampleData> &p_data, int p_sampling_pitch, int p_src_channel_count, int p_channel_count) :
 		SiOPMWaveBase(SiONModuleType::MODULE_PCM) {
 
 	_prepare_wavelet(p_data, p_src_channel_count, p_channel_count);

@@ -18,7 +18,7 @@ class MMLSequence;
 class SiOPMOperatorParams;
 
 // Channel parameters for SiONVoice.
-class SiOPMChannelParams : public RefCounted {
+class SiOPMChannelParams {
 	//GDCLASS(SiOPMChannelParams, RefCounted)
 
 	friend class TranslatorUtil;
@@ -30,7 +30,7 @@ private:
 	MMLSequence *init_sequence = nullptr;
 
 	// This list is exactly MAX_OPERATORS at all times, use operator_count to read only valid values.
-	List<std::shared_ptr<SiOPMOperatorParams>> operator_params;
+	List<Ref<SiOPMOperatorParams>> operator_params;
 	int operator_count = 0;
 	bool analog_like = false;
 
@@ -62,14 +62,13 @@ private:
 	int filter_release_offset = 0;
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
 	MMLSequence *get_init_sequence() const { return init_sequence; }
 
-	std::shared_ptr<SiOPMOperatorParams> get_operator_params(int p_index);
+	Ref<SiOPMOperatorParams> get_operator_params(int p_index);
 	int get_operator_count() const { return operator_count; }
 	void set_operator_count(int p_value);
 	bool is_analog_like() const { return analog_like; }
@@ -134,7 +133,7 @@ public:
 	void set_by_opm_register(int p_channel, int p_address, int p_data);
 
 	void initialize();
-	void copy_from(const std::shared_ptr<SiOPMChannelParams> &p_params);
+	void copy_from(const Ref<SiOPMChannelParams> &p_params);
 
 	SiOPMChannelParams();
 	~SiOPMChannelParams();

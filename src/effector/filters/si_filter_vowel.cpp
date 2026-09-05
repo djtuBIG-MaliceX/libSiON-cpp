@@ -77,12 +77,12 @@ void SiFilterVowel::set_vowel_formants(double p_output_level, double p_frequency
 	int freq_index1 = Formant::calculate_freq_index(p_frequency1);
 	int freq_index2 = Formant::calculate_freq_index(p_frequency2);
 
-	FormantEvent *event = memnew(FormantEvent(p_delay, p_output_level, p_frequency1, p_gain1, p_frequency2, p_gain2));
+	FormantEvent *event = new FormantEvent(p_delay, p_output_level, p_frequency1, p_gain1, p_frequency2, p_gain2);
 	_event_queue = event->insert_to(_event_queue);
 }
 
 void SiFilterVowel::_set_formant_band(int p_index, double p_frequency,  int p_gain, int p_band_index) {
-	////ERR_FAIL_INDEX(p_index, _formants.size());
+	ERR_FAIL_INDEX(p_index, _formants.size());
 
 	int freq_index = Formant::calculate_freq_index(p_frequency);
 	_formants[p_index].update(freq_index, p_gain, p_band_index);
@@ -146,7 +146,7 @@ int SiFilterVowel::_update_event(int p_time) {
 		_output_level = _event_queue->output_level;
 
 		FormantEvent *next_event = _event_queue->next;
-		memdelete(_event_queue);
+		delete _event_queue;
 		_event_queue = next_event;
 	}
 
@@ -242,17 +242,6 @@ void SiFilterVowel::set_by_mml(std::vector<double> p_args) {
 	double frequency6 = _get_mml_arg(p_args, 11, 5500);
 	int gain6         = _get_mml_arg(p_args, 12, 3);
 	set_formant_band1(frequency6, gain6);
-}
-
-void SiFilterVowel::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_vowel_formants", "output_level", "frequency1", "gain1", "frequency2", "gain2", "delay"), &SiFilterVowel::set_vowel_formants, DEFVAL(0));
-
-	ClassDB::bind_method(D_METHOD("set_formant_band1", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band1, DEFVAL(800),  DEFVAL(36), DEFVAL(3));
-	ClassDB::bind_method(D_METHOD("set_formant_band2", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band2, DEFVAL(1300), DEFVAL(24), DEFVAL(3));
-	ClassDB::bind_method(D_METHOD("set_formant_band3", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band3, DEFVAL(2200), DEFVAL(12), DEFVAL(3));
-	ClassDB::bind_method(D_METHOD("set_formant_band4", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band4, DEFVAL(3500), DEFVAL(9),  DEFVAL(3));
-	ClassDB::bind_method(D_METHOD("set_formant_band5", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band5, DEFVAL(4500), DEFVAL(6),  DEFVAL(3));
-	ClassDB::bind_method(D_METHOD("set_formant_band6", "frequency", "gain", "band_index"), &SiFilterVowel::set_formant_band6, DEFVAL(5500), DEFVAL(3),  DEFVAL(3));
 }
 
 SiFilterVowel::SiFilterVowel() :

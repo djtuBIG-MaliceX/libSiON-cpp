@@ -16,7 +16,7 @@ class MMLEvent;
 class MMLSequence;
 
 // Group of MMLSequences. MMLData > MMLSequenceGroup > MMLSequence > MMLEvent (">" means "has a").
-class MMLSequenceGroup : public Object {
+class MMLSequenceGroup {
 	//GDCLASS(MMLSequenceGroup, Object)
 
 	List<MMLSequence *> _free_list;
@@ -26,7 +26,6 @@ class MMLSequenceGroup : public Object {
 	MMLSequence *_term = nullptr;
 
 protected:
-	static void _bind_methods();
 
 public:
 	MMLSequence *create_new_sequence();

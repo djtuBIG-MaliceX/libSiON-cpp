@@ -80,7 +80,7 @@ MMLSequence *SiMMLChannelSettings::select_tone(SiMMLTrack *p_track, int p_voice_
 				voice_index = 0;
 			}
 
-			std::shared_ptr<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(voice_index);
+			Ref<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(voice_index);
 			if (voice.is_null()) {
 				break;
 			}
@@ -111,32 +111,32 @@ MMLSequence *SiMMLChannelSettings::select_tone(SiMMLTrack *p_track, int p_voice_
 //
 
 int SiMMLChannelSettings::get_pg_type(int p_index) const {
-	////ERR_FAIL_INDEX_V(p_index, _pg_type_list.size(), -1);
+	ERR_FAIL_INDEX_V(p_index, _pg_type_list.size(), -1);
 	return _pg_type_list[p_index];
 }
 
 void SiMMLChannelSettings::set_pg_type(int p_index, int p_type) {
-	////ERR_FAIL_INDEX(p_index, _pg_type_list.size());
+	ERR_FAIL_INDEX(p_index, _pg_type_list.size());
 	_pg_type_list[p_index] = p_type;
 }
 
 SiONPitchTableType SiMMLChannelSettings::get_pt_type(int p_index) const {
-	////ERR_FAIL_INDEX_V(p_index, _pt_type_list.size(), SiONPitchTableType::PITCH_TABLE_OPM);
+	ERR_FAIL_INDEX_V(p_index, _pt_type_list.size(), SiONPitchTableType::PITCH_TABLE_OPM);
 	return _pt_type_list[p_index];
 }
 
 void SiMMLChannelSettings::set_pt_type(int p_index, SiONPitchTableType p_type) {
-	////ERR_FAIL_INDEX(p_index, _pt_type_list.size());
+	ERR_FAIL_INDEX(p_index, _pt_type_list.size());
 	_pt_type_list[p_index] = p_type;
 }
 
 int SiMMLChannelSettings::get_voice_index(int p_index) const {
-	////ERR_FAIL_INDEX_V(p_index, _voice_index_table.size(), -1);
+	ERR_FAIL_INDEX_V(p_index, _voice_index_table.size(), -1);
 	return _voice_index_table[p_index];
 }
 
 void SiMMLChannelSettings::set_voice_index(int p_index, int p_value) {
-	////ERR_FAIL_INDEX(p_index, _voice_index_table.size());
+	ERR_FAIL_INDEX(p_index, _voice_index_table.size());
 	_voice_index_table[p_index] = p_value;
 }
 

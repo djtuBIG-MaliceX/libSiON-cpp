@@ -27,15 +27,7 @@ bool SiONTrackEvent::decrement_timer(int p_frame_rate) {
 
 //
 
-void SiONTrackEvent::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_track"), &SiONTrackEvent::get_track);
-	ClassDB::bind_method(D_METHOD("get_event_trigger_id"), &SiONTrackEvent::get_event_trigger_id);
-	ClassDB::bind_method(D_METHOD("get_note"), &SiONTrackEvent::get_note);
-	ClassDB::bind_method(D_METHOD("get_buffer_index"), &SiONTrackEvent::get_buffer_index);
-	ClassDB::bind_method(D_METHOD("get_frame_trigger_delay"), &SiONTrackEvent::get_frame_trigger_delay);
-}
-
-SiONTrackEvent::SiONTrackEvent(std::string p_type, SiONDriver *p_driver, SiMMLTrack *p_track, int p_buffer_index, int p_note, int p_event_trigger_id) :
+SiONTrackEvent::SiONTrackEvent(sion::String p_type, SiONDriver *p_driver, SiMMLTrack *p_track, int p_buffer_index, int p_note, int p_event_trigger_id) :
 		SiONEvent(p_type, p_driver) {
 	_track = p_track;
 

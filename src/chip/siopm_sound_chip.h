@@ -9,7 +9,6 @@
 
 ////#include <godot_cpp/core/object.hpp>
 ////#include <godot_cpp/templates/list.hpp>
-#include <forward_list>
 ////#include <godot_cpp/templates/vector.hpp>
 #include <vector>
 #include "chip/siopm_operator_params.h"
@@ -22,8 +21,8 @@ class SiOPMStream;
 class SiOPMSoundChip {
 	////GDCLASS(SiOPMSoundChip, Object)
 
-	std::shared_ptr<SiOPMOperatorParams> init_operator_params;
-	std::forward_list<int> *zero_buffer = nullptr;
+	Ref<SiOPMOperatorParams> init_operator_params;
+	SinglyLinkedList<int> *zero_buffer = nullptr;
 
 	SiOPMStream *output_stream = nullptr;
 	// Expected to be of STREAM_SEND_SIZE size.
@@ -35,17 +34,16 @@ class SiOPMSoundChip {
 	int _bitrate = 0;
 
 	// Expected to be of PIPE_SIZE size.
-	std::vector<std::forward_list<int> *> _pipe_buffers;
+	std::vector<SinglyLinkedList<int> *> _pipe_buffers;
 
 protected:
-	static void _bind_methods();
 
 public:
 	static const int STREAM_SEND_SIZE = 8;
 	static const int PIPE_SIZE = 5;
 
-	std::shared_ptr<SiOPMOperatorParams> get_init_operator_params() const { return init_operator_params; }
-	std::forward_list<int> *get_zero_buffer() const { return zero_buffer; }
+	Ref<SiOPMOperatorParams> get_init_operator_params() const { return init_operator_params; }
+	SinglyLinkedList<int> *get_zero_buffer() const { return zero_buffer; }
 
 	SiOPMStream *get_output_stream() const { return output_stream; }
 	std::vector<double> *get_output_buffer_ptr();
@@ -60,8 +58,8 @@ public:
 	int get_buffer_length() const { return _buffer_length; }
 	int get_bitrate() const { return _bitrate; }
 
-	//std::forward_list<int> *get_pipe(int p_pipe_num, int p_index = 0);
-	std::forward_list<int> *get_pipe(int p_pipe_num, int p_index = 0);
+	//SinglyLinkedList<int> *get_pipe(int p_pipe_num, int p_index = 0);
+	SinglyLinkedList<int> *get_pipe(int p_pipe_num, int p_index = 0);
 
 	void begin_process();
 	void end_process();

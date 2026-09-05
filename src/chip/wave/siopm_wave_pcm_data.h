@@ -22,7 +22,7 @@ class SiOPMWavePCMData : public SiOPMWaveBase {
 	int _channel_count = 0;
 	int _sampling_pitch = 0;
 
-	void _prepare_wavelet(const Variant &p_data, int p_src_channel_count, int p_channel_count);
+	void _prepare_wavelet(const Ref<SampleData> &p_data, int p_src_channel_count, int p_channel_count);
 
 	//
 
@@ -55,7 +55,7 @@ public:
 	void slice(int p_start_point = -1, int p_end_point = -1, int p_loop_point = -1);
 	void loop_tail_samples(int p_sample_count = 2205, int p_tail_margin = 0, bool p_crossfade = true);
 
-	SiOPMWavePCMData(const Variant &p_data = Variant(), int p_sampling_pitch = 4416, int p_src_channel_count = 2, int p_channel_count = 0);
+	SiOPMWavePCMData(const Ref<SampleData> &p_data = Ref<SampleData>(), int p_sampling_pitch = 4416, int p_src_channel_count = 2, int p_channel_count = 0);
 	~SiOPMWavePCMData() {}
 };
 

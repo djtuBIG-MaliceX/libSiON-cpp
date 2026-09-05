@@ -58,7 +58,7 @@ public:
 	int get_sequence_count() const { return _sequence_count; }
 
 	MMLSequence *connect(MMLSequenceGroup *p_seq_group, MMLSequence *p_sequence);
-	void parse(std::string p_formula);
+	void parse(sion::String p_formula);
 	void clear();
 
 	MMLExecutorConnector() {}

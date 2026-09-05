@@ -97,7 +97,6 @@ class SiFilterVowel : public SiEffectBase {
 	void _process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length);
 
 protected:
-	static void _bind_methods();
 
 public:
 	// Formants.

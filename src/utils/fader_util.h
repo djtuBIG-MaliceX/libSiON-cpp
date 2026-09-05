@@ -8,6 +8,7 @@
 #define SION_FADER_UTIL_H
 
 //#include <godot_cpp/variant/callable.hpp>
+#include <functional>
 
 
 
@@ -18,13 +19,13 @@ class FaderUtil {
 	int _counter = 0;
 	double _value = 0;
 
-	Callable _callback;
+	std::function<void(double)> _callback;
 
 public:
 	bool is_active() const;
 	bool is_incrementing() const;
 	double get_value() const { return _value; }
-	void set_callback(const Callable &p_callback) { _callback = p_callback; }
+	void set_callback(const std::function<void(double)> &p_callback) { _callback = p_callback; }
 
 	// Return true if the end value has been reached.
 	bool execute();
@@ -32,7 +33,7 @@ public:
 
 	void set_fade(double p_value_from = 0, double p_value_to = 1, int p_frames = 60);
 
-	FaderUtil(const Callable &p_callback = Callable(), double p_value_from = 0, double p_value_to = 1, int p_frames = 60);
+	FaderUtil(const std::function<void(double)> &p_callback = nullptr, double p_value_from = 0, double p_value_to = 1, int p_frames = 60);
 	~FaderUtil() {}
 };
 

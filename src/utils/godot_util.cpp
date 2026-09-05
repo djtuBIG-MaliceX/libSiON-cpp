@@ -9,24 +9,24 @@
 //#include <godot_cpp/classes/reg_ex.hpp>
 //#include <godot_cpp/classes/reg_ex_match.hpp>
 
-Packedstd::stringArray split_string_by_regex(const std::string &p_string, const std::string &p_regex) {
+std::vector<sion::String> split_string_by_regex(const sion::String &p_string, const sion::String &p_regex) {
 	// This is boilerplate to split a string by a regex in Godot.
-	Packedstd::stringArray arr;
+	std::vector<sion::String> arr;
 
-	std::shared_ptr<RegEx> re_split = RegEx::create_from_string(p_regex);
+	Ref<RegEx> re_split = RegEx::create_from_string(p_regex);
 	std::vector<RegExMatch> matches = re_split->search_all(p_string);
 
 	int last_index = 0;
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> separator = matches[i];
-		std::string match = p_string.substr(last_index, separator->get_start() - last_index);
+		Ref<RegExMatch> separator = matches[i];
+		sion::String match = p_string.substr(last_index, separator->get_start() - last_index);
 
-		arr.append(match);
+		arr.push_back(match);
 		last_index = separator->get_end();
 	}
 
-	std::string last_match = p_string.substr(last_index);
-	arr.append(last_match);
+	sion::String last_match = p_string.substr(last_index);
+	arr.push_back(last_match);
 
 	return arr;
 }

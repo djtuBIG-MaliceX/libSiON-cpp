@@ -18,10 +18,10 @@
 class SiEffectStream;
 class SiOPMSoundChip;
 
-class SiEffector : public Object {
+class SiEffector {
 	//GDCLASS(SiEffector, Object)
 
-	static HashMap<std::string, List<std::shared_ptr<SiEffectBase>>> _effect_instances;
+	static HashMap<sion::String, List<Ref<SiEffectBase>>> _effect_instances;
 
 	SiOPMSoundChip *_sound_chip = nullptr;
 
@@ -36,7 +36,6 @@ class SiEffector : public Object {
 	SiEffectStream *_alloc_stream(int p_depth);
 
 protected:
-	static void _bind_methods();
 
 public:
 	// Effects.
@@ -44,22 +43,22 @@ public:
 	int get_global_effect_count() const { return _global_effect_count; }
 
 	template <class T>
-	static void register_effect(const std::string &p_name);
-	static std::shared_ptr<SiEffectBase> get_effect_instance(const std::string &p_name);
+	static void register_effect(const sion::String &p_name);
+	static Ref<SiEffectBase> get_effect_instance(const sion::String &p_name);
 	template <class T>
-	static std::shared_ptr<T> create_effect_instance();
+	static Ref<T> create_effect_instance();
 
 	// Slots and connections.
 
 	std::vector<SiEffectBase> get_slot_effects(int p_slot) const;
-	void add_slot_effect(int p_slot, const std::shared_ptr<SiEffectBase> &p_effect);
+	void add_slot_effect(int p_slot, const Ref<SiEffectBase> &p_effect);
 	void set_slot_effects(int p_slot, const std::vector<SiEffectBase> &p_effects);
 	void clear_slot_effects(int p_slot);
 
-	SiEffectStream *create_local_effect(int p_depth, List<std::shared_ptr<SiEffectBase>> p_effects);
+	SiEffectStream *create_local_effect(int p_depth, List<Ref<SiEffectBase>> p_effects);
 	void delete_local_effect(SiEffectStream *p_effect);
 
-	void parse_global_effect_mml(int p_slot, std::string p_mml, std::string p_postfix);
+	void parse_global_effect_mml(int p_slot, sion::String p_mml, sion::String p_postfix);
 
 	// Processing.
 

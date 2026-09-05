@@ -63,8 +63,8 @@ class SiOPMChannelFM : public SiOPMChannelBase {
 	void _update_process_function();
 	void _update_operator_count(int p_count);
 
-	std::forward_list<int> *_pipe0 = nullptr;
-	std::forward_list<int> *_pipe1 = nullptr;
+	SinglyLinkedList<int> *_pipe0 = nullptr;
+	SinglyLinkedList<int> *_pipe1 = nullptr;
 
 	enum RegisterType {
 		REGISTER_OPM = 0,
@@ -103,9 +103,8 @@ class SiOPMChannelFM : public SiOPMChannelBase {
 	void _process_sync(int p_length);
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 	std::vector<SiOPMOperator *> _operators;
 	SiOPMOperator *_active_operator = nullptr;
@@ -122,11 +121,11 @@ protected:
 public:
 	static void finalize_pool();
 
-	virtual void get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const override;
-	virtual void set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
+	virtual void get_channel_params(const Ref<SiOPMChannelParams> &p_params) const override;
+	virtual void set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation = true) override;
 	void set_params_by_value(int p_ar, int p_dr, int p_sr, int p_rr, int p_sl, int p_tl, int p_ksr, int p_ksl, int p_mul, int p_dt1, int p_dt2, int p_ams, int p_phase, int p_fix_note);
 
-	virtual void set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) override;
+	virtual void set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) override;
 	virtual void set_channel_number(int p_value) override;
 	virtual void set_register(int p_address, int p_data) override;
 

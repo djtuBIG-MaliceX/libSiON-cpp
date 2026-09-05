@@ -179,8 +179,8 @@ void initialize_sion_module(ModuleInitializationLevel p_level) {
 	// Initialization.
 
 	// SUS: This is a bit ugly, but I don't have a better idea yet.
-	std::forward_list<int>::initialize_pool();
-	std::forward_list<double>::initialize_pool();
+	SinglyLinkedList<int>::initialize_pool();
+	SinglyLinkedList<double>::initialize_pool();
 
 	// Initialize singletons and static members before the execution.
 	MMLParser::initialize();
@@ -198,8 +198,8 @@ void uninitialize_sion_module(ModuleInitializationLevel p_level) {
 	// Finalization.
 
 	// SUS: This is a bit ugly, but I don't have a better idea yet.
-	std::forward_list<int>::finalize_pool();
-	std::forward_list<double>::finalize_pool();
+	SinglyLinkedList<int>::finalize_pool();
+	SinglyLinkedList<double>::finalize_pool();
 
 	// Finalize singletons and static members after the execution.
 	SiOPMChannelFM::finalize_pool();

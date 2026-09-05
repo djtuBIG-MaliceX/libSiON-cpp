@@ -13,7 +13,7 @@
 
 
 
-int MMLEvent::get_id_from_mml(std::string p_mml) {
+int MMLEvent::get_id_from_mml(sion::String p_mml) {
 	if (p_mml == "c" || p_mml == "d" || p_mml == "e" || p_mml == "f" || p_mml == "g" || p_mml == "a" || p_mml == "b") {
 		return MMLEvent::NOTE;
 	}
@@ -113,75 +113,16 @@ void MMLEvent::initialize(int p_id, int p_data, int p_length) {
 	jump = nullptr;
 }
 
-std::string MMLEvent::as_text() const {
+sion::String MMLEvent::as_text() const {
 	return "#" + itos(id) + "{" + itos(data) + "," + itos(length) + "}";
 }
 
-std::string MMLEvent::_to_string() const {
-	std::string chain_str = "";
+sion::String MMLEvent::_to_string() const {
+	sion::String chain_str = "";
 	chain_str += "next=" + (next ? itos(next->id) : "null") + ", ";
 	chain_str += "jump=" + (jump ? itos(jump->id) : "null");
 
 	return vformat("MMLEvent: id=%d, data=%d, len=%d, %s", id, length, data, chain_str);
-}
-
-void MMLEvent::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_id"), &MMLEvent::get_id);
-	ClassDB::bind_method(D_METHOD("set_id", "value"), &MMLEvent::set_id);
-	ClassDB::add_property("MMLEvent", PropertyInfo(Variant::INT, "id"), "set_id", "get_id");
-
-	ClassDB::bind_method(D_METHOD("get_data"), &MMLEvent::get_data);
-	ClassDB::bind_method(D_METHOD("set_data", "value"), &MMLEvent::set_data);
-	ClassDB::add_property("MMLEvent", PropertyInfo(Variant::INT, "data"), "set_data", "get_data");
-
-	ClassDB::bind_method(D_METHOD("get_length"), &MMLEvent::get_length);
-	ClassDB::bind_method(D_METHOD("set_length", "value"), &MMLEvent::set_length);
-	ClassDB::add_property("MMLEvent", PropertyInfo(Variant::INT, "length"), "set_length", "get_length");
-
-	ClassDB::bind_method(D_METHOD("get_next"), &MMLEvent::get_next);
-	ClassDB::bind_method(D_METHOD("set_next", "event"), &MMLEvent::set_next);
-	ClassDB::add_property("MMLEvent", PropertyInfo(Variant::OBJECT, "next", PROPERTY_HINT_RESOURCE_TYPE, "MMLEvent"), "set_next", "get_next");
-
-	ClassDB::bind_method(D_METHOD("get_jump"), &MMLEvent::get_jump);
-	ClassDB::bind_method(D_METHOD("set_jump", "event"), &MMLEvent::set_jump);
-	ClassDB::add_property("MMLEvent", PropertyInfo(Variant::OBJECT, "jump", PROPERTY_HINT_RESOURCE_TYPE, "MMLEvent"), "set_jump", "get_jump");
-
-	BIND_ENUM_CONSTANT(NO_OP);
-	BIND_ENUM_CONSTANT(PROCESS);
-	BIND_ENUM_CONSTANT(REST);
-	BIND_ENUM_CONSTANT(NOTE);
-	BIND_ENUM_CONSTANT(KEY_ON_DELAY);
-	BIND_ENUM_CONSTANT(QUANT_RATIO);
-	BIND_ENUM_CONSTANT(QUANT_COUNT);
-	BIND_ENUM_CONSTANT(VOLUME);
-	BIND_ENUM_CONSTANT(VOLUME_SHIFT);
-	BIND_ENUM_CONSTANT(FINE_VOLUME);
-	BIND_ENUM_CONSTANT(SLUR);
-	BIND_ENUM_CONSTANT(SLUR_WEAK);
-	BIND_ENUM_CONSTANT(PITCHBEND);
-	BIND_ENUM_CONSTANT(REPEAT_BEGIN);
-	BIND_ENUM_CONSTANT(REPEAT_BREAK);
-	BIND_ENUM_CONSTANT(REPEAT_END);
-	BIND_ENUM_CONSTANT(MOD_TYPE);
-	BIND_ENUM_CONSTANT(MOD_PARAM);
-	BIND_ENUM_CONSTANT(INPUT_PIPE);
-	BIND_ENUM_CONSTANT(OUTPUT_PIPE);
-	BIND_ENUM_CONSTANT(REPEAT_ALL);
-	BIND_ENUM_CONSTANT(PARAMETER);
-	BIND_ENUM_CONSTANT(SEQUENCE_HEAD);
-	BIND_ENUM_CONSTANT(SEQUENCE_TAIL);
-	BIND_ENUM_CONSTANT(SYSTEM_EVENT);
-	BIND_ENUM_CONSTANT(TABLE_EVENT);
-	BIND_ENUM_CONSTANT(GLOBAL_WAIT);
-	BIND_ENUM_CONSTANT(TEMPO);
-	BIND_ENUM_CONSTANT(TIMER);
-	BIND_ENUM_CONSTANT(REGISTER);
-	BIND_ENUM_CONSTANT(DEBUG_INFO);
-	BIND_ENUM_CONSTANT(INTERNAL_CALL);
-	BIND_ENUM_CONSTANT(INTERNAL_WAIT);
-	BIND_ENUM_CONSTANT(DRIVER_NOTE);
-	BIND_ENUM_CONSTANT(USER_DEFINED);
-	BIND_ENUM_CONSTANT(COMMAND_MAX);
 }
 
 MMLEvent::MMLEvent(int p_id, int p_data, int p_length) {

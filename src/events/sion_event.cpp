@@ -22,22 +22,15 @@ const char *SiONEvent::FADING = "fading";
 const char *SiONEvent::FADE_IN_COMPLETED = "fade_in_completed";
 const char *SiONEvent::FADE_OUT_COMPLETED = "fade_out_completed";
 
-std::shared_ptr<SiONData> SiONEvent::get_data() const {
-	//ERR_FAIL_NULL_V_MSG(_driver, std::shared_ptr<SiONData>(), "SiONEvent: Driver doesn't exist.");
+Ref<SiONData> SiONEvent::get_data() const {
+	ERR_FAIL_NULL_V_MSG(_driver, Ref<SiONData>(), "SiONEvent: Driver doesn't exist.");
 
 	return _driver->get_data();
 }
 
 //
 
-void SiONEvent::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_event_type"), &SiONEvent::get_event_type);
-	ClassDB::bind_method(D_METHOD("get_driver"), &SiONEvent::get_driver);
-	ClassDB::bind_method(D_METHOD("get_data"), &SiONEvent::get_data);
-	ClassDB::bind_method(D_METHOD("get_stream_buffer"), &SiONEvent::get_stream_buffer);
-}
-
-SiONEvent::SiONEvent(std::string p_type, SiONDriver *p_driver, Packedstd::vector2Array p_stream_buffer) {
+SiONEvent::SiONEvent(sion::String p_type, SiONDriver *p_driver, PackedVector2Array p_stream_buffer) {
 	_event_type = p_type;
 	_driver = p_driver;
 	_stream_buffer = p_stream_buffer;

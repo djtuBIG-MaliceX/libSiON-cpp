@@ -20,12 +20,12 @@
 MMLExecutor *MMLSequencer::_temp_executor = nullptr;
 
 void MMLSequencer::initialize() {
-	_temp_executor = memnew(MMLExecutor);
+	_temp_executor = new MMLExecutor;
 }
 
 void MMLSequencer::finalize() {
 	if (_temp_executor) {
-		memdelete(_temp_executor);
+		delete _temp_executor;
 		_temp_executor = nullptr;
 	}
 }
@@ -53,12 +53,16 @@ void MMLSequencer::set_bpm(double p_value) {
 
 // Events.
 
-void MMLSequencer::_set_mml_event_listener(int p_event_id, const Callable &p_handler, bool p_global) {
+void MMLSequencer::_set_mml_event_listener(int p_event_id, const std::function<MMLEvent *(MMLEvent *)> &p_handler, bool p_global) {
 	_event_handlers[p_event_id] = p_handler;
 	_event_global_flags[p_event_id] = p_global;
 }
 
-int MMLSequencer::_create_mml_event_listener(std::string p_letter, const Callable &p_handler, bool p_global) {
+void MMLSequencer::_set_default_listener(int p_event_id, MMLEvent *(MMLSequencer::*p_fn)(MMLEvent *), bool p_global) {
+	_set_mml_event_listener(p_event_id, [this, p_fn](MMLEvent *p_event) { return (this->*p_fn)(p_event); }, p_global);
+}
+
+int MMLSequencer::_create_mml_event_listener(sion::String p_letter, const std::function<MMLEvent *(MMLEvent *)> &p_handler, bool p_global) {
 	int event_id = _next_user_defined_event_id;
 	_next_user_defined_event_id++;
 
@@ -69,7 +73,7 @@ int MMLSequencer::_create_mml_event_listener(std::string p_letter, const Callabl
 	return event_id;
 }
 
-int MMLSequencer::get_event_id(std::string p_mml_command) {
+int MMLSequencer::get_event_id(sion::String p_mml_command) {
 	int event_id = MMLEvent::get_id_from_mml(p_mml_command);
 	if (event_id != 0) {
 		return event_id;
@@ -81,8 +85,8 @@ int MMLSequencer::get_event_id(std::string p_mml_command) {
 	return 0;
 }
 
-std::string MMLSequencer::get_event_letter(int p_event_id) {
-	////ERR_FAIL_COND_V(!_event_command_letter_map.has(p_event_id), "");
+sion::String MMLSequencer::get_event_letter(int p_event_id) {
+	ERR_FAIL_COND_V(!_event_command_letter_map.has(p_event_id), "");
 
 	return _event_command_letter_map[p_event_id];
 }
@@ -209,14 +213,14 @@ MMLEvent *MMLSequencer::_default_on_internal_wait(MMLEvent *p_event) {
 }
 
 MMLEvent *MMLSequencer::_default_on_internal_call(MMLEvent *p_event) {
-	List<Callable> callbacks = _current_executor->get_sequence()->get_callbacks_for_internal_call();
+	List<std::function<MMLEvent *(int)>> callbacks = _current_executor->get_sequence()->get_callbacks_for_internal_call();
 	int callback_idx = p_event->get_data();
 
 	MMLEvent *next = nullptr;
 	if (callback_idx >= 0 && callback_idx < callbacks.size()) {
-		Callable cb = callbacks[callback_idx];
-		if (cb.is_valid()) {
-			next = Object::cast_to<MMLEvent>(cb.call(p_event->get_length()));
+		std::function<MMLEvent *(int)> cb = callbacks[callback_idx];
+		if (cb) {
+			next = cb(p_event->get_length());
 		}
 	}
 
@@ -360,12 +364,12 @@ void MMLSequencer::_extract_global_sequence() {
 	}
 
 	if (initial_bpm > 0) {
-		std::shared_ptr<BeatsPerMinute> bpm_obj = memnew(BeatsPerMinute(initial_bpm, 44100, _parser_settings->resolution));
+		Ref<BeatsPerMinute> bpm_obj = new BeatsPerMinute(initial_bpm, 44100, _parser_settings->resolution);
 		mml_data->set_bpm_settings(bpm_obj);
 	}
 }
 
-bool MMLSequencer::prepare_compile(const std::shared_ptr<MMLData> &p_data, std::string p_mml) {
+bool MMLSequencer::prepare_compile(const Ref<MMLData> &p_data, sion::String p_mml) {
 	mml_data = p_data;
 	if (mml_data.is_null()) {
 		return false;
@@ -376,9 +380,9 @@ bool MMLSequencer::prepare_compile(const std::shared_ptr<MMLData> &p_data, std::
 	MMLParser::get_instance()->set_user_defined_event_map(_user_defined_event_map);
 	MMLParser::get_instance()->set_global_event_flags(_event_global_flags);
 
-	std::string mml_string = _on_before_compile(p_mml);
-	if (mml_string.empty()()) {
-		mml_data = std::shared_ptr<MMLData>();
+	sion::String mml_string = _on_before_compile(p_mml);
+	if (mml_string.empty()) {
+		mml_data = Ref<MMLData>();
 		return false;
 	}
 
@@ -410,8 +414,8 @@ double MMLSequencer::compile(int p_interval) {
 	return 1;
 }
 
-void MMLSequencer::prepare_process(const std::shared_ptr<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
-	////ERR_FAIL_COND_MSG((p_sample_rate != 22050 && p_sample_rate != 44100), "MMLSequencer: Sampling rate can only be 22050 or 44100.");
+void MMLSequencer::prepare_process(const Ref<MMLData> &p_data, int p_sample_rate, int p_buffer_length) {
+	ERR_FAIL_COND_MSG((p_sample_rate != 22050 && p_sample_rate != 44100), "MMLSequencer: Sampling rate can only be 22050 or 44100.");
 
 	mml_data = p_data;
 	_sample_rate = p_sample_rate;
@@ -452,9 +456,9 @@ int MMLSequencer::execute_global_sequence() {
 			_global_buffer_sample_count = 0;
 		} else {
 			// Update global execute sample count in some event handlers.
-			Callable cb = _event_handlers[event->get_id()];
-			if (cb.is_valid()) {
-				event = Object::cast_to<MMLEvent>(cb.call(event));
+			std::function<MMLEvent *(MMLEvent *)> cb = _event_handlers[event->get_id()];
+			if (cb) {
+				event = cb(event);
 				_current_executor->set_pointer(event);
 			} else {
 				// This shouldn't happen unless something is very wrong with our callables.
@@ -500,17 +504,17 @@ bool MMLSequencer::process_executor(MMLExecutor *p_executor, int p_buffer_sample
 	_process_buffer_sample_count = p_buffer_sample_count;
 	while (_process_buffer_sample_count > 0) {
 		if (event == nullptr) {
-			Callable cb = _event_handlers[MMLEvent::NO_OP];
-			if (cb.is_valid()) {
-				cb.call(_current_executor->get_nop_event());
+			std::function<MMLEvent *(MMLEvent *)> cb = _event_handlers[MMLEvent::NO_OP];
+			if (cb) {
+				cb(_current_executor->get_nop_event());
 			}
 			return true;
 		}
 
 		// Update process buffer sample count in some event handlers.
-		Callable cb = _event_handlers[event->get_id()];
-		if (cb.is_valid()) {
-			event = Object::cast_to<MMLEvent>(cb.call(event));
+		std::function<MMLEvent *(MMLEvent *)> cb = _event_handlers[event->get_id()];
+		if (cb) {
+			event = cb(event);
 			_current_executor->set_pointer(event);
 		} else {
 			// This shouldn't happen unless something is very wrong with our callables.
@@ -556,59 +560,39 @@ void MMLSequencer::parse_table_event(MMLEvent *p_prev) {
 
 //
 
-void MMLSequencer::_bind_methods() {
-	// To be used as callables.
-	ClassDB::bind_method(D_METHOD("_no_process", "event"),               &MMLSequencer::_no_process);
-	ClassDB::bind_method(D_METHOD("_dummy_on_process", "event"),         &MMLSequencer::_dummy_on_process);
-	ClassDB::bind_method(D_METHOD("_dummy_on_process_event", "event"),   &MMLSequencer::_dummy_on_process_event);
-
-	ClassDB::bind_method(D_METHOD("_default_on_no_operation", "event"),  &MMLSequencer::_default_on_no_operation);
-	ClassDB::bind_method(D_METHOD("_default_on_process", "event"),       &MMLSequencer::_default_on_process);
-	ClassDB::bind_method(D_METHOD("_default_on_repeat_all", "event"),    &MMLSequencer::_default_on_repeat_all);
-	ClassDB::bind_method(D_METHOD("_default_on_repeat_begin", "event"),  &MMLSequencer::_default_on_repeat_begin);
-	ClassDB::bind_method(D_METHOD("_default_on_repeat_break", "event"),  &MMLSequencer::_default_on_repeat_break);
-	ClassDB::bind_method(D_METHOD("_default_on_repeat_end", "event"),    &MMLSequencer::_default_on_repeat_end);
-	ClassDB::bind_method(D_METHOD("_default_on_sequence_tail", "event"), &MMLSequencer::_default_on_sequence_tail);
-	ClassDB::bind_method(D_METHOD("_default_on_global_wait", "event"),   &MMLSequencer::_default_on_global_wait);
-	ClassDB::bind_method(D_METHOD("_default_on_tempo", "event"),         &MMLSequencer::_default_on_tempo);
-	ClassDB::bind_method(D_METHOD("_default_on_timer", "event"),         &MMLSequencer::_default_on_timer);
-	ClassDB::bind_method(D_METHOD("_default_on_internal_wait", "event"), &MMLSequencer::_default_on_internal_wait);
-	ClassDB::bind_method(D_METHOD("_default_on_internal_call", "event"), &MMLSequencer::_default_on_internal_call);
-}
-
 MMLSequencer::MMLSequencer() {
-	_parser_settings = memnew(MMLParserSettings);
+	_parser_settings = new MMLParserSettings;
 
 	_event_handlers.resize(MMLEvent::COMMAND_MAX); // TODO zeroed
 	_event_global_flags.resize(MMLEvent::COMMAND_MAX); // TODO zeroed
 
 	for (int i = 0; i < MMLEvent::COMMAND_MAX; i++) {
-		_event_handlers[i] = Callable(this, "_no_process");
+		_event_handlers[i] = [this](MMLEvent *p_event) { return _no_process(p_event); };
 	}
 
-	_set_mml_event_listener(MMLEvent::NO_OP,         Callable(this, "_default_on_no_operation"),  false);
-	_set_mml_event_listener(MMLEvent::PROCESS,       Callable(this, "_default_on_process"),       false);
-	_set_mml_event_listener(MMLEvent::REPEAT_ALL,    Callable(this, "_default_on_repeat_all"),    false);
-	_set_mml_event_listener(MMLEvent::REPEAT_BEGIN,  Callable(this, "_default_on_repeat_begin"),  false);
-	_set_mml_event_listener(MMLEvent::REPEAT_BREAK,  Callable(this, "_default_on_repeat_break"),  false);
-	_set_mml_event_listener(MMLEvent::REPEAT_END,    Callable(this, "_default_on_repeat_end"),    false);
-	_set_mml_event_listener(MMLEvent::SEQUENCE_TAIL, Callable(this, "_default_on_sequence_tail"), false);
-	_set_mml_event_listener(MMLEvent::GLOBAL_WAIT,   Callable(this, "_default_on_global_wait"),   true);
-	_set_mml_event_listener(MMLEvent::TEMPO,         Callable(this, "_default_on_tempo"),         true);
-	_set_mml_event_listener(MMLEvent::TIMER,         Callable(this, "_default_on_timer"),         true);
-	_set_mml_event_listener(MMLEvent::INTERNAL_WAIT, Callable(this, "_default_on_internal_wait"), false);
-	_set_mml_event_listener(MMLEvent::INTERNAL_CALL, Callable(this, "_default_on_internal_call"), false);
-	_set_mml_event_listener(MMLEvent::TABLE_EVENT,   Callable(this, "_no_process"),               true);
+	_set_mml_event_listener(MMLEvent::NO_OP,         [this](MMLEvent *p_event) { return _default_on_no_operation(p_event); },  false);
+	_set_mml_event_listener(MMLEvent::PROCESS,       [this](MMLEvent *p_event) { return _default_on_process(p_event); },       false);
+	_set_mml_event_listener(MMLEvent::REPEAT_ALL,    [this](MMLEvent *p_event) { return _default_on_repeat_all(p_event); },    false);
+	_set_mml_event_listener(MMLEvent::REPEAT_BEGIN,  [this](MMLEvent *p_event) { return _default_on_repeat_begin(p_event); },  false);
+	_set_mml_event_listener(MMLEvent::REPEAT_BREAK,  [this](MMLEvent *p_event) { return _default_on_repeat_break(p_event); },  false);
+	_set_mml_event_listener(MMLEvent::REPEAT_END,    [this](MMLEvent *p_event) { return _default_on_repeat_end(p_event); },    false);
+	_set_mml_event_listener(MMLEvent::SEQUENCE_TAIL, [this](MMLEvent *p_event) { return _default_on_sequence_tail(p_event); }, false);
+	_set_mml_event_listener(MMLEvent::GLOBAL_WAIT,   [this](MMLEvent *p_event) { return _default_on_global_wait(p_event); },   true);
+	_set_mml_event_listener(MMLEvent::TEMPO,         [this](MMLEvent *p_event) { return _default_on_tempo(p_event); },         true);
+	_set_mml_event_listener(MMLEvent::TIMER,         [this](MMLEvent *p_event) { return _default_on_timer(p_event); },         true);
+	_set_mml_event_listener(MMLEvent::INTERNAL_WAIT, [this](MMLEvent *p_event) { return _default_on_internal_wait(p_event); }, false);
+	_set_mml_event_listener(MMLEvent::INTERNAL_CALL, [this](MMLEvent *p_event) { return _default_on_internal_call(p_event); }, false);
+	_set_mml_event_listener(MMLEvent::TABLE_EVENT,   [this](MMLEvent *p_event) { return _no_process(p_event); },               true);
 
-	std::shared_ptr<BeatsPerMinute> base_bpm = memnew(BeatsPerMinute(120, 44100));
+	Ref<BeatsPerMinute> base_bpm = new BeatsPerMinute(120, 44100);
 	_adjustible_bpm = base_bpm;
 	_bpm = base_bpm;
 
-	_global_executor = memnew(MMLExecutor);
+	_global_executor = new MMLExecutor;
 	MMLParser::get_instance()->get_command_letters(&_event_command_letter_map);
 }
 
 MMLSequencer::~MMLSequencer() {
-	memdelete(_parser_settings);
-	memdelete(_global_executor);
+	delete _parser_settings;
+	delete _global_executor;
 }

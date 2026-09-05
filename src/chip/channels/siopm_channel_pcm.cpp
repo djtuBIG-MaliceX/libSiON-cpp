@@ -13,7 +13,7 @@
 #include "chip/wave/siopm_wave_pcm_data.h"
 #include "chip/wave/siopm_wave_pcm_table.h"
 
-void SiOPMChannelPCM::get_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params) const {
+void SiOPMChannelPCM::get_channel_params(const Ref<SiOPMChannelParams> &p_params) const {
 	p_params->set_operator_count(1);
 
 	p_params->set_algorithm(0);
@@ -37,7 +37,7 @@ void SiOPMChannelPCM::get_channel_params(const std::shared_ptr<SiOPMChannelParam
 
 }
 
-void SiOPMChannelPCM::set_channel_params(const std::shared_ptr<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
+void SiOPMChannelPCM::set_channel_params(const Ref<SiOPMChannelParams> &p_params, bool p_with_volume, bool p_with_modulation) {
 	if (p_params->get_operator_count() == 0) {
 		return;
 	}
@@ -115,8 +115,8 @@ void SiOPMChannelPCM::set_params_by_value(int p_ar, int p_dr, int p_sr, int p_rr
 #undef SET_OP_PARAM
 }
 
-void SiOPMChannelPCM::set_wave_data(const std::shared_ptr<SiOPMWaveBase> &p_wave_data) {
-	std::shared_ptr<SiOPMWavePCMData> pcm_data = p_wave_data;
+void SiOPMChannelPCM::set_wave_data(const Ref<SiOPMWaveBase> &p_wave_data) {
+	Ref<SiOPMWavePCMData> pcm_data = p_wave_data;
 	_pcm_table = p_wave_data;
 	if (_pcm_table.is_valid()) {
 		pcm_data = _pcm_table->get_note_data(60);
@@ -138,7 +138,7 @@ void SiOPMChannelPCM::set_parameters(std::vector<int> p_params) {
 }
 
 void SiOPMChannelPCM::set_types(int p_pg_type, SiONPitchTableType p_pt_type) {
-	std::shared_ptr<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(p_pg_type);
+	Ref<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(p_pg_type);
 	if (pcm_table.is_valid()) {
 		set_wave_data(pcm_table);
 	} else {
@@ -162,7 +162,7 @@ int SiOPMChannelPCM::get_pitch() const {
 void SiOPMChannelPCM::set_pitch(int p_value) {
 	if (_pcm_table.is_valid()) {
 		int note = p_value >> 6;
-		std::shared_ptr<SiOPMWavePCMData> pcm_data = _pcm_table->get_note_data(note);
+		Ref<SiOPMWavePCMData> pcm_data = _pcm_table->get_note_data(note);
 
 		if (pcm_data.is_valid()) {
 			_sample_pitch_shift = pcm_data->get_sampling_pitch() - 4416; // 69*64
@@ -248,7 +248,7 @@ void SiOPMChannelPCM::initialize_lfo(int p_waveform, std::vector<int> p_custom_w
 	_amplitude_modulation_output_level = 0;
 	_pitch_modulation_output_level = 0;
 
-	_pcm_table = std::shared_ptr<SiOPMWavePCMTable>();
+	_pcm_table = Ref<SiOPMWavePCMTable>();
 	_operator->set_pm_detune(0);
 }
 
@@ -297,8 +297,8 @@ void SiOPMChannelPCM::_update_lfo() {
 }
 
 void SiOPMChannelPCM::_process_operator_mono(int p_length, bool p_mix) {
-	std::forward_list<int>::Element *base_pipe = (p_mix ? _out_pipe : _sound_chip->get_zero_buffer())->get();
-	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
+	SinglyLinkedList<int>::Element *base_pipe = (p_mix ? _out_pipe : _sound_chip->get_zero_buffer())->get();
+	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
 
 	// Noop.
 	if (_operator->get_pcm_end_point() <= 0) {
@@ -364,10 +364,10 @@ void SiOPMChannelPCM::_process_operator_mono(int p_length, bool p_mix) {
 }
 
 void SiOPMChannelPCM::_process_operator_stereo(int p_length, bool p_mix) {
-	std::forward_list<int>::Element *base_pipe = (p_mix ? _out_pipe : _sound_chip->get_zero_buffer())->get();
-	std::forward_list<int>::Element *out_pipe  = _out_pipe->get();
-	std::forward_list<int>::Element *base_pipe2 = (p_mix ? _out_pipe2 : _sound_chip->get_zero_buffer())->get();
-	std::forward_list<int>::Element *out_pipe2  = _out_pipe2->get();
+	SinglyLinkedList<int>::Element *base_pipe = (p_mix ? _out_pipe : _sound_chip->get_zero_buffer())->get();
+	SinglyLinkedList<int>::Element *out_pipe  = _out_pipe->get();
+	SinglyLinkedList<int>::Element *base_pipe2 = (p_mix ? _out_pipe2 : _sound_chip->get_zero_buffer())->get();
+	SinglyLinkedList<int>::Element *out_pipe2  = _out_pipe2->get();
 
 	// Noop.
 	if (_operator->get_pcm_end_point() <= 0) {
@@ -457,7 +457,7 @@ void SiOPMChannelPCM::_process_operator_stereo(int p_length, bool p_mix) {
 	_out_pipe2->set(out_pipe2);
 }
 
-void SiOPMChannelPCM::_write_stream_mono(std::forward_list<int>::Element *p_output, int p_length) {
+void SiOPMChannelPCM::_write_stream_mono(SinglyLinkedList<int>::Element *p_output, int p_length) {
 	double volume_coef = _sample_volume * _sound_chip->get_pcm_volume();
 	int pan = std::clamp(_pan + _sample_pan, 0, 128);
 
@@ -476,7 +476,7 @@ void SiOPMChannelPCM::_write_stream_mono(std::forward_list<int>::Element *p_outp
 	}
 }
 
-void SiOPMChannelPCM::_write_stream_stereo(std::forward_list<int>::Element *p_output_left, std::forward_list<int>::Element *p_output_right, int p_length) {
+void SiOPMChannelPCM::_write_stream_stereo(SinglyLinkedList<int>::Element *p_output_left, SinglyLinkedList<int>::Element *p_output_right, int p_length) {
 	double volume_coef = _sample_volume * _sound_chip->get_pcm_volume();
 	int pan = std::clamp(_pan + _sample_pan, 0, 128);
 
@@ -523,7 +523,7 @@ void SiOPMChannelPCM::buffer(int p_length) {
 
 	if (_operator->get_pcm_channel_num() == 1) {
 		// Preserve the start of the output pipe.
-		std::forward_list<int>::Element *mono_out = _out_pipe->get();
+		SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
 
 		_process_operator_mono(p_length, false);
 
@@ -537,8 +537,8 @@ void SiOPMChannelPCM::buffer(int p_length) {
 
 	} else {
 		// Preserve the start of output pipes.
-		std::forward_list<int>::Element *left_out = _out_pipe->get();
-		std::forward_list<int>::Element *right_out = _out_pipe2->get();
+		SinglyLinkedList<int>::Element *left_out = _out_pipe->get();
+		SinglyLinkedList<int>::Element *right_out = _out_pipe2->get();
 
 		_process_operator_stereo(p_length, false);
 
@@ -583,8 +583,8 @@ void SiOPMChannelPCM::reset() {
 	_is_idling = true;
 }
 
-std::string SiOPMChannelPCM::_to_string() const {
-	std::string params = "";
+sion::String SiOPMChannelPCM::_to_string() const {
+	sion::String params = "";
 
 	params += "vol=" + rtos(_volumes[0]) + ", ";
 	params += "pan=" + itos(_pan - 64) + "";
@@ -592,19 +592,14 @@ std::string SiOPMChannelPCM::_to_string() const {
 	return "SiOPMChannelPCM: " + params;
 }
 
-void SiOPMChannelPCM::_bind_methods() {
-	// To be used as callables.
-	ClassDB::bind_method(D_METHOD("_no_process", "length"), &SiOPMChannelPCM::_no_process);
-}
-
 SiOPMChannelPCM::SiOPMChannelPCM(SiOPMSoundChip *p_chip) : SiOPMChannelBase(p_chip) {
-	_operator = memnew(SiOPMOperator(p_chip));
+	_operator = new SiOPMOperator(p_chip);
 	_process_function = Callable(this, "_no_process");
 
 	initialize(nullptr, 0);
 }
 
 SiOPMChannelPCM::~SiOPMChannelPCM() {
-	memdelete(_operator);
+	delete _operator;
 	_operator = nullptr;
 }

@@ -51,12 +51,12 @@ class SiOPMChannelKS : public SiOPMChannelFM {
 
 	// Processing.
 
-	void _apply_karplus_strong(std::forward_list<int>::Element *p_buffer_start, int p_length);
+	void _apply_karplus_strong(SinglyLinkedList<int>::Element *p_buffer_start, int p_length);
 
 protected:
 	static void _bind_methods() {}
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
 	void set_karplus_strong_params(int p_attack_rate = 48, int p_decay_rate = 48, int p_total_level = 0, int p_fixed_pitch = 0, int p_wave_shape = -1, int p_tension = 8);

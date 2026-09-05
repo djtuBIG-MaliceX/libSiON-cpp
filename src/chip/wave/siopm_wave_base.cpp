@@ -12,16 +12,16 @@ SiOPMWaveBase::SiOPMWaveBase(SiONModuleType p_module_type) {
 	_module_type = p_module_type;
 }
 
-std::vector<double> SiOPMWaveBase::_extract_wave_data(const std::shared_ptr<AudioStream> &p_stream, int *r_channel_count) {
+std::vector<double> SiOPMWaveBase::_extract_wave_data(const Ref<AudioStream> &p_stream, int *r_channel_count) {
 	if (p_stream.is_null()) {
 		return std::vector<double>();
 	}
 
-	std::shared_ptr<AudioStreamWAV> wav_stream = p_stream;
+	Ref<AudioStreamWAV> wav_stream = p_stream;
 	if (wav_stream.is_valid()) {
 		AudioStreamWAV::Format data_format = wav_stream->get_format();
 		if (data_format != AudioStreamWAV::FORMAT_8_BITS && data_format != AudioStreamWAV::FORMAT_16_BITS) {
-			//ERR_FAIL_V_MSG(std::vector<double>(), vformat("SiOPMWaveBase: Unsupported WAV file format (%d).", data_format));
+			ERR_FAIL_V_MSG(std::vector<double>(), vformat("SiOPMWaveBase: Unsupported WAV file format (%d).", data_format));
 		}
 
 		*r_channel_count = (wav_stream->is_stereo() ? 2 : 1);
@@ -56,5 +56,5 @@ std::vector<double> SiOPMWaveBase::_extract_wave_data(const std::shared_ptr<Audi
 		return raw_data;
 	}
 
-	//ERR_FAIL_V_MSG(std::vector<double>(), "SiOPMWaveBase: Unsupported audio stream format.");
+	ERR_FAIL_V_MSG(std::vector<double>(), "SiOPMWaveBase: Unsupported audio stream format.");
 }

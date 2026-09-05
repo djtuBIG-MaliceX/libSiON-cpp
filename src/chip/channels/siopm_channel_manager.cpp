@@ -22,19 +22,19 @@ HashMap<SiOPMChannelManager::ChannelType, SiOPMChannelManager *> SiOPMChannelMan
 void SiOPMChannelManager::initialize(SiOPMSoundChip *p_chip) {
 	_sound_chip = p_chip;
 
-	_channel_managers[CHANNEL_FM]      = memnew(SiOPMChannelManager(CHANNEL_FM));
-	_channel_managers[CHANNEL_PCM]     = memnew(SiOPMChannelManager(CHANNEL_PCM));
-	_channel_managers[CHANNEL_SAMPLER] = memnew(SiOPMChannelManager(CHANNEL_SAMPLER));
-	_channel_managers[CHANNEL_KS]      = memnew(SiOPMChannelManager(CHANNEL_KS));
+	_channel_managers[CHANNEL_FM]      = new SiOPMChannelManager(CHANNEL_FM);
+	_channel_managers[CHANNEL_PCM]     = new SiOPMChannelManager(CHANNEL_PCM);
+	_channel_managers[CHANNEL_SAMPLER] = new SiOPMChannelManager(CHANNEL_SAMPLER);
+	_channel_managers[CHANNEL_KS]      = new SiOPMChannelManager(CHANNEL_KS);
 }
 
 void SiOPMChannelManager::finalize() {
 	_sound_chip = nullptr;
 
-	memdelete(_channel_managers[CHANNEL_FM]);
-	memdelete(_channel_managers[CHANNEL_PCM]);
-	memdelete(_channel_managers[CHANNEL_SAMPLER]);
-	memdelete(_channel_managers[CHANNEL_KS]);
+	delete _channel_managers[CHANNEL_FM];
+	delete _channel_managers[CHANNEL_PCM];
+	delete _channel_managers[CHANNEL_SAMPLER];
+	delete _channel_managers[CHANNEL_KS];
 	_channel_managers.clear();
 }
 
@@ -73,22 +73,22 @@ SiOPMChannelBase *SiOPMChannelManager::_create_channel(SiOPMChannelBase *p_prev,
 
 		switch (_channel_type) {
 			case CHANNEL_FM: {
-				new_channel = memnew(SiOPMChannelFM(_sound_chip));
+				new_channel = new SiOPMChannelFM(_sound_chip);
 			} break;
 			case CHANNEL_PCM: {
-				new_channel = memnew(SiOPMChannelPCM(_sound_chip));
+				new_channel = new SiOPMChannelPCM(_sound_chip);
 			} break;
 			case CHANNEL_SAMPLER: {
-				new_channel = memnew(SiOPMChannelSampler(_sound_chip));
+				new_channel = new SiOPMChannelSampler(_sound_chip);
 			} break;
 			case CHANNEL_KS: {
-				new_channel = memnew(SiOPMChannelKS(_sound_chip));
+				new_channel = new SiOPMChannelKS(_sound_chip);
 			} break;
 
 			default: break; // Silences enum warnings.
 		}
 
-		//ERR_FAIL_NULL_V(new_channel, nullptr);
+		ERR_FAIL_NULL_V(new_channel, nullptr);
 		new_channel->_channel_type = _channel_type;
 		_length++;
 	}
@@ -133,7 +133,7 @@ void SiOPMChannelManager::_reset_all() {
 SiOPMChannelManager::SiOPMChannelManager(ChannelType p_channel_type) {
 	_channel_type = p_channel_type;
 
-	_terminator = memnew(SiOPMChannelBase(_sound_chip));
+	_terminator = new SiOPMChannelBase(_sound_chip);
 	_terminator->_is_free = false;
 	_terminator->_next = _terminator;
 	_terminator->_prev = _terminator;
@@ -144,9 +144,9 @@ SiOPMChannelManager::~SiOPMChannelManager() {
 	SiOPMChannelBase *channel = _terminator->_next;
 	while (channel && channel != _terminator) {
 		SiOPMChannelBase *next_channel = channel->_next;
-		memdelete(channel);
+		delete channel;
 		channel = next_channel;
 	}
 
-	memdelete(_terminator);
+	delete _terminator;
 }

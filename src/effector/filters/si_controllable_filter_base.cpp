@@ -12,7 +12,7 @@
 void SiControllableFilterBase::set_params(int p_cutoff, int p_resonance, double p_fps) {
 	_cutoff_ptr = nullptr;
 	if (p_cutoff >= 0 && p_cutoff < 255) {
-		std::shared_ptr<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_cutoff);
+		Ref<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_cutoff);
 		if (table.is_valid()) {
 			_cutoff_ptr = table->get_head();
 		}
@@ -20,7 +20,7 @@ void SiControllableFilterBase::set_params(int p_cutoff, int p_resonance, double 
 
 	_resonance_ptr = nullptr;
 	if (p_resonance >= 0 && p_resonance < 255) {
-		std::shared_ptr<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_resonance);
+		Ref<SiMMLEnvelopeTable> table = SiMMLRefTable::get_instance()->get_envelope_table(p_resonance);
 		if (table.is_valid()) {
 			_resonance_ptr = table->get_head();
 		}
@@ -109,11 +109,6 @@ void SiControllableFilterBase::set_by_mml(std::vector<double> p_args) {
 
 void SiControllableFilterBase::reset() {
 	set_params();
-}
-
-void SiControllableFilterBase::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_params", "cutoff", "resonance", "fps"), &SiControllableFilterBase::set_params, DEFVAL(255), DEFVAL(255), DEFVAL(20));
-	ClassDB::bind_method(D_METHOD("set_params_manually", "cutoff", "resonance"), &SiControllableFilterBase::set_params_manually);
 }
 
 SiControllableFilterBase::SiControllableFilterBase() :

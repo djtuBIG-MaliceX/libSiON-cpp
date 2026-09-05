@@ -32,7 +32,7 @@ public:
 	//
 
 	void initialize(std::vector<int> p_wavelet, SiONPitchTableType p_default_pt_type = SiONPitchTableType::PITCH_TABLE_OPM);
-	void copy_from(const std::shared_ptr<SiOPMWaveTable> &p_source);
+	void copy_from(const Ref<SiOPMWaveTable> &p_source);
 
 	SiOPMWaveTable(std::vector<int> p_wavelet = std::vector<int>(), SiONPitchTableType p_default_pitch_table_type = SiONPitchTableType::PITCH_TABLE_OPM);
 	~SiOPMWaveTable() {}

@@ -9,6 +9,8 @@
 
 //#include <godot_cpp/templates/list.hpp>
 //#include <godot_cpp/variant/callable.hpp>
+#include <functional>
+
 #include "sequencer/base/mml_data.h"
 
 
@@ -16,7 +18,7 @@
 class MMLEvent;
 
 // Sequence of 1 sound channel. MMLData > MMLSequenceGroup > MMLSequence > MMLEvent (">" means "has a").
-class MMLSequence : public Object {
+class MMLSequence {
 	//GDCLASS(MMLSequence, Object)
 
 	// Chain of sequences.
@@ -35,7 +37,7 @@ class MMLSequence : public Object {
 	bool _is_active = true;
 
 	// Callback functions for Event::INTERNAL_CALL.
-	List<Callable> _callbacks_for_internal_call;
+	List<std::function<MMLEvent *(int)>> _callbacks_for_internal_call;
 
 	// Length in resolution units (1920 = whole-tone in default).
 	int _event_length = -1;
@@ -43,14 +45,13 @@ class MMLSequence : public Object {
 
 	// MML string.
 
-	std::string _mml_string;
+	sion::String _mml_string;
 
 	void _update_event_length();
 
 protected:
-	static void _bind_methods();
 
-	std::string _to_string() const;
+	sion::String _to_string() const;
 
 public:
 	// Chain of sequences.
@@ -72,7 +73,7 @@ public:
 	void set_active(bool p_active) { _is_active = p_active; }
 
 	bool is_system_command() const;
-	std::string get_system_command() const;
+	sion::String get_system_command() const;
 
 	MMLEvent *get_head_event() const { return _head_event; }
 	void set_head_event(MMLEvent *p_event) { _head_event = p_event; }
@@ -80,7 +81,7 @@ public:
 	void set_tail_event(MMLEvent *p_event) { _tail_event = p_event; }
 
 	MMLEvent *append_new_event(int p_event_id, int p_data, int p_length = 0);
-	MMLEvent *append_new_callback(const Callable &p_callback, int p_data);
+	MMLEvent *append_new_callback(const std::function<MMLEvent *(int)> &p_callback, int p_data);
 	MMLEvent *prepend_new_event(int p_event_id, int p_data, int p_length = 0);
 
 	void push_back(MMLEvent *p_event);
@@ -91,12 +92,12 @@ public:
 
 	int get_event_length();
 	bool has_repeat_all();
-	List<Callable> get_callbacks_for_internal_call() const { return _callbacks_for_internal_call; }
+	List<std::function<MMLEvent *(int)>> get_callbacks_for_internal_call() const { return _callbacks_for_internal_call; }
 
 	// MML string.
 
 	void update_mml_string();
-	std::string get_mml_string() const { return _mml_string; }
+	sion::String get_mml_string() const { return _mml_string; }
 
 	//
 

@@ -24,23 +24,23 @@ void MMLParser::initialize() {
 	}
 
 	// Sets the instance internally.
-	memnew(MMLParser);
+	new MMLParser;
 }
 
 void MMLParser::finalize() {
 	if (_instance) {
-		memdelete(_instance);
+		delete _instance;
 		_instance = nullptr;
 	}
 }
 
 // Methods.
 
-#define OP_//ERR_FAIL_RANGE(m_value, m_min, m_max, m_cmd)                                                                                                                          \
-	////ERR_FAIL_COND_MSG(m_value < m_min || m_value > m_max, vformat("MMLParser: Command '%s' has argument (%d) outside of valid range (%d : %d).", m_cmd, m_value, m_min, m_max));
+#define OP_ERR_FAIL_RANGE(m_value, m_min, m_max, m_cmd)                                                                                                                          \
+	ERR_FAIL_COND_MSG(m_value < m_min || m_value > m_max, vformat("MMLParser: Command '%s' has argument (%d) outside of valid range (%d : %d).", m_cmd, m_value, m_min, m_max));
 
-#define OP_//ERR_FAIL_RANGE_V(m_value, m_min, m_max, m_cmd, m_return)                                                                                                                          \
-	////ERR_FAIL_COND_V_MSG(m_value < m_min || m_value > m_max, m_return, vformat("MMLParser: Command '%s' has argument (%d) outside of valid range (%d : %d).", m_cmd, m_value, m_min, m_max));
+#define OP_ERR_FAIL_RANGE_V(m_value, m_min, m_max, m_cmd, m_return)                                                                                                                          \
+	ERR_FAIL_COND_V_MSG(m_value < m_min || m_value > m_max, m_return, vformat("MMLParser: Command '%s' has argument (%d) outside of valid range (%d : %d).", m_cmd, m_value, m_min, m_max));
 
 // Settings.
 
@@ -57,24 +57,24 @@ void MMLParser::_create_mml_regex(bool p_reset) {
 	// We generate a regular expression string based on some setting information.
 	// Specifically, we account for user define event letters.
 
-	Packedstd::stringArray user_defs;
-	for (const KeyValue<std::string, int> &kv : _user_defined_event_map) {
+	std::vector<sion::String> user_defs;
+	for (const KeyValue<sion::String, int> &kv : _user_defined_event_map) {
 		user_defs.push_back(kv.key);
 	}
 
 	// Here's the part where user definitions are converted to a regex-compatible string.
 	// If there are no definitions, we set the string to "a" as a hacky solution.
-	std::string user_defs_str = "a";
+	sion::String user_defs_str = "a";
 	if (user_defs.size() > 0) {
 		user_defs.sort();
 		user_defs.reverse(); // We want descending order.
 
-		user_defs_str = std::string("|").join(user_defs);
+		user_defs_str = sion::String("|").join(user_defs);
 	}
 
 	// Godot's RegEx implementation doesn't support passing global flags, but PCRE2 allows local flags, which we can abuse.
 	// (?s) enables single line mode (dot matches newline) for the entire expression.
-	std::string reg_string = "(?s)";
+	sion::String reg_string = "(?s)";
 	reg_string += "(\\s+)";                                            // whitespace [1]
 	reg_string += "|(#[^;]*)";                                         // system [2]
 	reg_string += "|(";                                                // --all-- [3]
@@ -89,11 +89,11 @@ void MMLParser::_create_mml_regex(bool p_reset) {
 }
 
 void MMLParser::_clear_mml_regex() {
-	_mml_regex = std::shared_ptr<RegEx>();
+	_mml_regex = Ref<RegEx>();
 	_mml_regex_last_index = 0;
 }
 
-void MMLParser::set_user_defined_event_map(HashMap<std::string, int> p_event_map) {
+void MMLParser::set_user_defined_event_map(HashMap<sion::String, int> p_event_map) {
 	// Original code checks if the map is the same before assigning. This can be expensive and a problem to check for us.
 
 	_user_defined_event_map = p_event_map;
@@ -104,7 +104,7 @@ void MMLParser::set_global_event_flags(std::vector<bool> p_event_flags) {
 	_event_global_flags = p_event_flags;
 }
 
-void MMLParser::get_command_letters(HashMap<int, std::string> *r_letter_map) {
+void MMLParser::get_command_letters(HashMap<int, sion::String> *r_letter_map) {
 	if (!r_letter_map) {
 		return;
 	}
@@ -131,7 +131,7 @@ void MMLParser::get_command_letters(HashMap<int, std::string> *r_letter_map) {
 	(*r_letter_map)[MMLEvent::TEMPO]        = "t";
 }
 
-int MMLParser::_register_system_event_string(std::string p_event) {
+int MMLParser::_register_system_event_string(sion::String p_event) {
 	if (_system_event_strings.size() <= _system_event_index) {
 		_system_event_strings.resize(_system_event_strings.size() * 2); // TODO zeroed
 	}
@@ -141,13 +141,13 @@ int MMLParser::_register_system_event_string(std::string p_event) {
 	return _system_event_index - 1;
 }
 
-std::string MMLParser::get_system_event_string(MMLEvent *p_event) {
-	////ERR_FAIL_INDEX_V(p_event->get_data(), _system_event_strings.size(), "");
+sion::String MMLParser::get_system_event_string(MMLEvent *p_event) {
+	ERR_FAIL_INDEX_V(p_event->get_data(), _system_event_strings.size(), "");
 
 	return _system_event_strings[p_event->get_data()];
 }
 
-int MMLParser::_register_sequence_mml_strings(std::string p_mml) {
+int MMLParser::_register_sequence_mml_strings(sion::String p_mml) {
 	if (_sequence_mml_strings.size() <= _sequence_mml_index) {
 		_sequence_mml_strings.resize(_sequence_mml_strings.size() * 2); // TODO zeroed
 	}
@@ -157,19 +157,19 @@ int MMLParser::_register_sequence_mml_strings(std::string p_mml) {
 	return _sequence_mml_index - 1;
 }
 
-std::string MMLParser::get_sequence_mml(MMLEvent *p_event) {
+sion::String MMLParser::get_sequence_mml(MMLEvent *p_event) {
 	if (p_event->get_length() == -1) {
 		return "";
 	}
-	////ERR_FAIL_INDEX_V(p_event->get_length(), _sequence_mml_strings.size(), "");
+	ERR_FAIL_INDEX_V(p_event->get_length(), _sequence_mml_strings.size(), "");
 
 	return _sequence_mml_strings[p_event->get_length()];
 }
 
 // Key.
 
-void MMLParser::set_key_signature(std::string p_sign) {
-	if (p_sign.empty()()) {
+void MMLParser::set_key_signature(sion::String p_sign) {
+	if (p_sign.empty()) {
 		_key_signature = _key_signature_table[0];
 		return;
 	}
@@ -245,13 +245,13 @@ void MMLParser::set_key_signature(std::string p_sign) {
 		_key_signature_custom[i] = 0;
 	}
 
-	Packedstd::stringArray arr = split_string_by_regex(p_sign, "[\\s,]");
+	std::vector<sion::String> arr = split_string_by_regex(p_sign, "[\\s,]");
 	// Note that the original code is broken here (it tries to get the first and the second character
 	// on the Array object). I assume that the intention is to check each split substring and parse it
 	// as a note in the key table. If there are duplicate notes, then the latter overrides the former.
 	// If notes are missing then they are set to 0 in the table.
 	for (int i = 0; i < arr.size(); i++) {
-		std::string note_sign = arr[i].to_lower();
+		sion::String note_sign = arr[i].to_lower();
 		int note_idx = note_letters.find(note_sign[0]);
 		//ERR_CONTINUE_MSG(note_idx == -1, vformat("MMLParser: Cannot recognize '%s' as a key signature.", p_sign));
 
@@ -284,7 +284,7 @@ MMLEvent *MMLParser::_push_mml_event(int p_event_id, int p_data, int p_length) {
 MMLEvent *MMLParser::_add_mml_event(int p_event_id, int p_data, int p_length, bool p_note_option) {
 	if (p_note_option) {
 		// Note option events are inserted after NOTE.
-		////ERR_FAIL_COND_V_MSG(_last_event->get_id() != MMLEvent::NOTE, nullptr, "MMLParser: Commands '*' and '&' can only come after a note.");
+		ERR_FAIL_COND_V_MSG(_last_event->get_id() != MMLEvent::NOTE, nullptr, "MMLParser: Commands '*' and '&' can only come after a note.");
 		int length = _last_event->get_length();
 		_last_event->set_length(0);
 		_push_mml_event(p_event_id, p_data, length);
@@ -337,7 +337,7 @@ void MMLParser::_reset_state_track() {
 	_head_mml_index = _mml_regex_last_index;
 }
 
-void MMLParser::prepare_parse(MMLParserSettings *p_settings, std::string p_mml) {
+void MMLParser::prepare_parse(MMLParserSettings *p_settings, sion::String p_mml) {
 	_settings = p_settings;
 	_mml_string = p_mml;
 	_parsing_time = Time::get_singleton()->get_ticks_msec();
@@ -346,7 +346,7 @@ void MMLParser::prepare_parse(MMLParserSettings *p_settings, std::string p_mml) 
 	_reset_state();
 }
 
-int MMLParser::_parse_length(const std::shared_ptr<RegExMatch> &p_res) {
+int MMLParser::_parse_length(const Ref<RegExMatch> &p_res) {
 	// This is an abbreviation, return INT32_MIN.
 	if (p_res->get_string(REX_PARAM).length() == 0) {
 		return INT32_MIN;
@@ -358,21 +358,21 @@ int MMLParser::_parse_length(const std::shared_ptr<RegExMatch> &p_res) {
 	}
 
 	length = _settings->resolution / length;
-	OP_//ERR_FAIL_RANGE_V(length, 1, _settings->resolution, "length", 0);
+	OP_ERR_FAIL_RANGE_V(length, 1, _settings->resolution, "length", 0);
 
 	return length;
 }
 
-int MMLParser::_parse_param(const std::shared_ptr<RegExMatch> &p_res, int p_default) {
-	const std::string param = p_res->get_string(REX_PARAM);
-	if (!param.empty()()) {
+int MMLParser::_parse_param(const Ref<RegExMatch> &p_res, int p_default) {
+	const sion::String param = p_res->get_string(REX_PARAM);
+	if (!param.empty()) {
 		return param.to_int();
 	}
 
 	return p_default;
 }
 
-int MMLParser::_parse_period(const std::shared_ptr<RegExMatch> &p_res) {
+int MMLParser::_parse_period(const Ref<RegExMatch> &p_res) {
 	return p_res->get_string(REX_PERIOD).length();
 }
 
@@ -386,15 +386,15 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 
 	std::vector<RegExMatch> matches = _mml_regex->search_all(_mml_string, _mml_regex_last_index);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
-		const std::string match_string = res->get_string(0);
+		Ref<RegExMatch> res = matches[i];
+		const sion::String match_string = res->get_string(0);
 		_mml_regex_last_index = res->get_end() + 1;
 
-		if (match_string.empty()()) {
+		if (match_string.empty()) {
 			break; // Stop parsing if there is an empty match.
 		}
 
-		if (!res->get_string(REX_WHITESPACE).empty()()) {
+		if (!res->get_string(REX_WHITESPACE).empty()) {
 			continue; // This is a comment.
 		}
 
@@ -402,7 +402,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 		bool halt = false;
 
 		// Note events.
-		if (!res->get_string(REX_NOTE).empty()()) {
+		if (!res->get_string(REX_NOTE).empty()) {
 			// We want to convert the a-g range to the c-b range. We are guaranteed
 			// to have letters a through g from the regex, so we subtract the code of C.
 			// Then, if we underflow, we correct it by shifting the value by 7.
@@ -413,7 +413,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 			}
 
 			int shift = _key_signature[note];
-			std::string shift_string = res->get_string(REX_NOTE_SHIFT);
+			sion::String shift_string = res->get_string(REX_NOTE_SHIFT);
 			if (shift_string == "+" || shift_string == "#") {
 				shift++;
 			} else if (shift_string == "-") {
@@ -423,14 +423,14 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 			_op_note(_key_scale[note] + shift + _settings->get_mml_to_note_offset(), _parse_length(res), _parse_period(res));
 
 		// User defined events.
-		} else if (!res->get_string(REX_USER_EVENT).empty()()) {
-			std::string event_str = res->get_string(REX_USER_EVENT);
+		} else if (!res->get_string(REX_USER_EVENT).empty()) {
+			sion::String event_str = res->get_string(REX_USER_EVENT);
 			//ERR_CONTINUE_MSG(!_user_defined_event_map.has(event_str), vformat("MMLParser: Unknown user-defined event: '%s'.", event_str));
 			_add_mml_event(_user_defined_event_map[event_str], _parse_param(res));
 
 		// Standard events.
-		} else if (!res->get_string(REX_EVENT).empty()()) {
-			std::string event_str = res->get_string(REX_EVENT);
+		} else if (!res->get_string(REX_EVENT).empty()) {
+			sion::String event_str = res->get_string(REX_EVENT);
 
 			// Formatting below is enforced like this for readability.
 
@@ -535,18 +535,18 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 			}
 
 		// System events.
-		} else if (!res->get_string(REX_SYSTEM).empty()()) {
-			////ERR_FAIL_COND_V_MSG(_last_event->get_id() != MMLEvent::SEQUENCE_HEAD, nullptr, "MMLParser: System commands are only allowed at the top of the channel sequence.");
+		} else if (!res->get_string(REX_SYSTEM).empty()) {
+			ERR_FAIL_COND_V_MSG(_last_event->get_id() != MMLEvent::SEQUENCE_HEAD, nullptr, "MMLParser: System commands are only allowed at the top of the channel sequence.");
 
 			_add_mml_event(MMLEvent::SYSTEM_EVENT, _register_system_event_string(res->get_string(REX_SYSTEM)));
 
 		// Table events.
-		} else if (!res->get_string(REX_TABLE).empty()()) {
+		} else if (!res->get_string(REX_TABLE).empty()) {
 			_add_mml_event(MMLEvent::TABLE_EVENT, _register_system_event_string(res->get_string(REX_TABLE)));
 
 		// Invalid syntax.
 		} else {
-			//ERR_FAIL_V_MSG(nullptr, vformat("MMLParser: Invalid syntax encountered: '%s'.", match_string));
+			ERR_FAIL_V_MSG(nullptr, vformat("MMLParser: Invalid syntax encountered: '%s'.", match_string));
 		}
 
 		if (halt) {
@@ -556,7 +556,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 
 	// Done parsing.
 
-	////ERR_FAIL_COND_V_MSG(_repeat_stack.size() != 0, nullptr, "MMLParser: Too many items in the repeat stack for command '['.");
+	ERR_FAIL_COND_V_MSG(_repeat_stack.size() != 0, nullptr, "MMLParser: Too many items in the repeat stack for command '['.");
 
 	if (_last_event->get_id() != MMLEvent::SEQUENCE_HEAD) {
 		_last_sequence_head->set_jump(_last_event);
@@ -571,7 +571,7 @@ MMLEvent *MMLParser::parse(int p_interrupt) {
 }
 
 double MMLParser::get_parse_progress() {
-	if (_mml_string.empty()()) {
+	if (_mml_string.empty()) {
 		return 0;
 	}
 
@@ -585,7 +585,7 @@ MMLEvent *MMLParser::alloc_event(int p_event_id, int p_data, int p_length) {
 		event = _free_event_chain;
 		_free_event_chain = _free_event_chain->get_next();
 	} else {
-		event = memnew(MMLEvent(0));
+		event = new MMLEvent(0);
 	}
 
 	event->initialize(p_event_id, p_data, p_length);
@@ -659,7 +659,7 @@ void MMLParser::_op_tie(int p_length, int p_period) {
 	} else if (_last_event->get_id() == MMLEvent::REST || _last_event->get_id() == MMLEvent::NOTE) {
 		_last_event->set_length(_last_event->get_length() + _calculate_length(p_length, p_period));
 	} else {
-		//ERR_FAIL_MSG("MMLParser: Invalid tie command syntax.");
+		ERR_FAIL_MSG("MMLParser: Invalid tie command syntax.");
 	}
 }
 
@@ -676,19 +676,19 @@ void MMLParser::_op_portament() {
 }
 
 void MMLParser::_op_quant(int p_value) {
-	OP_//ERR_FAIL_RANGE(p_value, _settings->min_quant_ratio, _settings->max_quant_ratio, "q");
+	OP_ERR_FAIL_RANGE(p_value, _settings->min_quant_ratio, _settings->max_quant_ratio, "q");
 	_add_mml_event(MMLEvent::QUANT_RATIO, p_value);
 }
 
 void MMLParser::_op_at_quant(int p_value) {
-	OP_//ERR_FAIL_RANGE(p_value, _settings->min_quant_count, _settings->max_quant_count, "@q");
+	OP_ERR_FAIL_RANGE(p_value, _settings->min_quant_count, _settings->max_quant_count, "@q");
 	_add_mml_event(MMLEvent::QUANT_COUNT, p_value);
 }
 
 /// Pitch operations.
 
 void MMLParser::_op_octave(int p_value) {
-	OP_//ERR_FAIL_RANGE(p_value, _settings->min_octave, _settings->max_octave, "o");
+	OP_ERR_FAIL_RANGE(p_value, _settings->min_octave, _settings->max_octave, "o");
 	_static_octave = p_value;
 }
 
@@ -701,12 +701,12 @@ void MMLParser::_op_note_shift(int p_value) {
 }
 
 void MMLParser::_op_volume(int p_value) {
-	OP_//ERR_FAIL_RANGE(p_value, 0, _settings->max_volume, "v");
+	OP_ERR_FAIL_RANGE(p_value, 0, _settings->max_volume, "v");
 	_add_mml_event(MMLEvent::VOLUME, p_value);
 }
 
 void MMLParser::_op_at_volume(int p_value) {
-	OP_//ERR_FAIL_RANGE(p_value, 0, _settings->max_fine_volume, "@v");
+	OP_ERR_FAIL_RANGE(p_value, 0, _settings->max_fine_volume, "@v");
 	_add_mml_event(MMLEvent::FINE_VOLUME, p_value);
 }
 
@@ -727,19 +727,19 @@ void MMLParser::_op_repeat_point() {
 }
 
 void MMLParser::_op_repeat_begin(int p_count) {
-	OP_//ERR_FAIL_RANGE(p_count, 1, 65535, "[");
+	OP_ERR_FAIL_RANGE(p_count, 1, 65535, "[");
 	_add_mml_event(MMLEvent::REPEAT_BEGIN, p_count, 0);
 	_repeat_stack.push_front(_last_event);
 }
 
 void MMLParser::_op_repeat_break() {
-	////ERR_FAIL_COND_MSG(_repeat_stack.size() == 0, "MMLParser: Not enough items in the repeat stack for command '|'.");
+	ERR_FAIL_COND_MSG(_repeat_stack.size() == 0, "MMLParser: Not enough items in the repeat stack for command '|'.");
 	_add_mml_event(MMLEvent::REPEAT_BREAK);
 	_last_event->set_jump(_repeat_stack[0]);
 }
 
 void MMLParser::_op_repeat_end(int p_count) {
-	////ERR_FAIL_COND_MSG(_repeat_stack.size() == 0, "MMLParser: Not enough items in the repeat stack for command ']'.");
+	ERR_FAIL_COND_MSG(_repeat_stack.size() == 0, "MMLParser: Not enough items in the repeat stack for command ']'.");
 	_add_mml_event(MMLEvent::REPEAT_END);
 
 	MMLEvent *begin_event = _repeat_stack.front()->get();
@@ -749,7 +749,7 @@ void MMLParser::_op_repeat_end(int p_count) {
 	begin_event->set_jump(_last_event);
 
 	if (p_count != INT32_MIN) {
-		OP_//ERR_FAIL_RANGE(p_count, 1, 65535, "]");
+		OP_ERR_FAIL_RANGE(p_count, 1, 65535, "]");
 		begin_event->set_data(p_count);
 	}
 }
@@ -801,7 +801,7 @@ bool MMLParser::_op_end_sequence() {
 	return _interrupt_interval < (Time::get_singleton()->get_ticks_msec() - _start_time);
 }
 
-#undef OP_//ERR_FAIL_RANGE
+#undef OP_ERR_FAIL_RANGE
 
 //
 
@@ -816,7 +816,7 @@ MMLParser::MMLParser() {
 
 	_key_signature_custom.resize(7); // TODO zeroed
 
-	_terminator = memnew(MMLEvent(0));
+	_terminator = new MMLEvent(0);
 }
 
 MMLParser::~MMLParser() {
@@ -829,7 +829,7 @@ MMLParser::~MMLParser() {
 		MMLEvent *event = term_event;
 		term_event = term_event->get_next();
 
-		memdelete(event);
+		delete event;
 	}
 	_terminator = nullptr;
 
@@ -838,7 +838,7 @@ MMLParser::~MMLParser() {
 		MMLEvent *event = freed_event;
 		freed_event = freed_event->get_next();
 
-		memdelete(event);
+		delete event;
 	}
 	_free_event_chain = nullptr;
 }

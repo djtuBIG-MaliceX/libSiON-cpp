@@ -15,14 +15,14 @@
 
 
 
-std::shared_ptr<SiOPMOperatorParams> SiOPMChannelParams::get_operator_params(int p_index) {
-	////ERR_FAIL_INDEX_V(p_index, operator_count, nullptr);
+Ref<SiOPMOperatorParams> SiOPMChannelParams::get_operator_params(int p_index) {
+	ERR_FAIL_INDEX_V(p_index, operator_count, nullptr);
 
 	return operator_params[p_index];
 }
 
 void SiOPMChannelParams::set_operator_count(int p_value) {
-	////ERR_FAIL_COND(p_value > MAX_OPERATORS);
+	ERR_FAIL_COND(p_value > MAX_OPERATORS);
 
 	operator_count = p_value;
 }
@@ -36,13 +36,13 @@ bool SiOPMChannelParams::has_pitch_modulation() const {
 }
 
 double SiOPMChannelParams::get_master_volume(int p_index) const {
-	////ERR_FAIL_INDEX_V(p_index, master_volumes.size(), 0);
+	ERR_FAIL_INDEX_V(p_index, master_volumes.size(), 0);
 
 	return master_volumes[p_index];
 }
 
 void SiOPMChannelParams::set_master_volume(int p_index, double p_value) {
-	////ERR_FAIL_INDEX(p_index, master_volumes.size());
+	ERR_FAIL_INDEX(p_index, master_volumes.size());
 
 	master_volumes[p_index] = p_value;
 }
@@ -109,7 +109,7 @@ void SiOPMChannelParams::set_by_opm_register(int p_channel, int p_address, int p
 		} else { // Operator parameter
 			int ops[4] = { 3, 1, 2, 0 };
 			int op_index = ops[(p_address >> 3) & 3];
-			std::shared_ptr<SiOPMOperatorParams> op_params = operator_params[op_index];
+			Ref<SiOPMOperatorParams> op_params = operator_params[op_index];
 
 			switch ((p_address - 0x40) >> 5) {
 				case 0: { // DT1:6-4 MUL:3-0
@@ -180,7 +180,7 @@ void SiOPMChannelParams::initialize() {
 	init_sequence->clear();
 }
 
-void SiOPMChannelParams::copy_from(const std::shared_ptr<SiOPMChannelParams> &p_params) {
+void SiOPMChannelParams::copy_from(const Ref<SiOPMChannelParams> &p_params) {
 	operator_count = p_params->operator_count;
 
 	algorithm = p_params->algorithm;
@@ -218,8 +218,8 @@ void SiOPMChannelParams::copy_from(const std::shared_ptr<SiOPMChannelParams> &p_
 	init_sequence->clear();
 }
 
-std::string SiOPMChannelParams::_to_string() const {
-	std::string params = "";
+sion::String SiOPMChannelParams::_to_string() const {
+	sion::String params = "";
 
 	params += "ops=" + itos(operator_count) + ", ";
 	params += "alg=" + itos(algorithm) + ", ";
@@ -241,111 +241,21 @@ std::string SiOPMChannelParams::_to_string() const {
 	return "SiOPMChannelParams: " + params;
 }
 
-void SiOPMChannelParams::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_operator_count"), &SiOPMChannelParams::get_operator_count);
-	ClassDB::bind_method(D_METHOD("set_operator_count", "value"), &SiOPMChannelParams::set_operator_count);
-
-	ClassDB::bind_method(D_METHOD("get_operator_params", "index"), &SiOPMChannelParams::get_operator_params);
-
-	ClassDB::bind_method(D_METHOD("is_analog_like"), &SiOPMChannelParams::is_analog_like);
-	ClassDB::bind_method(D_METHOD("set_analog_like", "value"), &SiOPMChannelParams::set_analog_like);
-
-	ClassDB::bind_method(D_METHOD("get_algorithm"), &SiOPMChannelParams::get_algorithm);
-	ClassDB::bind_method(D_METHOD("set_algorithm", "value"), &SiOPMChannelParams::set_algorithm);
-	ClassDB::bind_method(D_METHOD("get_feedback"), &SiOPMChannelParams::get_feedback);
-	ClassDB::bind_method(D_METHOD("set_feedback", "value"), &SiOPMChannelParams::set_feedback);
-	ClassDB::bind_method(D_METHOD("get_feedback_connection"), &SiOPMChannelParams::get_feedback_connection);
-	ClassDB::bind_method(D_METHOD("set_feedback_connection", "value"), &SiOPMChannelParams::set_feedback_connection);
-
-	ClassDB::bind_method(D_METHOD("get_envelope_frequency_ratio"), &SiOPMChannelParams::get_envelope_frequency_ratio);
-	ClassDB::bind_method(D_METHOD("set_envelope_frequency_ratio", "value"), &SiOPMChannelParams::set_envelope_frequency_ratio);
-	ClassDB::bind_method(D_METHOD("get_lfo_wave_shape"), &SiOPMChannelParams::get_lfo_wave_shape);
-	ClassDB::bind_method(D_METHOD("set_lfo_wave_shape", "value"), &SiOPMChannelParams::set_lfo_wave_shape);
-	ClassDB::bind_method(D_METHOD("get_lfo_frequency_step"), &SiOPMChannelParams::get_lfo_frequency_step);
-	ClassDB::bind_method(D_METHOD("set_lfo_frequency_step", "value"), &SiOPMChannelParams::set_lfo_frequency_step);
-
-	ClassDB::bind_method(D_METHOD("get_amplitude_modulation_depth"), &SiOPMChannelParams::get_amplitude_modulation_depth);
-	ClassDB::bind_method(D_METHOD("set_amplitude_modulation_depth", "value"), &SiOPMChannelParams::set_amplitude_modulation_depth);
-	ClassDB::bind_method(D_METHOD("get_pitch_modulation_depth"), &SiOPMChannelParams::get_pitch_modulation_depth);
-	ClassDB::bind_method(D_METHOD("set_pitch_modulation_depth", "value"), &SiOPMChannelParams::set_pitch_modulation_depth);
-
-	ClassDB::bind_method(D_METHOD("get_master_volume", "index"), &SiOPMChannelParams::get_master_volume);
-	ClassDB::bind_method(D_METHOD("set_master_volume", "index", "value"), &SiOPMChannelParams::set_master_volume);
-
-	ClassDB::bind_method(D_METHOD("get_pan"), &SiOPMChannelParams::get_pan);
-	ClassDB::bind_method(D_METHOD("set_pan", "value"), &SiOPMChannelParams::set_pan);
-
-	ClassDB::bind_method(D_METHOD("get_filter_type"), &SiOPMChannelParams::get_filter_type);
-	ClassDB::bind_method(D_METHOD("set_filter_type", "value"), &SiOPMChannelParams::set_filter_type);
-	ClassDB::bind_method(D_METHOD("get_filter_cutoff"), &SiOPMChannelParams::get_filter_cutoff);
-	ClassDB::bind_method(D_METHOD("set_filter_cutoff", "value"), &SiOPMChannelParams::set_filter_cutoff);
-	ClassDB::bind_method(D_METHOD("get_filter_resonance"), &SiOPMChannelParams::get_filter_resonance);
-	ClassDB::bind_method(D_METHOD("set_filter_resonance", "value"), &SiOPMChannelParams::set_filter_resonance);
-	ClassDB::bind_method(D_METHOD("get_filter_attack_rate"), &SiOPMChannelParams::get_filter_attack_rate);
-	ClassDB::bind_method(D_METHOD("set_filter_attack_rate", "value"), &SiOPMChannelParams::set_filter_attack_rate);
-	ClassDB::bind_method(D_METHOD("get_filter_decay_rate1"), &SiOPMChannelParams::get_filter_decay_rate1);
-	ClassDB::bind_method(D_METHOD("set_filter_decay_rate1", "value"), &SiOPMChannelParams::set_filter_decay_rate1);
-	ClassDB::bind_method(D_METHOD("get_filter_decay_rate2"), &SiOPMChannelParams::get_filter_decay_rate2);
-	ClassDB::bind_method(D_METHOD("set_filter_decay_rate2", "value"), &SiOPMChannelParams::set_filter_decay_rate2);
-	ClassDB::bind_method(D_METHOD("get_filter_release_rate"), &SiOPMChannelParams::get_filter_release_rate);
-	ClassDB::bind_method(D_METHOD("set_filter_release_rate", "value"), &SiOPMChannelParams::set_filter_release_rate);
-	ClassDB::bind_method(D_METHOD("get_filter_decay_offset1"), &SiOPMChannelParams::get_filter_decay_offset1);
-	ClassDB::bind_method(D_METHOD("set_filter_decay_offset1", "value"), &SiOPMChannelParams::set_filter_decay_offset1);
-	ClassDB::bind_method(D_METHOD("get_filter_decay_offset2"), &SiOPMChannelParams::get_filter_decay_offset2);
-	ClassDB::bind_method(D_METHOD("set_filter_decay_offset2", "value"), &SiOPMChannelParams::set_filter_decay_offset2);
-	ClassDB::bind_method(D_METHOD("get_filter_sustain_offset"), &SiOPMChannelParams::get_filter_sustain_offset);
-	ClassDB::bind_method(D_METHOD("set_filter_sustain_offset", "value"), &SiOPMChannelParams::set_filter_sustain_offset);
-	ClassDB::bind_method(D_METHOD("get_filter_release_offset"), &SiOPMChannelParams::get_filter_release_offset);
-	ClassDB::bind_method(D_METHOD("set_filter_release_offset", "value"), &SiOPMChannelParams::set_filter_release_offset);
-
-	//
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "operator_count"), "set_operator_count", "get_operator_count");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::BOOL, "analog_like"), "set_analog_like", "is_analog_like");
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "algorithm"), "set_algorithm", "get_algorithm");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "feedback"), "set_feedback", "get_feedback");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "feedback_connection"), "set_feedback_connection", "get_feedback_connection");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "envelope_frequency_ratio"), "set_envelope_frequency_ratio", "get_envelope_frequency_ratio");
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "lfo_wave_shape"), "set_lfo_wave_shape", "get_lfo_wave_shape");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "lfo_frequency_step"), "set_lfo_frequency_step", "get_lfo_frequency_step");
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "amplitude_modulation_depth"), "set_amplitude_modulation_depth", "get_amplitude_modulation_depth");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "pitch_modulation_depth"), "set_pitch_modulation_depth", "get_pitch_modulation_depth");
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "pan"), "set_pan", "get_pan");
-
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_type"), "set_filter_type", "get_filter_type");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_cutoff"), "set_filter_cutoff", "get_filter_cutoff");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_resonance"), "set_filter_resonance", "get_filter_resonance");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_attack_rate"), "set_filter_attack_rate", "get_filter_attack_rate");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_decay_rate1"), "set_filter_decay_rate1", "get_filter_decay_rate1");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_decay_rate2"), "set_filter_decay_rate2", "get_filter_decay_rate2");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_release_rate"), "set_filter_release_rate", "get_filter_release_rate");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_decay_offset1"), "set_filter_decay_offset1", "get_filter_decay_offset1");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_decay_offset2"), "set_filter_decay_offset2", "get_filter_decay_offset2");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_sustain_offset"), "set_filter_sustain_offset", "get_filter_sustain_offset");
-	ClassDB::add_property("SiOPMChannelParams", PropertyInfo(Variant::INT, "filter_release_offset"), "set_filter_release_offset", "get_filter_release_offset");
-
-	BIND_CONSTANT(MAX_OPERATORS);
-}
-
 SiOPMChannelParams::SiOPMChannelParams() {
-	init_sequence = memnew(MMLSequence);
+	init_sequence = new MMLSequence;
 	master_volumes.clear();
 	master_volumes.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed
 
 	operator_params.clear();
 	for (int i = 0; i < MAX_OPERATORS; i++) {
-		operator_params.push_back(memnew(SiOPMOperatorParams));
+		operator_params.push_back(new SiOPMOperatorParams);
 	}
 
 	initialize();
 }
 
 SiOPMChannelParams::~SiOPMChannelParams() {
-	memdelete(init_sequence);
+	delete init_sequence;
 	init_sequence = nullptr;
 
 	operator_params.clear();

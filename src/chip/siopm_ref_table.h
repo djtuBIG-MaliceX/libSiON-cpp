@@ -29,13 +29,13 @@ class SiOPMRefTable {
 	// Wave samples.
 
 	// Custom wave tables.
-	std::vector<std::shared_ptr<SiOPMWaveTable>> _custom_wave_tables;
+	std::vector<Ref<SiOPMWaveTable>> _custom_wave_tables;
 	// Overriding custom wave tables.
-	std::vector<std::shared_ptr<SiOPMWaveTable>> _stencil_custom_wave_tables;
+	std::vector<Ref<SiOPMWaveTable>> _stencil_custom_wave_tables;
 	// PCM voices.
-	std::vector<std::shared_ptr<SiMMLVoice>> _pcm_voices;
+	std::vector<Ref<SiMMLVoice>> _pcm_voices;
 	// Overriding PCM voices.
-	std::vector<std::shared_ptr<SiMMLVoice>> _stencil_pcm_voices;
+	std::vector<Ref<SiMMLVoice>> _stencil_pcm_voices;
 
 	//
 
@@ -44,7 +44,7 @@ class SiOPMRefTable {
 	void _create_eg_tables();
 	void _create_pg_tables();
 	void _create_wave_samples();
-	void _create_ma3_waveset(int p_index, const std::shared_ptr<SiOPMWaveTable> &p_table);
+	void _create_ma3_waveset(int p_index, const Ref<SiOPMWaveTable> &p_table);
 	void _create_lfo_tables();
 	void _create_filter_tables();
 
@@ -244,7 +244,7 @@ public:
 	// PG phase step shift filter.
 	int phase_step_shift_filter[SiONPitchTableType::PITCH_TABLE_MAX];
 	// PG sound reference table.
-	HashMap<std::string, Variant> sound_reference;
+	HashMap<sion::String, Ref<SampleData>> sound_reference;
 
 	// Table for dt1 (from fmgen.cpp).
 	int dt1_table[8][KEY_CODE_TABLE_SIZE];
@@ -256,30 +256,30 @@ public:
 	// Wave samples.
 
 	// PG wave tables.
-	std::vector<std::shared_ptr<SiOPMWaveTable>> wave_tables;
+	std::vector<Ref<SiOPMWaveTable>> wave_tables;
 	// PG wave tables without any waves.
-	std::shared_ptr<SiOPMWaveTable> no_wave_table;
-	std::shared_ptr<SiOPMWaveTable> no_wave_table_opm;
+	Ref<SiOPMWaveTable> no_wave_table;
+	Ref<SiOPMWaveTable> no_wave_table_opm;
 	// PG sampler table.
-	std::vector<std::shared_ptr<SiOPMWaveSamplerTable>> sampler_tables;
+	std::vector<Ref<SiOPMWaveSamplerTable>> sampler_tables;
 
 	void reset_all_user_tables();
-	void register_wave_table(int p_index, const std::shared_ptr<SiOPMWaveTable> &p_table);
-	std::shared_ptr<SiOPMWaveSamplerData> register_sampler_data(int p_index, const Variant &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count);
+	void register_wave_table(int p_index, const Ref<SiOPMWaveTable> &p_table);
+	Ref<SiOPMWaveSamplerData> register_sampler_data(int p_index, const Ref<SampleData> &p_data, bool p_ignore_note_off, int p_pan, int p_src_channel_count, int p_channel_count);
 
-	std::shared_ptr<SiOPMWaveTable> get_wave_table(int p_index);
-	std::shared_ptr<SiOPMWavePCMTable> get_pcm_data(int p_index);
+	Ref<SiOPMWaveTable> get_wave_table(int p_index);
+	Ref<SiOPMWavePCMTable> get_pcm_data(int p_index);
 
-	std::shared_ptr<SiMMLVoice> get_global_pcm_voice(int p_index);
-	std::shared_ptr<SiMMLVoice> set_global_pcm_voice(int p_index, const std::shared_ptr<SiMMLVoice> &p_from_voice);
+	Ref<SiMMLVoice> get_global_pcm_voice(int p_index);
+	Ref<SiMMLVoice> set_global_pcm_voice(int p_index, const Ref<SiMMLVoice> &p_from_voice);
 
-	void set_sampler_table_stencil(int p_index, const std::shared_ptr<SiOPMWaveSamplerTable> &p_table);
+	void set_sampler_table_stencil(int p_index, const Ref<SiOPMWaveSamplerTable> &p_table);
 	void clear_sampler_table_stencil(int p_index);
 
-	void set_stencil_custom_wave_tables(std::vector<std::shared_ptr<SiOPMWaveTable>> p_tables) { _stencil_custom_wave_tables = p_tables; }
-	void clear_stencil_custom_wave_tables() { _stencil_custom_wave_tables = std::vector<std::shared_ptr<SiOPMWaveTable>>(); }
-	void set_stencil_pcm_voices(std::vector<std::shared_ptr<SiMMLVoice>> p_tables) { _stencil_pcm_voices = p_tables; }
-	void clear_stencil_pcm_voices() { _stencil_pcm_voices = std::vector<std::shared_ptr<SiMMLVoice>>(); }
+	void set_stencil_custom_wave_tables(std::vector<Ref<SiOPMWaveTable>> p_tables) { _stencil_custom_wave_tables = p_tables; }
+	void clear_stencil_custom_wave_tables() { _stencil_custom_wave_tables = std::vector<Ref<SiOPMWaveTable>>(); }
+	void set_stencil_pcm_voices(std::vector<Ref<SiMMLVoice>> p_tables) { _stencil_pcm_voices = p_tables; }
+	void clear_stencil_pcm_voices() { _stencil_pcm_voices = std::vector<Ref<SiMMLVoice>>(); }
 
 	//
 

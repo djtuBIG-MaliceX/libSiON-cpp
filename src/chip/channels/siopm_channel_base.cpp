@@ -281,8 +281,8 @@ void SiOPMChannelBase::reset_channel_buffer_status() {
 	_buffer_index = 0;
 }
 
-void SiOPMChannelBase::_apply_ring_modulation(std::forward_list<int>::Element *p_buffer_start, int p_length) {
-	std::forward_list<int>::Element *target = p_buffer_start;
+void SiOPMChannelBase::_apply_ring_modulation(SinglyLinkedList<int>::Element *p_buffer_start, int p_length) {
+	SinglyLinkedList<int>::Element *target = p_buffer_start;
 
 	for (int i = 0; i < p_length; i++) {
 		target->value *= _ring_pipe->get()->value * _ringmod_level;
@@ -291,7 +291,7 @@ void SiOPMChannelBase::_apply_ring_modulation(std::forward_list<int>::Element *p
 	}
 }
 
-void SiOPMChannelBase::_apply_sv_filter(std::forward_list<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]) {
+void SiOPMChannelBase::_apply_sv_filter(SinglyLinkedList<int>::Element *p_buffer_start, int p_length, double (&r_variables)[3]) {
 	int cutoff = std::clamp(_cutoff_frequency + _cutoff_offset, 0, 128);
 	double cutoff_value = _table->filter_cutoff_table[cutoff];
 	double feedback_value = _resonance; // * _table->filter_feedback_table[out]; // This is commented out in original code.
@@ -299,7 +299,7 @@ void SiOPMChannelBase::_apply_sv_filter(std::forward_list<int>::Element *p_buffe
 	// Previous setting.
 	int step = _filter_eg_residue;
 
-	std::forward_list<int>::Element *target = p_buffer_start;
+	SinglyLinkedList<int>::Element *target = p_buffer_start;
 	int length = p_length;
 	while (length >= step) {
 		// Process.
@@ -348,7 +348,7 @@ void SiOPMChannelBase::buffer(int p_length) {
 	}
 
 	// Preserve the start of the output pipe.
-	std::forward_list<int>::Element *mono_out = _out_pipe->get();
+	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
 	if (_process_function.is_valid()) {
@@ -447,19 +447,14 @@ void SiOPMChannelBase::reset() {
 	_is_idling = true;
 }
 
-std::string SiOPMChannelBase::_to_string() const {
-	std::string params = "";
+sion::String SiOPMChannelBase::_to_string() const {
+	sion::String params = "";
 
 	params += "feedback=" + itos(_input_level - 6) + ", ";
 	params += "vol=" + rtos(_volumes[0]) + ", ";
 	params += "pan=" + itos(_pan - 64) + "";
 
 	return "SiOPMChannelBase: " + params;
-}
-
-void SiOPMChannelBase::_bind_methods() {
-	// To be used as callables.
-	ClassDB::bind_method(D_METHOD("_no_process", "length"), &SiOPMChannelBase::_no_process);
 }
 
 SiOPMChannelBase::SiOPMChannelBase(SiOPMSoundChip *p_chip) {

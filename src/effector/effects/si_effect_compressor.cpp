@@ -13,9 +13,9 @@ void SiEffectCompressor::set_params(double p_threshold, double p_window_time, do
 	_window_rms_averaging = 1.0 / _window_samples;
 
 	if (_window_rms_list) {
-		memdelete(_window_rms_list);
+		delete _window_rms_list;
 	}
-	_window_rms_list = memnew(std::forward_list<double>(_window_samples, 0.0, true));
+	_window_rms_list = new SinglyLinkedList<double>(_window_samples, 0.0, true);
 
 	_attack_rate = 0.5;
 	if (p_attack_time != 0) {
@@ -81,10 +81,6 @@ void SiEffectCompressor::set_by_mml(std::vector<double> p_args) {
 
 void SiEffectCompressor::reset() {
 	set_params();
-}
-
-void SiEffectCompressor::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_params", "threshold", "window_time", "attack_time", "release_time", "max_gain", "mixing_level"), &SiEffectCompressor::set_params, DEFVAL(0.7), DEFVAL(50), DEFVAL(20), DEFVAL(20), DEFVAL(-6), DEFVAL(0.5));
 }
 
 SiEffectCompressor::SiEffectCompressor(double p_threshold, double p_window_time, double p_attack_time, double p_release_time, double p_max_gain, double p_mixing_level) :

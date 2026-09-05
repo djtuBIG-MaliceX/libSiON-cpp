@@ -20,11 +20,11 @@ int SiOPMSoundChip::get_channel_count() const {
 	return output_stream->get_channel_count();
 }
 
-std::forward_list<int> *SiOPMSoundChip::get_pipe(int p_pipe_num, int p_index) {
-	////ERR_FAIL_INDEX_V(p_pipe_num, _pipe_buffers.size(), nullptr);
+SinglyLinkedList<int> *SiOPMSoundChip::get_pipe(int p_pipe_num, int p_index) {
+	ERR_FAIL_INDEX_V(p_pipe_num, _pipe_buffers.size(), nullptr);
 
-	std::forward_list<int> *pipe = _pipe_buffers[p_pipe_num];
-	////ERR_FAIL_INDEX_V(p_index, pipe->size(), nullptr);
+	SinglyLinkedList<int> *pipe = _pipe_buffers[p_pipe_num];
+	ERR_FAIL_INDEX_V(p_index, pipe->size(), nullptr);
 
 	pipe->front();
 	pipe->advance(p_index);
@@ -61,10 +61,10 @@ void SiOPMSoundChip::initialize(int p_channel_count, int p_bitrate, int p_buffer
 
 		for (int i = 0; i < PIPE_SIZE; i++) {
 			if (_pipe_buffers[i]) {
-				memdelete(_pipe_buffers[i]);
+				delete _pipe_buffers[i];
 			}
 
-			_pipe_buffers[i] = memnew(std::forward_list<int>(_buffer_length, 0, true));
+			_pipe_buffers[i] = new SinglyLinkedList<int>(_buffer_length, 0, true);
 		}
 	}
 
@@ -78,31 +78,27 @@ void SiOPMSoundChip::reset() {
 	SiOPMChannelManager::reset_all_channels();
 }
 
-void SiOPMSoundChip::_bind_methods() {
-	BIND_CONSTANT(STREAM_SEND_SIZE);
-}
-
 SiOPMSoundChip::SiOPMSoundChip() {
 	init_operator_params.instantiate();
 
-	output_stream = memnew(SiOPMStream);
+	output_stream = new SiOPMStream;
 
 	stream_slot.resize(STREAM_SEND_SIZE); // TODO zeroed
 	stream_slot.fill(nullptr);
 
-	zero_buffer = memnew(std::forward_list<int>(1, 0, true));
+	zero_buffer = new SinglyLinkedList<int>(1, 0, true);
 	_pipe_buffers.resize(PIPE_SIZE); // TODO zeroed
 
 	SiOPMChannelManager::initialize(this);
 }
 
 SiOPMSoundChip::~SiOPMSoundChip() {
-	memdelete(output_stream);
+	delete output_stream;
 
-	memdelete(zero_buffer);
+	delete zero_buffer;
 	for (int i = 0; i < PIPE_SIZE; i++) {
 		if (_pipe_buffers[i]) {
-			memdelete(_pipe_buffers[i]);
+			delete _pipe_buffers[i];
 		}
 	}
 

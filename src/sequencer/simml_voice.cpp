@@ -28,12 +28,12 @@ bool SiMMLVoice::is_fm_voice() const {
 }
 
 bool SiMMLVoice::is_pcm_voice() const {
-	std::shared_ptr<SiOPMWavePCMTable> pcm_table = wave_data;
+	Ref<SiOPMWavePCMTable> pcm_table = wave_data;
 	if (pcm_table.is_valid()) {
 		return true;
 	}
 
-	std::shared_ptr<SiOPMWavePCMData> pcm_data = wave_data;
+	Ref<SiOPMWavePCMData> pcm_data = wave_data;
 	if (pcm_data.is_valid()) {
 		return true;
 	}
@@ -42,13 +42,13 @@ bool SiMMLVoice::is_pcm_voice() const {
 }
 
 bool SiMMLVoice::is_sampler_voice() const {
-	std::shared_ptr<SiOPMWaveSamplerTable> sampler_table = wave_data;
+	Ref<SiOPMWaveSamplerTable> sampler_table = wave_data;
 
 	return sampler_table.is_valid();
 }
 
 bool SiMMLVoice::is_wave_table_voice() const {
-	std::shared_ptr<SiOPMWaveTable> wave_table = wave_data;
+	Ref<SiOPMWaveTable> wave_table = wave_data;
 
 	return wave_table.is_valid();
 }
@@ -140,12 +140,12 @@ void SiMMLVoice::update_track_voice(SiMMLTrack *p_track) {
 	}
 }
 
-std::shared_ptr<SiMMLVoice> SiMMLVoice::create_blank_pcm_voice(int p_channel_num) {
-	std::shared_ptr<SiMMLVoice> instance;
+Ref<SiMMLVoice> SiMMLVoice::create_blank_pcm_voice(int p_channel_num) {
+	Ref<SiMMLVoice> instance;
 	instance.instantiate();
 	instance->module_type = SiONModuleType::MODULE_PCM;
 	instance->channel_num = p_channel_num;
-	instance->wave_data = std::shared_ptr<SiOPMWavePCMTable>(memnew(SiOPMWavePCMTable));
+	instance->wave_data = Ref<SiOPMWavePCMTable>(new SiOPMWavePCMTable);
 
 	return instance;
 }
@@ -161,7 +161,7 @@ void SiMMLVoice::reset() {
 	preferable_note = -1;
 
 	channel_params->initialize();
-	wave_data = std::shared_ptr<SiOPMWaveBase>();
+	wave_data = Ref<SiOPMWaveBase>();
 	pms_tension = 8;
 
 	default_gate_time = NAN;
@@ -187,16 +187,16 @@ void SiMMLVoice::reset() {
 	pitch_modulation_delay = 0;
 	pitch_modulation_term = 0;
 
-	note_on_tone_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_on_amplitude_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_on_filter_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_on_pitch_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_on_note_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_off_tone_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_off_amplitude_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_off_filter_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_off_pitch_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
-	note_off_note_envelope = std::shared_ptr<SiMMLEnvelopeTable>();
+	note_on_tone_envelope = Ref<SiMMLEnvelopeTable>();
+	note_on_amplitude_envelope = Ref<SiMMLEnvelopeTable>();
+	note_on_filter_envelope = Ref<SiMMLEnvelopeTable>();
+	note_on_pitch_envelope = Ref<SiMMLEnvelopeTable>();
+	note_on_note_envelope = Ref<SiMMLEnvelopeTable>();
+	note_off_tone_envelope = Ref<SiMMLEnvelopeTable>();
+	note_off_amplitude_envelope = Ref<SiMMLEnvelopeTable>();
+	note_off_filter_envelope = Ref<SiMMLEnvelopeTable>();
+	note_off_pitch_envelope = Ref<SiMMLEnvelopeTable>();
+	note_off_note_envelope = Ref<SiMMLEnvelopeTable>();
 
 	note_on_tone_envelope_step = 1;
 	note_on_amplitude_envelope_step = 1;
@@ -210,7 +210,7 @@ void SiMMLVoice::reset() {
 	note_off_note_envelope_step = 1;
 }
 
-void SiMMLVoice::copy_from(const std::shared_ptr<SiMMLVoice> &p_source) {
+void SiMMLVoice::copy_from(const Ref<SiMMLVoice> &p_source) {
 	chip_type = p_source->chip_type;
 
 	update_track_parameters = p_source->update_track_parameters;
@@ -249,7 +249,7 @@ void SiMMLVoice::copy_from(const std::shared_ptr<SiMMLVoice> &p_source) {
 	pitch_modulation_term = p_source->pitch_modulation_term;
 
 #define COPY_NOTE_ENVELOPE(m_prop)            \
-	m_prop = std::shared_ptr<SiMMLEnvelopeTable>();       \
+	m_prop = Ref<SiMMLEnvelopeTable>();       \
 	if (p_source->m_prop.is_valid()) {        \
 		m_prop->copy_from(p_source->m_prop);  \
 	}
@@ -276,48 +276,6 @@ void SiMMLVoice::copy_from(const std::shared_ptr<SiMMLVoice> &p_source) {
 	note_off_filter_envelope_step = p_source->note_off_filter_envelope_step;
 	note_off_pitch_envelope_step = p_source->note_off_pitch_envelope_step;
 	note_off_note_envelope_step = p_source->note_off_note_envelope_step;
-}
-
-void SiMMLVoice::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("get_chip_type"), &SiMMLVoice::get_chip_type);
-	ClassDB::bind_method(D_METHOD("set_chip_type", "type"), &SiMMLVoice::set_chip_type);
-	ClassDB::bind_method(D_METHOD("get_module_type"), &SiMMLVoice::get_module_type);
-	ClassDB::bind_method(D_METHOD("set_module_type", "module_type", "channel_num", "tone_num"), &SiMMLVoice::set_module_type, DEFVAL(0), DEFVAL(-1));
-	ClassDB::bind_method(D_METHOD("get_channel_num"), &SiMMLVoice::get_channel_num);
-	ClassDB::bind_method(D_METHOD("set_channel_num", "num"), &SiMMLVoice::set_channel_num);
-	ClassDB::bind_method(D_METHOD("get_tone_num"), &SiMMLVoice::get_tone_num);
-	ClassDB::bind_method(D_METHOD("set_tone_num", "num"), &SiMMLVoice::set_tone_num);
-
-	ClassDB::bind_method(D_METHOD("is_fm_voice"), &SiMMLVoice::is_fm_voice);
-	ClassDB::bind_method(D_METHOD("is_pcm_voice"), &SiMMLVoice::is_pcm_voice);
-	ClassDB::bind_method(D_METHOD("is_sampler_voice"), &SiMMLVoice::is_sampler_voice);
-	ClassDB::bind_method(D_METHOD("is_wave_table_voice"), &SiMMLVoice::is_wave_table_voice);
-
-	ClassDB::bind_method(D_METHOD("get_channel_params"), &SiMMLVoice::get_channel_params);
-
-	ClassDB::bind_method(D_METHOD("get_velocity"), &SiMMLVoice::get_velocity);
-	ClassDB::bind_method(D_METHOD("set_velocity", "value"), &SiMMLVoice::set_velocity);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::INT, "velocity"), "set_velocity", "get_velocity");
-	ClassDB::bind_method(D_METHOD("get_expression"), &SiMMLVoice::get_expression);
-	ClassDB::bind_method(D_METHOD("set_expression", "value"), &SiMMLVoice::set_expression);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::INT, "expression"), "set_expression", "get_expression");
-	ClassDB::bind_method(D_METHOD("get_velocity_mode"), &SiMMLVoice::get_velocity_mode);
-	ClassDB::bind_method(D_METHOD("set_velocity_mode", "value"), &SiMMLVoice::set_velocity_mode);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::INT, "velocity_mode"), "set_velocity_mode", "get_velocity_mode");
-	ClassDB::bind_method(D_METHOD("get_velocity_shift"), &SiMMLVoice::get_velocity_shift);
-	ClassDB::bind_method(D_METHOD("set_velocity_shift", "value"), &SiMMLVoice::set_velocity_shift);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::INT, "velocity_shift"), "set_velocity_shift", "get_velocity_shift");
-	ClassDB::bind_method(D_METHOD("get_expression_mode"), &SiMMLVoice::get_expression_mode);
-	ClassDB::bind_method(D_METHOD("set_expression_mode", "value"), &SiMMLVoice::set_expression_mode);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::INT, "expression_mode"), "set_expression_mode", "get_expression_mode");
-
-	ClassDB::bind_method(D_METHOD("should_update_track_parameters"), &SiMMLVoice::should_update_track_parameters);
-	ClassDB::bind_method(D_METHOD("set_update_track_parameters", "enabled"), &SiMMLVoice::set_update_track_parameters);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::BOOL, "update_track_parameters"), "set_update_track_parameters", "should_update_track_parameters");
-
-	ClassDB::bind_method(D_METHOD("should_update_volumes"), &SiMMLVoice::should_update_volumes);
-	ClassDB::bind_method(D_METHOD("set_update_volumes", "enabled"), &SiMMLVoice::set_update_volumes);
-	ClassDB::add_property("SiMMLVoice", PropertyInfo(Variant::BOOL, "update_volumes"), "set_update_volumes", "should_update_volumes");
 }
 
 SiMMLVoice::SiMMLVoice() {

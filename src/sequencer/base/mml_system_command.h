@@ -12,7 +12,7 @@
 
 
 
-class MMLSystemCommand : public RefCounted {
+class MMLSystemCommand {
 	//GDCLASS(MMLSystemCommand, RefCounted)
 
 protected:
@@ -21,10 +21,10 @@ protected:
 public:
 	// For the given MML string "#ABC5{def}ghi;"...
 
-	std::string command; // Command name; always starts with "#", e.g. command = "#ABC"
+	sion::String command; // Command name; always starts with "#", e.g. command = "#ABC"
 	int number = 0; // Number after command, e.g. number = 5
-	std::string content; // std::string inside {..}, e.g. content = "def"
-	std::string postfix; // std::string at the end of the command, e.g. postfix = "ghi"
+	sion::String content; // sion::String inside {..}, e.g. content = "def"
+	sion::String postfix; // sion::String at the end of the command, e.g. postfix = "ghi"
 
 	MMLSystemCommand() {}
 	~MMLSystemCommand() {}

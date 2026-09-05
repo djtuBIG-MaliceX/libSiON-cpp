@@ -18,13 +18,13 @@
 // }
 
 void SiEffectComposite::set_slot_effects(int p_slot, std::vector<SiEffectBase> p_effects) {
-	////ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
+	ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
 
 	_slots[p_slot].effects = p_effects;
 }
 
 void SiEffectComposite::set_slot_levels(int p_slot, double p_send_level, double p_mix_level) {
-	////ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
+	ERR_FAIL_INDEX(p_slot, SLOTS_MAX);
 
 	_slots[p_slot].send_level = p_send_level;
 	_slots[p_slot].mix_level = p_mix_level;
@@ -32,7 +32,7 @@ void SiEffectComposite::set_slot_levels(int p_slot, double p_send_level, double 
 
 int SiEffectComposite::prepare_process() {
 	for (int i = 0; i < SLOTS_MAX; i++) {
-		for (std::shared_ptr<SiEffectBase> effect : _slots[i].effects) {
+		for (Ref<SiEffectBase> effect : _slots[i].effects) {
 			effect->prepare_process();
 		}
 	}
@@ -42,7 +42,7 @@ int SiEffectComposite::prepare_process() {
 
 int SiEffectComposite::process(int p_channels, std::vector<double> *r_buffer, int p_start_index, int p_length) {
 	for (int i = 1; i < SLOTS_MAX; i++) {
-		if (_slots[i].effects.empty()()) {
+		if (_slots[i].effects.empty()) {
 			continue;
 		}
 
@@ -61,12 +61,12 @@ int SiEffectComposite::process(int p_channels, std::vector<double> *r_buffer, in
 	}
 
 	for (int i = 1; i < SLOTS_MAX; i++) {
-		if (_slots[i].effects.empty()()) {
+		if (_slots[i].effects.empty()) {
 			continue;
 		}
 
 		int channel_num = p_channels;
-		for (std::shared_ptr<SiEffectBase> effect : _slots[i].effects) {
+		for (Ref<SiEffectBase> effect : _slots[i].effects) {
 			channel_num = effect->process(channel_num, &_slots[i].buffer, p_start_index, p_length);
 		}
 
@@ -76,8 +76,8 @@ int SiEffectComposite::process(int p_channels, std::vector<double> *r_buffer, in
 	}
 
 	int out_channels = p_channels;
-	if (!_slots[0].effects.empty()()) {
-		for (std::shared_ptr<SiEffectBase> effect : _slots[0].effects) {
+	if (!_slots[0].effects.empty()) {
+		for (Ref<SiEffectBase> effect : _slots[0].effects) {
 			out_channels = effect->process(out_channels, r_buffer, p_start_index, p_length);
 		}
 
@@ -100,7 +100,3 @@ void SiEffectComposite::reset() {
 	}
 }
 
-void SiEffectComposite::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_slot_effects", "slot", "effects"), &SiEffectComposite::_set_slot_effects_bind);
-	ClassDB::bind_method(D_METHOD("set_slot_levels", "slot", "send_level", "mix_level"), &SiEffectComposite::set_slot_levels);
-}

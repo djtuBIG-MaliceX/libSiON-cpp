@@ -15,16 +15,15 @@
 class SiONData;
 class SiONDriver;
 
-class SiONEvent : public RefCounted {
+class SiONEvent {
 	//GDCLASS(SiONEvent, RefCounted)
 
-	std::string _event_type;
+	sion::String _event_type;
 
 	SiONDriver *_driver = nullptr;
-	Packedstd::vector2Array _stream_buffer;
+	PackedVector2Array _stream_buffer;
 
 protected:
-	static void _bind_methods();
 
 public:
 	// Event types, doubling as signal names.
@@ -71,15 +70,15 @@ public:
 
 	// Properties.
 
-	std::string get_event_type() const { return _event_type; }
+	sion::String get_event_type() const { return _event_type; }
 
 	SiONDriver *get_driver() const { return _driver; }
-	std::shared_ptr<SiONData> get_data() const;
-	Packedstd::vector2Array get_stream_buffer() const { return _stream_buffer; }
+	Ref<SiONData> get_data() const;
+	PackedVector2Array get_stream_buffer() const { return _stream_buffer; }
 
 	//
 
-	SiONEvent(std::string p_type = std::string(), SiONDriver *p_driver = nullptr, Packedstd::vector2Array p_stream_buffer = Packedstd::vector2Array());
+	SiONEvent(sion::String p_type = sion::String(), SiONDriver *p_driver = nullptr, PackedVector2Array p_stream_buffer = PackedVector2Array());
 	~SiONEvent() {}
 };
 

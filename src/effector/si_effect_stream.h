@@ -20,7 +20,7 @@ class SiOPMStream;
 class SiEffectStream {
 
 	SiOPMSoundChip *_sound_chip = nullptr;
-	List<std::shared_ptr<SiEffectBase>> _chain;
+	List<Ref<SiEffectBase>> _chain;
 
 	SiOPMStream *_stream = nullptr;
 	// Deeper streams execute first.
@@ -31,13 +31,13 @@ class SiEffectStream {
 	std::vector<double> _volumes;
 	std::vector<SiOPMStream *> _output_streams;
 
-	void _add_effect(std::string p_cmd, std::vector<double> p_args, int p_argc);
-	void _set_postfix_param(int p_slot, std::string p_cmd, std::vector<double> p_args, int p_argc);
+	void _add_effect(sion::String p_cmd, std::vector<double> p_args, int p_argc);
+	void _set_postfix_param(int p_slot, sion::String p_cmd, std::vector<double> p_args, int p_argc);
 
 public:
-	List<std::shared_ptr<SiEffectBase>> get_chain() const { return _chain; }
-	void set_chain(const List<std::shared_ptr<SiEffectBase>> &p_effects) { _chain = p_effects; }
-	void add_to_chain(const std::shared_ptr<SiEffectBase> &p_effect) { _chain.push_back(p_effect); }
+	List<Ref<SiEffectBase>> get_chain() const { return _chain; }
+	void set_chain(const List<Ref<SiEffectBase>> &p_effects) { _chain = p_effects; }
+	void add_to_chain(const Ref<SiEffectBase> &p_effect) { _chain.push_back(p_effect); }
 	SiOPMStream *get_stream() const { return _stream; }
 
 	int get_depth() const { return _depth; }
@@ -56,7 +56,7 @@ public:
 
 	//
 
-	void parse_mml(int p_slot, std::string p_mml, std::string p_postfix);
+	void parse_mml(int p_slot, sion::String p_mml, sion::String p_postfix);
 
 	void initialize(int p_depth);
 	void reset();

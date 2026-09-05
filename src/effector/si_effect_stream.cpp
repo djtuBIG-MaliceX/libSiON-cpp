@@ -68,7 +68,7 @@ void SiEffectStream::connect(SiOPMStream *p_output) {
 }
 
 int SiEffectStream::prepare_process() {
-	if (_chain.empty()()) {
+	if (_chain.empty()) {
 		return 0;
 	}
 
@@ -115,18 +115,18 @@ int SiEffectStream::process(int p_start_idx, int p_length, bool p_write_in_strea
 
 //
 
-void SiEffectStream::_add_effect(std::string p_cmd, std::vector<double> p_args, int p_argc) {
-	////ERR_FAIL_COND_MSG(p_cmd.empty()(), "SiEffectStream: Trying to add an effect with no name.");
+void SiEffectStream::_add_effect(sion::String p_cmd, std::vector<double> p_args, int p_argc) {
+	ERR_FAIL_COND_MSG(p_cmd.empty(), "SiEffectStream: Trying to add an effect with no name.");
 
-	std::shared_ptr<SiEffectBase> effect = SiEffector::get_effect_instance(p_cmd);
+	Ref<SiEffectBase> effect = SiEffector::get_effect_instance(p_cmd);
 	if (effect.is_valid()) {
 		effect->set_by_mml(p_args);
 		_chain.push_back(effect);
 	}
 }
 
-void SiEffectStream::_set_postfix_param(int p_slot, std::string p_cmd, std::vector<double> p_args, int p_argc) {
-	////ERR_FAIL_COND_MSG(p_cmd.empty()(), vformat("SiEffectStream: Trying to set an effect param with no name in slot %d.", p_slot));
+void SiEffectStream::_set_postfix_param(int p_slot, sion::String p_cmd, std::vector<double> p_args, int p_argc) {
+	ERR_FAIL_COND_MSG(p_cmd.empty(), vformat("SiEffectStream: Trying to set an effect param with no name in slot %d.", p_slot));
 
 	if (p_cmd == "p") {
 		set_pan((((int)p_args[0]) << 4) - 64);
@@ -146,18 +146,18 @@ void SiEffectStream::_set_postfix_param(int p_slot, std::string p_cmd, std::vect
 			set_stream_send(i + p_slot, std::clamp(value, 0, 1));
 		}
 	} else {
-		//ERR_PRINT(vformat("SiEffectStream: Trying to set an unknown effect param (%s) in slot %d.", p_cmd, p_slot));
+		ERR_PRINT(vformat("SiEffectStream: Trying to set an unknown effect param (%s) in slot %d.", p_cmd, p_slot));
 	}
 }
 
-void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_postfix) {
+void SiEffectStream::parse_mml(int p_slot, sion::String p_mml, sion::String p_postfix) {
 	const int max_argc = 16;
 
 	// SUS: Slot number is only used to set postfix params, but not the effect itself.
 	// It is possible that the given slot number is incorrect and thus the effect is
 	// added in a different position than the params are set in.
 
-	std::string command;
+	sion::String command;
 	int argc = 0;
 	std::vector<double> args;
 	args.resize(max_argc); // TODO zeroed
@@ -179,19 +179,19 @@ void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_post
 	initialize(0);
 	CLEAR_ARGS();
 
-	std::shared_ptr<RegEx> re_mml = RegEx::create_from_string("([a-zA-Z_]+|,)\\s*([.\\-\\d]+)?");
-	std::shared_ptr<RegEx> re_postfix = RegEx::create_from_string("(p|@p|@v|,)\\s*([.\\-\\d]+)?");
+	Ref<RegEx> re_mml = RegEx::create_from_string("([a-zA-Z_]+|,)\\s*([.\\-\\d]+)?");
+	Ref<RegEx> re_postfix = RegEx::create_from_string("(p|@p|@v|,)\\s*([.\\-\\d]+)?");
 
 	// Parse MML.
 
 	std::vector<RegExMatch> matches = re_mml->search_all(p_mml);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == ",") {
 			CONSUME_ARG(2);
 		} else {
-			if (!command.empty()()) {
+			if (!command.empty()) {
 				_add_effect(command, args, argc);
 			}
 			CLEAR_ARGS();
@@ -201,7 +201,7 @@ void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_post
 		}
 	}
 
-	if (!command.empty()()) {
+	if (!command.empty()) {
 		_add_effect(command, args, argc);
 	}
 	CLEAR_ARGS();
@@ -210,12 +210,12 @@ void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_post
 
 	matches = re_postfix->search_all(p_postfix);
 	for (int i = 0; i < matches.size(); i++) {
-		std::shared_ptr<RegExMatch> res = matches[i];
+		Ref<RegExMatch> res = matches[i];
 
 		if (res->get_string(1) == ",") {
 			CONSUME_ARG(2);
 		} else {
-			if (!command.empty()()) {
+			if (!command.empty()) {
 				_set_postfix_param(p_slot, command, args, argc);
 			}
 			CLEAR_ARGS();
@@ -225,7 +225,7 @@ void SiEffectStream::parse_mml(int p_slot, std::string p_mml, std::string p_post
 		}
 	}
 
-	if (!command.empty()()) {
+	if (!command.empty()) {
 		_set_postfix_param(p_slot, command, args, argc);
 	}
 	CLEAR_ARGS();
@@ -255,7 +255,7 @@ void SiEffectStream::reset() {
 }
 
 void SiEffectStream::free() {
-	for (std::shared_ptr<SiEffectBase> effect : _chain) {
+	for (Ref<SiEffectBase> effect : _chain) {
 		effect->set_free(true);
 	}
 	_chain.clear();
@@ -266,7 +266,7 @@ SiEffectStream::SiEffectStream(SiOPMSoundChip *p_chip, SiOPMStream *p_stream) {
 	if (p_stream) {
 		_stream = p_stream;
 	} else {
-		_stream = memnew(SiOPMStream);
+		_stream = new SiOPMStream;
 	}
 
 	_volumes.resize(SiOPMSoundChip::STREAM_SEND_SIZE); // TODO zeroed

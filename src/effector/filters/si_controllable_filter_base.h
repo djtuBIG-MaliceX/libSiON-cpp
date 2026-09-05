@@ -16,8 +16,8 @@ class SiControllableFilterBase : public SiEffectBase {
 
 	// These are referencing external data, and we don't want to mess the internal cursor
 	// in that data. So we keep our own pointers.
-	std::forward_list<int>::Element *_cutoff_ptr = nullptr;
-	std::forward_list<int>::Element *_resonance_ptr = nullptr;
+	SinglyLinkedList<int>::Element *_cutoff_ptr = nullptr;
+	SinglyLinkedList<int>::Element *_resonance_ptr = nullptr;
 
 	int _lfo_step = 0;
 	int _lfo_residue_step = 0;
@@ -25,7 +25,6 @@ class SiControllableFilterBase : public SiEffectBase {
 	virtual void _process_lfo(std::vector<double> *r_buffer, int p_start_index, int p_length) {}
 
 protected:
-	static void _bind_methods();
 
 	double _p0_right = 0;
 	double _p1_right = 0;

@@ -105,14 +105,10 @@ void SiEffectAutopan::reset() {
 	set_params();
 }
 
-void SiEffectAutopan::_bind_methods() {
-	ClassDB::bind_method(D_METHOD("set_params", "frequency", "stereo_width"), &SiEffectAutopan::set_params, DEFVAL(1), DEFVAL(1));
-}
-
 SiEffectAutopan::SiEffectAutopan(double p_frequency, double p_stereo_width) :
 		SiEffectBase() {
-	_p_left = memnew(std::forward_list<double>(BUFFER_SIZE, 0.0, true));
-	_p_right = memnew(std::forward_list<double>(BUFFER_SIZE, 0.0, true));
+	_p_left = new SinglyLinkedList<double>(BUFFER_SIZE, 0.0, true);
+	_p_right = new SinglyLinkedList<double>(BUFFER_SIZE, 0.0, true);
 
 	set_params(p_frequency, p_stereo_width);
 }

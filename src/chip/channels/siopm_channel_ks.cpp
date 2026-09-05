@@ -28,7 +28,7 @@ void SiOPMChannelKS::set_karplus_strong_params(int p_attack_rate, int p_decay_ra
 	set_params_by_value(p_attack_rate, p_decay_rate, 0, 63, 15, p_total_level, 0, 0, 1, 0, 0, 0, 0, p_fixed_pitch);
 
 	_active_operator->set_pulse_generator_type(p_wave_shape);
-	std::shared_ptr<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
+	Ref<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
 	_active_operator->set_pitch_table_type(wave_table->get_default_pitch_table_type());
 
 	set_all_release_rate(p_tension);
@@ -40,18 +40,18 @@ void SiOPMChannelKS::set_parameters(std::vector<int> p_params) {
 
 	switch (_ks_seed_type) {
 		case KS_SEED_FM: {
-			////ERR_FAIL_INDEX(_ks_seed_index, SiMMLRefTable::VOICE_MAX);
+			ERR_FAIL_INDEX(_ks_seed_index, SiMMLRefTable::VOICE_MAX);
 
-			std::shared_ptr<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(_ks_seed_index);
+			Ref<SiMMLVoice> voice = SiMMLRefTable::get_instance()->get_voice(_ks_seed_index);
 			if (voice.is_valid()) {
 				set_channel_params(voice->get_channel_params(), false);
 			}
 		} break;
 
 		case KS_SEED_PCM: {
-			////ERR_FAIL_INDEX(_ks_seed_index, SiOPMRefTable::PCM_DATA_MAX);
+			ERR_FAIL_INDEX(_ks_seed_index, SiOPMRefTable::PCM_DATA_MAX);
 
-			std::shared_ptr<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(_ks_seed_index);
+			Ref<SiOPMWavePCMTable> pcm_table = _table->get_pcm_data(_ks_seed_index);
 			if (pcm_table.is_valid()) {
 				set_wave_data(pcm_table);
 			}
@@ -62,7 +62,7 @@ void SiOPMChannelKS::set_parameters(std::vector<int> p_params) {
 			set_params_by_value(p_params[1], p_params[2], 0, 63, 15, p_params[3], 0, 0, 1, 0, 0, 0, 0, p_params[4]);
 
 			_active_operator->set_pulse_generator_type(p_params[5] == INT32_MIN ? SiONPulseGeneratorType::PULSE_NOISE_PINK : p_params[5]);
-			std::shared_ptr<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
+			Ref<SiOPMWaveTable> wave_table = _table->get_wave_table(_active_operator->get_pulse_generator_type());
 			_active_operator->set_pitch_table_type(wave_table->get_default_pitch_table_type());
 		} break;
 	}
@@ -131,8 +131,8 @@ void SiOPMChannelKS::reset_channel_buffer_status() {
 	_is_idling = false;
 }
 
-void SiOPMChannelKS::_apply_karplus_strong(std::forward_list<int>::Element *p_buffer_start, int p_length) {
-	std::forward_list<int>::Element *target = p_buffer_start;
+void SiOPMChannelKS::_apply_karplus_strong(SinglyLinkedList<int>::Element *p_buffer_start, int p_length) {
+	SinglyLinkedList<int>::Element *target = p_buffer_start;
 	const int pitch_idx_max = SiOPMRefTable::PITCH_TABLE_SIZE - 1;
 
 	int pitch_idx = _ks_pitch_index + _operators[0]->get_ptss_detune() + _pitch_modulation_output_level;
@@ -180,7 +180,7 @@ void SiOPMChannelKS::buffer(int p_length) {
 	}
 
 	// Preserve the start of the output pipe.
-	std::forward_list<int>::Element *mono_out = _out_pipe->get();
+	SinglyLinkedList<int>::Element *mono_out = _out_pipe->get();
 
 	// Update the output pipe for the provided length.
 	if (_process_function.is_valid()) {
@@ -248,8 +248,8 @@ void SiOPMChannelKS::reset() {
 	SiOPMChannelFM::reset();
 }
 
-std::string SiOPMChannelKS::_to_string() const {
-	std::string params = "";
+sion::String SiOPMChannelKS::_to_string() const {
+	sion::String params = "";
 
 	params += "ops=" + itos(_operator_count) + ", ";
 
