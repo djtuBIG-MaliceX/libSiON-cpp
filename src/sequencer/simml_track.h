@@ -283,6 +283,14 @@ public:
 	int get_pitch_shift() const { return _pitch_shift; }
 	void set_pitch_shift(int p_value) { _pitch_shift = p_value; }
 
+	// Read-only helpers for telemetry/visualizers. These never mutate DSP state.
+
+	SiONModuleType get_module_type() const;
+	// True while a portamento (`po`) or pitch-bend (`*`) sweep is in flight.
+	bool is_pitch_sweeping() const { return _sweep_step != 0; }
+	// Sweep destination as a 1/64-semitone pitch index; meaningful while sweeping.
+	int get_pitch_sweep_target() const { return _sweep_end >> FIXED_BITS; }
+
 	int get_note() const { return _note; }
 	void set_note_immediately(int p_note, int p_sample_length, bool p_slur = false);
 

@@ -31,8 +31,8 @@ target_link_options(sion_wasm PRIVATE
 	# dynamic import(), so only SharedArrayBuffer streaming could host WASM
 	# there (needs COOP/COEP headers); the page renders via ScriptProcessorNode.
 	"-sENVIRONMENT=web,node"
-	"-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,HEAPF32"
-	"-sEXPORTED_FUNCTIONS=[_sion_web_init,_sion_web_play,_sion_web_stop,_sion_web_update,_sion_web_render,_sion_web_buffer,_sion_web_is_streaming,_sion_web_set_volume,_sion_web_last_error]"
+	"-sEXPORTED_RUNTIME_METHODS=ccall,cwrap,UTF8ToString,HEAPF32,HEAP32"
+	"-sEXPORTED_FUNCTIONS=[_sion_web_init,_sion_web_play,_sion_web_stop,_sion_web_update,_sion_web_render,_sion_web_buffer,_sion_web_is_streaming,_sion_web_set_volume,_sion_web_last_error,_sion_web_capture_channels,_sion_web_channel_data]"
 	"-sALLOW_MEMORY_GROWTH=1"
 )
 

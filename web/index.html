@@ -34,19 +34,56 @@ body {
 }
 
 #mml_text {
-	width: 800px;
+	width: 100%;
 	height: 600px;
+	box-sizing: border-box;
 }
 
 #status_msg {
 	white-space: pre-wrap;
-	max-width: 800px;
+	max-width: 100%;
 	font-family: monospace;
 	color: #c0c0c0;
 }
 
 #status_msg.error {
 	color: #ff8080;
+}
+
+/* Two-column layout: editor on the left, channel visualizer always on the
+   right half (stacks below the editor only when the window is too narrow). */
+#cols {
+	display: flex;
+	gap: 16px;
+	align-items: flex-start;
+	flex-wrap: wrap;
+	max-width: 1680px;
+}
+
+#editor_col {
+	flex: 1 1 480px;
+	min-width: 360px;
+	max-width: 900px;
+}
+
+#viz_wrap {
+	flex: 1 1 520px;
+	min-width: 440px;
+	max-width: 1200px;
+}
+
+#channel_viz {
+	display: block;
+	max-width: 100%;
+	background-color: #0a0a0c;
+	border: 1px solid #333;
+}
+
+#viz_legend {
+	font-size: 11px;
+	color: #808080;
+	margin-top: 4px;
+	line-height: 1.5;
 }
 		</style>
 		<script src="sion_wasm.js"></script>
@@ -58,15 +95,29 @@ body {
 			<h1>SiON MML player (powered by <a target="_blank" href="https://github.com/djtuBIG-MaliceX/libSiON-cpp">libSiON-cpp</a>)</h1>
 			<h3>Syntax reference: <a target="_blank" href="https://keim.github.io/SiON/mmlref/sion_mml_reference_e.html">link</a></h3>
 			<h3>Demo songs: <a href="./">Play</a> | <a target="_blank" href="https://github.com/keim/SiONMML/tree/master/mmltalks">Sample MML</a></h3>
-			<form id="mml_form">
-				<textarea id="mml_text"></textarea>
-				<br />
-				<button type="submit" id="play_btn">Play!</button>
-				<button type="button" id="stop_btn">Stop</button>
-				<label><input type="checkbox" id="loop_chk" /> loop</label>
-				<input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
-			</form>
-			<div id="status_msg"></div>
+			<div id="cols">
+				<div id="editor_col">
+					<form id="mml_form">
+						<textarea id="mml_text"></textarea>
+						<br />
+						<button type="submit" id="play_btn">Play!</button>
+						<button type="button" id="stop_btn">Stop</button>
+						<label><input type="checkbox" id="loop_chk" /> loop</label>
+						<input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
+					</form>
+					<div id="status_msg"></div>
+				</div>
+				<div id="viz_wrap">
+					<label><input type="checkbox" id="viz_chk" checked /> channel visualizer</label>
+					<canvas id="channel_viz" width="800" height="48"></canvas>
+					<div id="viz_legend">
+						One row per allocated chip channel (FM / PCM / SAMPLER / KS, max 26; extras ignored).
+						Lit keys = notes currently sounding on that channel — tracks routed to the same %module,%number
+						share a row and stack polyphonically. White tick = live pitch (follows bends, vibrato-free glide,
+						portamento slides); yellow outline = portamento/bend target; right meters: pitch bend, pan, volume.
+					</div>
+				</div>
+			</div>
 		</div>
 
 		<script>
@@ -179,6 +230,277 @@ window.onload = () => {
 		textarea.value = default_song;
 	}
 };
+
+// ----- Channel visualizer --------------------------------------------------
+// Draws one row per allocated chip channel (max 26) from the engine's WASM
+// snapshot: mini piano keyboard with all sounding notes (polyphonic rows
+// stack), live-pitch marker (bend/portamento), sweep-target outline, and
+// bend/pan/volume meters. Pure read of the driver state - no audio impact.
+(() => {
+	const NOTE_LO = 24; // C1; pitch indices /64 are MML note numbers (c = 60)
+	const NOTE_HI = 107; // B7
+	const ROW_H = 21;
+	const HEAD_H = 15;
+
+	// The canvas fills the right column: labels fixed at the left, meters
+	// right-aligned, and the piano strip absorbs whatever width remains.
+	const MIN_W = 480, MAX_W = 1200;
+	const X_STRIP = 104;
+	const METER_GAP = 8, STRIP_GAP = 12;
+	const BEND_W = 72, PAN_W = 54, VOL_W = 48;
+	let W = MIN_W, X_STRIP_R = 0, whiteW = 0;
+
+	function layoutW() {
+		const avail = vizWrap ? vizWrap.clientWidth : 0;
+		return Math.max(MIN_W, Math.min(avail || MAX_W, MAX_W));
+	}
+
+	const TYPE_COLORS = ['#5fb8ff', '#6fe08f', '#ffc76b', '#d98fff']; // FM PCM SMP KS
+	const MODULE_TAGS = ['PSG', 'APU', 'NSE', 'MA3', 'SCC', 'GEN', 'FM', 'PCM', 'PLS', 'RMP', 'SMP', 'KS', 'GB', 'VRC6', 'SID', 'OPM', 'OPN', 'OPNA', 'OPLL', 'OPL3', 'MAX'];
+
+	const isWhite = (n) => [0, 2, 4, 5, 7, 9, 11].includes(n % 12);
+
+	// White-key slot of every semitone in the display range.
+	const whiteIdx = new Int32Array(NOTE_HI - NOTE_LO + 2);
+	let whiteCount = 0;
+	for (let n = NOTE_LO; n <= NOTE_HI + 1; n++) {
+		whiteIdx[n - NOTE_LO] = whiteCount;
+		if (isWhite(n)) whiteCount++;
+	}
+
+	// Center x of a semitone slot (blacks sit on the white boundary) and the
+	// continuous x for a 1/64-semitone pitch index.
+	function centerOf(note) {
+		if (isWhite(note)) return X_STRIP + (whiteIdx[note - NOTE_LO] + 0.5) * whiteW;
+		return X_STRIP + whiteIdx[note - NOTE_LO] * whiteW;
+	}
+	function pitchToX(pitch, clamp = true) {
+		const f = pitch / 64;
+		let n0 = Math.floor(f);
+		const frac = f - n0;
+		if (n0 < NOTE_LO) return clamp ? X_STRIP : centerOf(n0);
+		if (n0 >= NOTE_HI) return clamp ? X_STRIP_R : centerOf(n0);
+		return centerOf(n0) + (centerOf(n0 + 1) - centerOf(n0)) * frac;
+	}
+	function keyRect(note) { // highlight rect for a discrete key
+		if (isWhite(note)) {
+			const x = X_STRIP + whiteIdx[note - NOTE_LO] * whiteW;
+			return [x, whiteW];
+		}
+		const bw = whiteW * 0.58;
+		return [X_STRIP + whiteIdx[note - NOTE_LO] * whiteW - bw / 2, bw];
+	}
+	function keyHeight(note) { // matches the drawn key geometry (1px inset reserved)
+		return isWhite(note) ? ROW_H - 7 : (ROW_H - 6) * 0.58 - 1;
+	}
+
+	const canvas = document.getElementById('channel_viz');
+	const ctx = canvas.getContext('2d');
+	const chk = document.getElementById('viz_chk');
+	const vizWrap = document.getElementById('viz_wrap');
+	let lastSig = null, lastW = 0;
+
+	function noteColor(flags, color) {
+		if (flags & SION_VIS.MUTE) return '#5a5a5a';
+		return color;
+	}
+
+	function draw(rows) {
+		const dpr = window.devicePixelRatio || 1;
+		const count = rows.length;
+		W = layoutW();
+		const X_VOL = W - VOL_W;
+		const X_PAN = X_VOL - METER_GAP - PAN_W;
+		const X_BEND = X_PAN - METER_GAP - BEND_W;
+		X_STRIP_R = X_BEND - STRIP_GAP;
+		whiteW = (X_STRIP_R - X_STRIP) / whiteCount;
+		const h = Math.max(count > 0 ? HEAD_H + count * ROW_H + 4 : 46, 46);
+		if (canvas.width !== W * dpr || canvas.height !== h * dpr) {
+			canvas.width = W * dpr;
+			canvas.height = h * dpr;
+			canvas.style.width = W + 'px';
+			canvas.style.height = h + 'px';
+		}
+		ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+		ctx.fillStyle = '#0a0a0c';
+		ctx.fillRect(0, 0, W, h);
+
+		// Header: octave labels + meter captions.
+		ctx.font = '9px monospace';
+		ctx.textBaseline = 'middle';
+		ctx.fillStyle = '#666';
+		if (count > 0) {
+			for (let n = NOTE_LO; n <= NOTE_HI; n += 12) {
+				const x = X_STRIP + whiteIdx[n - NOTE_LO] * whiteW;
+				ctx.fillText('C' + (Math.floor(n / 12) - 1), x + 2, HEAD_H / 2);
+			}
+			ctx.fillStyle = '#888';
+			ctx.textAlign = 'center';
+			ctx.fillText('bend', X_BEND + BEND_W / 2, HEAD_H / 2);
+			ctx.fillText('pan', X_PAN + PAN_W / 2, HEAD_H / 2);
+			ctx.fillText('vol', X_VOL + VOL_W / 2, HEAD_H / 2);
+			ctx.textAlign = 'left';
+		}
+
+		if (count === 0) {
+			ctx.fillStyle = '#808080';
+			ctx.font = '12px sans-serif';
+			ctx.fillText('No channels allocated - press Play.', 16, h / 2);
+			return;
+		}
+
+		for (let i = 0; i < count; i++) {
+			const row = rows[i];
+			const y = HEAD_H + i * ROW_H;
+			const color = TYPE_COLORS[row.type] || '#bbbbbb';
+			const active = row.notes.some((n) => n.flags & (SION_VIS.KEY_ON | SION_VIS.AUDIBLE));
+
+			ctx.fillStyle = i % 2 ? '#101014' : '#0c0c11';
+			ctx.fillRect(3, y, W - 3, ROW_H);
+			ctx.globalAlpha = active ? 1 : 0.3;
+			ctx.fillStyle = color;
+			ctx.fillRect(0, y + 1, 3, ROW_H - 2);
+			ctx.globalAlpha = 1;
+
+			// Labels: module tag, hardware channel number ('~' = auto), voice/program.
+			const cy = y + ROW_H / 2;
+			ctx.font = '10px monospace';
+			ctx.fillStyle = color;
+			ctx.fillText(MODULE_TAGS[row.module] || '?', 8, cy);
+			ctx.fillStyle = '#9aa4ae';
+			ctx.fillText(row.chnum >= 0 ? '#' + row.chnum : '~', 44, cy);
+			ctx.fillText('v' + row.program, 62, cy);
+
+			// Portamento LED slot (lit while a `po`/`*` sweep is in flight).
+			ctx.fillStyle = '#2a2a2e';
+			ctx.fillRect(X_STRIP - 10, cy - 3, 6, 6);
+
+			// Keyboard.
+			for (let n = NOTE_LO; n <= NOTE_HI; n++) {
+				if (!isWhite(n)) continue;
+				const x = X_STRIP + whiteIdx[n - NOTE_LO] * whiteW;
+				ctx.fillStyle = n % 12 === 0 ? '#2c2c36' : '#232329';
+				ctx.fillRect(x, y + 3, whiteW - 1, ROW_H - 6);
+			}
+			for (let n = NOTE_LO; n <= NOTE_HI; n++) {
+				if (isWhite(n)) continue;
+				const [x, w] = keyRect(n);
+				ctx.fillStyle = '#494955';
+				ctx.fillRect(x, y + 3, w, (ROW_H - 6) * 0.58);
+			}
+
+			// Sounding notes.
+			for (const note of row.notes) {
+				const nearest = Math.round(note.pitch / 64);
+				if (!(flagsSilent(note)) && nearest >= NOTE_LO && nearest <= NOTE_HI) {
+					const [x, w] = keyRect(nearest);
+					const h = keyHeight(nearest);
+					ctx.globalAlpha = noteColorAlpha(note);
+					ctx.fillStyle = noteColor(note.flags, color);
+					ctx.fillRect(x + 0.5, y + 3.5, w - 1, h);
+					if (!(note.flags & SION_VIS.KEY_ON) && note.flags & SION_VIS.AUDIBLE) {
+						ctx.strokeStyle = color; // release tail: outline over the dim fill
+						ctx.strokeRect(x + 0.5, y + 3.5, w - 1, h);
+					}
+					ctx.globalAlpha = 1;
+				}
+			}
+
+			// Portamento / bend targets + live pitch markers + meters.
+			for (let k = 0; k < row.notes.length && k < 6; k++) {
+				const note = row.notes[k];
+				const slotY = y + 4 + k * 3;
+
+				if (note.flags & SION_VIS.SWEEP) {
+					const t = Math.round(note.sweepTarget / 64);
+					if (t >= NOTE_LO && t <= NOTE_HI) {
+						const [tx, tw] = keyRect(t);
+						ctx.strokeStyle = '#ffd75e';
+						ctx.lineWidth = 1.5;
+						ctx.strokeRect(tx + 0.75, y + 3.75, tw - 1.5, ROW_H - 7.5);
+						ctx.lineWidth = 1;
+					}
+					ctx.fillStyle = '#ffd75e'; // portamento LED
+					ctx.fillRect(X_STRIP - 10, cy - 3, 6, 6);
+				}
+
+				const silent = flagsSilent(note);
+				if (!silent) {
+					const x = pitchToX(note.pitch);
+					ctx.fillStyle = 'rgba(244, 244, 255, 0.85)'; // live pitch tick
+					ctx.fillRect(Math.round(x), y + 2, 1, ROW_H - 4);
+
+					// Bend: cents from the nearest semitone.
+					const cents = Math.max(-1200, Math.min(1200, (note.pitch - Math.round(note.pitch / 64) * 64) * (100 / 64)));
+					ctx.fillStyle = color;
+					const bx = X_BEND + BEND_W / 2;
+					ctx.fillRect(Math.min(bx, bx + (cents / 1200) * (BEND_W / 2)), slotY, Math.abs((cents / 1200) * (BEND_W / 2)), 2);
+
+					// Pan dot.
+					ctx.fillStyle = '#c8d2dc';
+					ctx.fillRect(X_PAN + (note.pan / 127) * (PAN_W - 3), slotY, 3, 2);
+
+					// Volume bar.
+					const volw = Math.min(1, note.volume / 1000) * VOL_W;
+					ctx.fillStyle = color;
+					ctx.fillRect(X_VOL, slotY, volw, 2);
+				}
+
+				if (k === 0) {
+					ctx.strokeStyle = '#3a3a3a'; // meter center tracks
+					ctx.beginPath();
+					ctx.moveTo(X_BEND + BEND_W / 2 + 0.5, y + 2);
+					ctx.lineTo(X_BEND + BEND_W / 2 + 0.5, y + ROW_H - 2);
+					ctx.stroke();
+					ctx.fillStyle = '#3a3a3a';
+					ctx.fillRect(X_PAN + PAN_W / 2 - 0.5, y + 2, 1, ROW_H - 4);
+				}
+			}
+		}
+	}
+
+	function flagsSilent(note) {
+		return (note.flags & (SION_VIS.KEY_ON | SION_VIS.AUDIBLE)) === 0;
+	}
+	function noteColorAlpha(note) {
+		const vol = Math.min(1, note.volume / 1000);
+		if (!(note.flags & SION_VIS.KEY_ON)) return 0.3; // release tail
+		return 0.45 + 0.55 * vol;
+	}
+
+	function signature(snap) {
+		if (snap === null) return 'off';
+		let s = '' + snap.count;
+		for (const row of snap.rows) {
+			s += '|' + row.type + ',' + row.program;
+			for (const n of row.notes) {
+				s += ';' + n.flags + ',' + (n.pitch >> 1) + ',' + (n.volume >> 4);
+			}
+		}
+		return s;
+	}
+
+	function visualize() {
+		if (!chk.checked) return;
+		const snap = engine.captureChannels(); // null until the engine has started
+		const sig = signature(snap);
+		if (sig !== lastSig || layoutW() !== lastW) {
+			lastSig = sig;
+			lastW = layoutW();
+			draw(snap === null ? [] : snap.rows);
+		}
+	}
+
+	function vizLoop() {
+		requestAnimationFrame(vizLoop);
+		visualize();
+	}
+	chk.addEventListener('change', () => {
+		canvas.style.display = chk.checked ? 'block' : 'none';
+		lastSig = null; // force a redraw on re-show
+	});
+	requestAnimationFrame(vizLoop);
+})();
 		</script>
 	</body>
 </html>

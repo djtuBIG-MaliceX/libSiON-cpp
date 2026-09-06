@@ -125,9 +125,48 @@ string, regex, audio, callable, random, time + likely/unlikely macros + `using :
   SinglyLinkedList<int/double>::initialize_pool/finalize_pool (+ SiOPMChannelFM::finalize_pool).
   Smoke test currently calls initialize_pool by hand.)
 
-## Status: Phases 1-4 COMPLETE incl. goldens + Godot glue removed. ctest 4/4 green.
+## Status: Phases 1-4 COMPLETE incl. goldens + Godot glue removed. ctest 4/4 green. Web channel visualizer DONE (session 10).
 Build: 0 errors/warnings. `ctest --test-dir build -C Debug` → 4/4 Passed (~7s).
 Full dev configure: `cmake -S . -B build -DLIBSION_BUILD_TESTS=ON -DLIBSION_BUILD_CLI=ON`.
+
+### DONE — session 10 (web channel visualizer + macOS toolchain)
+- FEATURE (user request): per-channel visualizer on the web page — every allocated chip channel (cap 26,
+  extras ignored) shows sounding piano notes, pitch bend, volume, pan, instrument, portamento; POLYPHONY-CAPABLE:
+  rows are grouped by (ChannelType, `%channel-number`) so MML tracks routed to the same hardware channel via
+  `%m,n` share a row and stack up to 8 simultaneous notes (node test asserts a merged `%0,0` pair = 2 notes/row).
+- TELEMETRY SOURCE: live `SiOPMChannelBase::get_pitch()` (1/64-semitone pitch index — inherently includes bend,
+  portamento sweep, note envelopes; FM/PCM/SAMPLER/KS all override). Track fields for vol (`get_output_level`),
+  pan, program (`get_program_number`), mute/idle/key-on from the channel. Rows appear only while streaming
+  (capture returns 0 when `!is_streaming()` so stopped songs clear the panel); sequencer tracks with
+  is_finished() or null channel are skipped; sorted FM→KS, explicit ch numbers before auto (`~`).
+- TINY SRC ADDITIONS (read-only, DSP-safe — voices test still 654/654): SiMMLTrack::is_pitch_sweeping()
+  (_sweep_step != 0 — covers BOTH `po` and `*` sweeps), get_pitch_sweep_target(), get_module_type() (+
+  SiMMLChannelSettings::get_module_type()); HARDENING GUARD: SiOPMChannelFM::get_pitch() returned _operators[-1]
+  UB if _operator_count==0 (fresh channel pre-params, now reachable by telemetry) → returns 0.
+- FACADE ABI (web/sion_web.cpp): `sion_web_capture_channels()` refills fixed-address g_channel_rows; 26 rows ×
+  46 int32: [type, chnum, module, program, note_count, rsv] + 8×[pitch, vol_permille, pan0..127, flags, sweep_target];
+  flags KEY_ON=1 SWEEP=2 MUTE=4 AUDIBLE=8 (release tail). `sion_web_channel_data()` = base addr. Mirrored as
+  SION_VIS in sion_engine.js (engine.captureChannels() decodes {count, rows}); EXPORTED_FUNCTIONS/HEAP32 updated.
+- PAGE (web/index.html): TWO-COLUMN FLEX LAYOUT (user request: visualizer always on the right half; editor left;
+  stacks below only when window too narrow). Canvas width = right-column clientWidth (480..1200, recomputed per
+  frame, redraw forced on resize). Per row: module tag (PSG/FM/OPNA/PCM/SMP/KS…), `#n` or `~`, `v<program>`,
+  portamento LED, C1..B7 mini keyboard (lit keys = notes, alpha=velocity, dim+outline=releasing), continuous
+  live-pitch tick, yellow outline = sweep target, bend/pan/vol meters (one slot per simultaneous note). rAF loop
+  skips redraw via state signature. Checkbox hides panel. NOTE: label shows MODULE type truthfully — a MML track
+  without `%`/voice select is genuinely MODULE_PSG (SiMMLTrack::reset default), not FM.
+- TESTS: test_node.js extended (rows>0, key-on near middle-c, caps, merged polyphony ≥2 notes, SWEEP flag).
+  BEND MML SYNTAX GOTCHA (user): pitch-bend `*` targets the FULL next note incl. length — write `c8 * < c8`;
+  the earlier `po48; c & >c` guess never swept (test kept failing until switched to `*`). Browser harness
+  (puppeteer-core + system Chrome, throwaway in %TMP/opencode/web_test): rows/key-on/sweep/bent-pitch assertions
+  through engine.captureChannels() + element screenshots — PASS. Native ctest 4/4 incl. voices goldens.
+- macOS BUILD NOTES (this machine had no emsdk): brew emscripten IS BROKEN FOR BUILDS (no bundled LLVM →
+  falls back to Xcode clang without wasm backend; don't bother). Used OFFICIAL emsdk at ~/emsdk (install+activate
+  latest). Xcode python3 = 3.9 < emscripten's 3.10 floor: fix = uv-managed CPython via `export
+  EMSDK_PYTHON=$HOME/.local/share/uv/python/cpython-3.12-macos-aarch64-none/bin/python3` (plain PATH edits are
+  ignored by the brew/emsdk launchers). Web build: `emcmake cmake -S . -B build_web -G Ninja` (NO manual
+  -DCMAKE_TOOLCHAIN_FILE — emcmake injects it; passing one caused "not set after EnableLanguage"), then
+  `cmake --build build_web`; run `node build_web/web/test_node.js`. Env must be exported inline per command
+  (bash tool env does NOT persist between calls).
 
 ### DONE — session 8 (rename, pitch-bend fix, CLI unicode/codepage)
 - RENAMED (user request): project libSiON-cpp; library target `gdsion` → `SiONcpp`

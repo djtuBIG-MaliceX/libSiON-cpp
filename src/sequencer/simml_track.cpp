@@ -142,6 +142,10 @@ void SiMMLTrack::set_note_immediately(int p_note, int p_sample_length, bool p_sl
 
 // Channel properties.
 
+SiONModuleType SiMMLTrack::get_module_type() const {
+	return _channel_settings != nullptr ? (SiONModuleType)_channel_settings->get_module_type() : SiONModuleType::MODULE_PSG;
+}
+
 void SiMMLTrack::set_channel_module_type(SiONModuleType p_type, int p_channel_num, int p_tone_num) {
 	_channel_settings = SiMMLRefTable::get_instance()->channel_settings_map[p_type];
 

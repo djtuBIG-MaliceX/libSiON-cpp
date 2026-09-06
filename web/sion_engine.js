@@ -12,11 +12,26 @@
 // other rate (Safari keeps the device rate) a linear-interpolating windowed
 // resampler bridges the two.
 
+// Channel-visualizer snapshot ABI, mirroring VIS_* in web/sion_web.cpp:
+// per row (46 int32): channel_type, channel_number(-1=auto), module_type,
+// program, note_count, reserved; then 8 notes of pitch(1/64 semitone live
+// index), volume(permille), pan(0..127), flags, sweep-target(pitch index).
+const SION_VIS = {
+	MAX_ROWS: 26,
+	NOTES_PER_ROW: 8,
+	ROW_INTS: 46,
+	KEY_ON: 1,
+	SWEEP: 2, // portamento (`po`) / pitch-bend (`*`) glide in flight
+	MUTE: 4,
+	AUDIBLE: 8, // channel not idling (release tail included)
+};
+
 class SiONEngine {
 	constructor() {
 		this.mod = null;
 		this.fns = null;
 		this.bufBase = 0;
+		this.chanBase = 0;
 		this.ready = null; // promise, resolves once driver + ctx node are live
 		this.onStreamingChanged = null; // callback(bool)
 
@@ -41,6 +56,7 @@ class SiONEngine {
 		}
 		this.mod = mod;
 		this.bufBase = mod.cwrap('sion_web_buffer', 'number', [])() >> 2; // Float32 element index
+		this.chanBase = mod.cwrap('sion_web_channel_data', 'number', [])() >> 2; // Int32 element index
 		this.fns = {
 			play: mod.cwrap('sion_web_play', 'number', ['string']),
 			stop: mod.cwrap('sion_web_stop', null, []),
@@ -49,6 +65,7 @@ class SiONEngine {
 			streaming: mod.cwrap('sion_web_is_streaming', 'number', []),
 			volume: mod.cwrap('sion_web_set_volume', null, ['number']),
 			lastError: mod.cwrap('sion_web_last_error', 'string', []),
+			capture: mod.cwrap('sion_web_capture_channels', 'number', []),
 		};
 
 		this.ratio = this.driverRate / ctx.sampleRate;
@@ -80,6 +97,40 @@ class SiONEngine {
 
 	setVolume(v) {
 		if (this.fns !== null) this.fns.volume(v);
+	}
+
+	// Refreshes the driver's channel snapshot and returns a decoded view:
+	//   { count, rows: [ { type, chnum, module, program, notes: [note...] } ] }
+	// with note = { pitch, volume, pan, flags, sweepTarget }. Read-only; safe to
+	// call once per animation frame. Returns null before the engine has started.
+	captureChannels() {
+		if (this.fns === null) return null;
+		const count = this.fns.capture();
+		const heap = this.mod.HEAP32;
+		const rows = [];
+		for (let i = 0; i < count; i++) {
+			const b = this.chanBase + i * SION_VIS.ROW_INTS;
+			const row = {
+				type: heap[b],
+				chnum: heap[b + 1],
+				module: heap[b + 2],
+				program: heap[b + 3],
+				notes: [],
+			};
+			const n = Math.min(heap[b + 4], SION_VIS.NOTES_PER_ROW);
+			for (let k = 0; k < n; k++) {
+				const p = b + 6 + k * 5;
+				row.notes.push({
+					pitch: heap[p],
+					volume: heap[p + 1],
+					pan: heap[p + 2],
+					flags: heap[p + 3],
+					sweepTarget: heap[p + 4],
+				});
+			}
+			rows.push(row);
+		}
+		return { count, rows };
 	}
 
 	_peek(frames) {

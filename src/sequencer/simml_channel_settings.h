@@ -43,6 +43,8 @@ private:
 	int _initial_voice_index = 0;
 
 public:
+	int get_module_type() const { return _type; }
+
 	SelectToneType get_select_tone() const { return _select_tone_type; }
 	bool is_select_tone_type(SelectToneType p_type) const { return _select_tone_type == p_type; }
 	void set_select_tone_type(SelectToneType p_type) { _select_tone_type = p_type; }

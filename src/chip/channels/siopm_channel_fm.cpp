@@ -625,6 +625,11 @@ void SiOPMChannelFM::set_all_release_rate(int p_value) {
 }
 
 int SiOPMChannelFM::get_pitch() const {
+	// A freshly created channel has no operators until set_channel_params() runs;
+	// telemetry readers (web visualizer) may observe that window.
+	if (_operator_count == 0) {
+		return 0;
+	}
 	return _operators[_operator_count - 1]->get_pitch_index();
 }
 
