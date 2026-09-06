@@ -24,7 +24,7 @@ class SiOPMChannelParams {
 	friend class TranslatorUtil;
 
 public:
-	static const int MAX_OPERATORS = 4;
+	static constexpr int MAX_OPERATORS = 4;
 
 private:
 	MMLSequence *init_sequence = nullptr;

@@ -42,7 +42,7 @@ endif()
 if(MSVC)
 	target_compile_options(sion_cpp_play PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
 else()
-	target_compile_options(sion_cpp_play PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
+	target_compile_options(sion_cpp_play PRIVATE "-include" "${CMAKE_CURRENT_SOURCE_DIR}/../src/compat/sion_compat.h")
 endif()
 
 set_target_properties(sion_cpp_play PROPERTIES OUTPUT_NAME "sion-cpp-play")

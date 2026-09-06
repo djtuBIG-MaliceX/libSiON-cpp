@@ -7,7 +7,9 @@
 #ifndef LIBSION_WAV_WRITER_H
 #define LIBSION_WAV_WRITER_H
 
-#include "cli_util.h"\n\n#include <algorithm>
+#include "cli_util.h"
+
+#include <algorithm>
 #include <cmath>
 #include <cstdint>
 #include <cstdio>

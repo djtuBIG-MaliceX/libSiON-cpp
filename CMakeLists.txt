@@ -6,11 +6,17 @@
 
 cmake_minimum_required(VERSION 3.20)
 
-project(libSiON-cpp VERSION 0.7.0 LANGUAGES CXX)
+# C is required because PortAudio (CLI backend) skips its own project() call
+# when nested, leaving the C language disabled for its targets otherwise.
+project(libSiON-cpp VERSION 0.7.0 LANGUAGES CXX C)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
+
+# Static deps (PortAudio, PCRE2) end up inside PIE executables on Linux — their
+# own CMake scripts don't all request position-independent code.
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 
 option(LIBSION_BUILD_CLI "Build the sion-cpp-play command-line tool" OFF)
 option(LIBSION_BUILD_TESTS "Build native tests" OFF)
@@ -78,7 +84,7 @@ endif()
 if(MSVC)
 	target_compile_options(SiONcpp PRIVATE "/FI${CMAKE_CURRENT_SOURCE_DIR}/src/compat/sion_compat.h")
 else()
-	target_compile_options(SiONcpp PRIVATE "-include${CMAKE_CURRENT_SOURCE_DIR}/src/compat/sion_compat.h")
+	target_compile_options(SiONcpp PRIVATE "-include" "${CMAKE_CURRENT_SOURCE_DIR}/src/compat/sion_compat.h")
 endif()
 
 # --- Subdirectories

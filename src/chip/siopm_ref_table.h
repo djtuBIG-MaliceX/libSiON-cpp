@@ -82,7 +82,7 @@ public:
 	static const int PHASE_MAX            = 1 << PHASE_BITS;
 	static const int PHASE_FILTER         = PHASE_MAX - 1;
 	static const int PHASE_SIGN_RSHIFT    = PHASE_BITS - 1;
-	static const int SAMPLING_TABLE_SIZE  = 1 << SAMPLING_TABLE_BITS;
+	static constexpr int SAMPLING_TABLE_SIZE  = 1 << SAMPLING_TABLE_BITS;
 	static const int NOISE_TABLE_SIZE     = 1 << NOISE_TABLE_BITS;
 	static const int PITCH_TABLE_SIZE     = 1 << (HALF_TONE_BITS + NOTE_BITS);
 	static const int NOTE_TABLE_SIZE      = 1 << NOTE_BITS;

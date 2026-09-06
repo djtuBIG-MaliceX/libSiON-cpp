@@ -70,8 +70,8 @@ public:
 		return *this;
 	}
 
-	bool is_valid() const { return get() != nullptr; }
-	bool is_null() const { return get() == nullptr; }
+	bool is_valid() const { return Base::get() != nullptr; }
+	bool is_null() const { return Base::get() == nullptr; }
 };
 
 // Key/value pair view used when iterating a HashMap, mirroring the
