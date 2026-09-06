@@ -9,7 +9,7 @@ The name of the synthesizer should be pronounced like the word "_scion_".
 ## Features
 
 - SiON MML compiler and sequencer (macros `#A{...}`, system commands like `#OPM@`, per-channel patching with `#`, loops, user events, ...)
-- The full SiON sound chip emulation: OPM / OPL / OPN / MA3 algorithm voices, 650+ built-in preset voices, custom voices, envelopes, modulations
+- The full SiON sound chip emulation: OPM / OPL / OPN / MA3 algorithm voices as implemented in GDSiON.
 - Effectors (delay, chorus, fader, filters, ...) wired through `SiONDriver`
 - Offline rendering straight to a buffer, or realtime streaming through PortAudio
 - Deterministic DSP — the render output is verified against captured goldens from the original renderer
@@ -20,7 +20,7 @@ Requirements: CMake 3.20+ and a C++17 compiler (MSVC, GCC, Clang). PCRE2 and (fo
 
 ```shell
 cmake -S . -B build -DLIBSION_BUILD_CLI=ON -DLIBSION_BUILD_TESTS=ON
-cmake --build build --config Debug
+cmake --build build --config Release --parallel 4
 ctest --test-dir build -C Debug
 ```
 
@@ -89,8 +89,8 @@ The native test suite doubles as the behavioral contract:
 
 ## Provenance
 
-- [SiON](https://github.com/keim/SiON) by keim — the original ActionScript 3 synthesizer.
-- [GDSiON](https://github.com/YuriSizov/gdsion) by Yuri Sizov and contributors — the Godot port this fork is built from, including the libification groundwork.
+- [SiON](https://github.com/keim/SiON) by @keim_at_Si — the original ActionScript 3 synthesizer.
+- [GDSiON](https://github.com/YuriSizov/gdsion) by @YuriSizov and contributors — the Godot port this fork is built from, including the libification groundwork.
 
 ## AI DISCLOSURE
 
