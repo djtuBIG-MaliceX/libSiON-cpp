@@ -6,6 +6,8 @@ The Godot glue has been removed entirely: what remains is a self-contained, depe
 
 The name of the synthesizer should be pronounced like the word "_scion_".
 
+Try it out online [here](https://codingchords.com/junk/sion-mml-web) - visualizer available :)
+
 ## Features
 
 - SiON MML compiler and sequencer (macros `#A{...}`, system commands like `#OPM@`, per-channel patching with `#`, loops, user events, ...)
