@@ -1,8 +1,9 @@
-####################################################
-# Part of GDSiON software synthesizer              #
-# Copyright (c) 2024 Yuri Sizov and contributors   #
-# Provided under MIT                               #
-####################################################
+###########################################################################
+# Part of libSiON-cpp, forked from GDSiON software synthesizer            #
+# Copyright (c) 2024-2026 Yuri Sizov, James Alan Nguyen and contributors/ #
+# Based on SiON Flash Software Synthesizer (C) 2008-2016 keim_at_Si       #
+# Provided under MIT License.                                             #
+###########################################################################
 
 # Emscripten target: builds the player module (sion_wasm.mjs + sion_wasm.wasm)
 # consumed by web/sion_worklet.js, and stages index.html / test scripts next to
