@@ -21,6 +21,11 @@ set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 option(LIBSION_BUILD_CLI "Build the sion-cpp-play command-line tool" OFF)
 option(LIBSION_BUILD_TESTS "Build native tests" OFF)
 option(LIBSION_DRIVER_EXPERIMENTAL "Include SiONDriver in the library" ON)
+option(LIBSION_BUILD_WEB "Build the Emscripten WebAssembly player module" ${EMSCRIPTEN})
+
+if(LIBSION_BUILD_WEB AND NOT EMSCRIPTEN)
+	message(FATAL_ERROR "LIBSION_BUILD_WEB requires the Emscripten toolchain (configure with emcmake)")
+endif()
 
 if(POLICY CMP0135)
 	cmake_policy(SET CMP0135 NEW)
@@ -38,7 +43,12 @@ set(PCRE2_SUPPORT_LIBEDIT OFF CACHE BOOL "" FORCE)
 set(PCRE2_SUPPORT_LIBREADLINE OFF CACHE BOOL "" FORCE)
 set(PCRE2_SUPPORT_LIBZ OFF CACHE BOOL "" FORCE)
 set(PCRE2_SUPPORT_LIBBZ2 OFF CACHE BOOL "" FORCE)
-set(PCRE2_SUPPORT_JIT ON CACHE BOOL "" FORCE)
+# sljit has no WASM backend; PCRE2 falls back to the interpreter there.
+if(EMSCRIPTEN)
+	set(PCRE2_SUPPORT_JIT OFF CACHE BOOL "" FORCE)
+else()
+	set(PCRE2_SUPPORT_JIT ON CACHE BOOL "" FORCE)
+endif()
 set(PCRE2_BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 set(BUILD_SHARED_LIBS OFF CACHE BOOL "" FORCE)
 
@@ -57,7 +67,9 @@ if(NOT "${_libsion_policy_min_saved}" STREQUAL "")
 	set(CMAKE_POLICY_VERSION_MINIMUM "${_libsion_policy_min_saved}")
 endif()
 
-find_package(Threads QUIET)
+if(NOT EMSCRIPTEN)
+	find_package(Threads QUIET)
+endif()
 
 # --- Library
 
@@ -88,6 +100,10 @@ else()
 endif()
 
 # --- Subdirectories
+
+if(LIBSION_BUILD_WEB)
+	add_subdirectory(web)
+endif()
 
 if(LIBSION_BUILD_CLI)
 	add_subdirectory(cli)

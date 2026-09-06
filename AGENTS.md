@@ -190,6 +190,41 @@ Full dev configure: `cmake -S . -B build -DLIBSION_BUILD_TESTS=ON -DLIBSION_BUIL
   KEPT as goldens/test inputs.
 - Gotcha: Windows SDK stdint.h #defines INT16_MAX — never use it as an identifier (C2059 'constant').
 
+### DONE — session 9 (Emscripten/WASM port + browser player page)
+- NEW `web/` target: `LIBSION_BUILD_WEB` (option defaults ON under EMSCRIPTEN, FATAL_ERROR if set
+  without emscripten). `web/sion_web.cpp` = extern "C" facade (init/play/stop/update/render/buffer/
+  is_streaming/set_volume/last_error; static 8192-frame render buffer at FIXED wasm address;
+  auto_stop(true); error_output() sink swapped to string-collector around play_mml for page display).
+  Output `sion_wasm.js`+`.wasm`: MODULARIZE EXPORT_NAME=createSiONModule, classic (non-ES6) glue,
+  ENVIRONMENT=web,node, EXPORTED_RUNTIME_METHODS ccall/cwrap/UTF8ToString/HEAPF32, ALLOW_MEMORY_GROWTH,
+  --no-entry. Top-level CMake: PCRE2 JIT forced OFF under EMSCRIPTEN; find_package(Threads) skipped
+  under EMSCRIPTEN. `sion_web_stage` ALL-target re-copies index.html/sion_engine.js/test_node.js into
+  the build dir every build (edit assets without relinking).
+- AUDIO ARCH FINDINGS (do not retry AudioWorklet blindly): Chrome AudioWorkletGlobalScope has
+  NO importScripts, NO self, NO fetch, and dynamic import() is DISALLOWED; a worklet module whose
+  importScripts throws still lets addModule() RESOLVE → node ctor then says "node name not defined"
+  (silent-registration-fail trap). Emscripten glue therefore cannot load in a worklet without
+  SAB+COOP/COEP hosting. FINAL DESIGN: main-thread engine `web/sion_engine.js` — ScriptProcessorNode
+  (2048 = driver block), cwrap'd fns, windowed linear resampler (win 32768 frames, absolute-cursor
+  bookkeeping, compaction) when ctx.sampleRate != 44100; mono-output-safe mixdown.
+- `web/index.html`: merged editor+player replacing edit.html→./?songdata= redirect pair. Same base64
+  query convention + sessionStorage; UTF-8-tolerant b64 encode/decode (legacy pages were Latin-1);
+  Play/Stop/loop/volume; status div ('Compiling...'/'Playing...'/error lines/'Finished.'); ?rate= hook
+  forces ctx rate for resampler testing. Autoplay attempt on load w/ graceful failure.
+- BUILD: `D:\opt\emsdk` git was at 6.0.0 but only 3.1.51 installed → `emsdk install latest; activate
+  latest` DONE (6.0.0 live, NOT --permanent PATH). Windows gotchas: VS generator IGNORES
+  CMAKE_TOOLCHAIN_FILE (silently built MSVC!) → must `-G Ninja` +
+  -DCMAKE_MAKE_PROGRAM="C:\Program Files\Microsoft Visual Studio\18\Community\Common7\IDE\CommonExtensions\Microsoft\CMake\Ninja\ninja.exe"
+  + toolchain file; no emcmake.bat at emsdk root in 6.0.0 (emcmake.exe lives in upstream/emscripten);
+  emsdk's bundled node dirs contain ANCIENT v12 first-alphabetically — never put it on PATH when
+  running modern-JS node scripts (system node v25 handles tests; `?.` crashes old node).
+- VERIFIED: web build 0 errors; test_node.js PASS (peak 0.1758 == native smoke, error capture via
+  Godot-worded sink, auto_stop); puppeteer-core+Chrome headless suite PASS: songdata autoplay →
+  Playing → Finished(auto_stop), 'o20' error displayed with range message, loop survives sequence end,
+  48k-ctx resampler path plays+finishes. Native regression: ctest 4/4 still green.
+- Local serve: `cd build_web\web; python -m http.server` (favicon 404 is the only page console error).
+  browser_test.js/puppeteer harness lives in %LOCALAPPDATA%\Temp\opencode\web_test (throwaway).
+
 ## Remaining optional polish (not blocking)
 1. CLI: --list-voices; driver --events thread caveat.
 2. README.md still describes the GDExtension; rewrite for standalone + gdsion-play.

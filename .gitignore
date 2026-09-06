@@ -119,6 +119,7 @@ $RECYCLE.BIN/
 *.msp
 *.lnk
 /build/
+/build_web/
 /build_log_*.txt
 /configure_log.txt
 /session-ses_*

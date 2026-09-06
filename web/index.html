@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+	<head>
+		<meta charset="utf-8">
+		<meta name="viewport" content="width=device-width, user-scalable=no, initial-scale=1.0">
+		<title>SiON MML player (libSiON-cpp WASM)</title>
+		<!--
+			Single-page editor + player, replacing the old GDSiON Godot-web
+			editor/player pair (edit.html -> ./?songdata=...). Plays directly
+			here through sion_wasm.js/sion_wasm.wasm. Audio is pulled with a
+			ScriptProcessorNode (see web/sion_engine.js for why not an
+			AudioWorklet). Serve over HTTP, e.g.:
+			    cd build_web/web && python -m http.server 8000
+		-->
+		<style>
+html, body {
+	padding: 0;
+	border: 0;
+	font-family: sans-serif;
+}
+
+a:visited {
+	color: white;
+}
+
+a:hover {
+	background-color: yellow;
+	color: blue;
+}
+
+body {
+	color: white;
+	background-color: black;
+}
+
+#mml_text {
+	width: 800px;
+	height: 600px;
+}
+
+#status_msg {
+	white-space: pre-wrap;
+	max-width: 800px;
+	font-family: monospace;
+	color: #c0c0c0;
+}
+
+#status_msg.error {
+	color: #ff8080;
+}
+		</style>
+		<script src="sion_wasm.js"></script>
+		<script src="sion_engine.js"></script>
+	</head>
+
+	<body>
+		<div id="content">
+			<h1>SiON MML player (powered by <a target="_blank" href="https://github.com/YuriSizov/gdsion">libSiON-cpp</a>)</h1>
+			<h3>Syntax reference: <a target="_blank" href="https://keim.github.io/SiON/mmlref/sion_mml_reference_e.html">link</a></h3>
+			<h3>Demo songs: <a href="./">Play</a> | <a target="_blank" href="https://github.com/keim/SiONMML/tree/master/mmltalks">Sample MML</a></h3>
+			<form id="mml_form">
+				<textarea id="mml_text"></textarea>
+				<br />
+				<button type="submit" id="play_btn">Play!</button>
+				<button type="button" id="stop_btn">Stop</button>
+				<label><input type="checkbox" id="loop_chk" /> loop</label>
+				<input type="range" id="volume" min="0" max="1" step="0.01" value="1" />
+			</form>
+			<div id="status_msg"></div>
+		</div>
+
+		<script>
+const DRIVER_RATE = 44100;
+// ?rate= overrides the requested AudioContext rate (test hook for the
+// engine's resampler, e.g. ?rate=48000 mimics Safari's device-rate context).
+const CTX_RATE = parseInt(new URLSearchParams(location.search).get('rate'), 10) || DRIVER_RATE;
+const default_song = "#TITLE{Test song};\n#REV;\n\nt120;\n\ncdefgab>c;";
+
+let actx = null;
+let lastMML = '';
+
+const engine = new SiONEngine();
+engine.onStreamingChanged = (streaming) => {
+	if (streaming) {
+		if (!document.getElementById('status_msg').classList.contains('error')) {
+			setStatus('Playing...');
+		}
+	} else if (document.getElementById('loop_chk').checked && lastMML.length > 0) {
+		engine.play(lastMML); // replay errors ignored; previous status stands
+	} else {
+		setStatus('Finished.');
+	}
+};
+
+function setStatus(text, isError) {
+	const el = document.getElementById('status_msg');
+	el.textContent = text;
+	el.className = isError ? 'error' : '';
+}
+
+function b64encode(s) {
+	const bytes = new TextEncoder().encode(s);
+	let bin = '';
+	for (let i = 0; i < bytes.length; i++) bin += String.fromCharCode(bytes[i]);
+	return btoa(bin);
+}
+
+function b64decode(s) {
+	// The old pages used plain btoa(atob), i.e. Latin-1; accept both, UTF-8 first.
+	const bin = atob(s);
+	try {
+		const bytes = Uint8Array.from(bin, (c) => c.charCodeAt(0));
+		return new TextDecoder('utf-8', { fatal: true }).decode(bytes);
+	} catch (e) {
+		return bin;
+	}
+}
+
+async function play(mml) {
+	lastMML = mml;
+	sessionStorage.setItem('songdata', mml);
+	setStatus('Compiling...');
+	try {
+		if (actx === null) {
+			try {
+				actx = new AudioContext({ sampleRate: CTX_RATE });
+			} catch (e) {
+				actx = new AudioContext(); // Safari: fixed device rate, engine resamples
+			}
+			await engine.start(actx, DRIVER_RATE);
+		}
+		await actx.resume();
+	} catch (e) {
+		setStatus('Audio failed: ' + e.message + ' - click Play again.', true);
+		return;
+	}
+	const errors = engine.play(mml);
+	if (errors && errors.length > 0) {
+		const lines = errors.split('\n').filter((l) => l.startsWith('ERROR: '));
+		setStatus(lines.length > 0 ? lines.join('\n') : errors, true);
+	}
+}
+
+function stop() {
+	engine.stop();
+	setStatus('Stopped.');
+}
+
+window.onload = () => {
+	const textarea = document.querySelector('#mml_text');
+
+	document.querySelector('#mml_form').addEventListener('submit', (e) => {
+		e.preventDefault();
+		const data = textarea.value;
+		history.replaceState(null, '', location.pathname + '?songdata=' + encodeURIComponent(b64encode(data)));
+		play(data);
+	});
+	document.querySelector('#stop_btn').addEventListener('click', stop);
+	document.querySelector('#volume').addEventListener('input', (e) => {
+		engine.setVolume(parseFloat(e.target.value));
+	});
+
+	// Original ?songdata=<base64> convention (spaces travel as '+' in query strings).
+	let s = new URL(window.location.href).searchParams.get('songdata');
+	if (s != null) {
+		if (s.length > 0) {
+			s = s.replaceAll(' ', '+');
+			try {
+				textarea.value = b64decode(s);
+			} catch (e) {
+				textarea.value = default_song;
+			}
+		} else {
+			const stored = window.sessionStorage['songdata'];
+			textarea.value = stored != null ? stored : default_song;
+		}
+		play(textarea.value); // autoplay attempt; browser may defer to first click
+	} else {
+		textarea.value = default_song;
+	}
+};
+		</script>
+	</body>
+</html>

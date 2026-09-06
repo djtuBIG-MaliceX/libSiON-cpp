@@ -29,6 +29,7 @@ ctest --test-dir build -C Debug
 | `LIBSION_BUILD_CLI` | `OFF` | Build the `sion-cpp-play` command-line player |
 | `LIBSION_BUILD_TESTS` | `OFF` | Build the native CTest suites (MML goldens, audio determinism) |
 | `LIBSION_DRIVER_EXPERIMENTAL` | `ON` | Include `SiONDriver` in the library |
+| `LIBSION_BUILD_WEB` | auto (`ON` under Emscripten) | Build the browser player module from `web/` |
 
 The static library is produced as `libSiONcpp.a` / `libSiONcpp.so` on Linux, `libSiONcpp.a` on macOS and `SiONcpp.lib` on Windows.
 
@@ -52,6 +53,36 @@ sion-cpp-play -f song.mml --device "line out"
 ```
 
 Run `sion-cpp-play --help` for the full option list. The SiON MML syntax reference lives [here](https://keim.github.io/SiON/mmlref/sion_mml_reference_e.html).
+
+## Web (Emscripten)
+
+The library cross-compiles to WebAssembly and ships with a single-page editor/player
+(`web/index.html`) that plays MML directly in the browser — no server-side component,
+no Godot. The page keeps the classic `?songdata=<base64>` URL convention of the old
+GDSiON web demo, so existing song links keep working.
+
+Build with [emsdk](https://emscripten.org/docs/getting_started/downloads.html) (Ninja required on Windows):
+
+```shell
+emcmake cmake -S . -B build_web -G Ninja -DCMAKE_BUILD_TYPE=Release
+cmake --build build_web
+```
+
+This produces `build_web/web/` containing the module (`sion_wasm.js` + `sion_wasm.wasm`),
+the page, and its engine glue. Serve that directory over HTTP and open it (AudioContext
+needs a real origin, `file://` won't do):
+
+```shell
+cd build_web/web && python -m http.server 8000   # then browse http://localhost:8000
+node test_node.js                                # headless smoke test of the module
+```
+
+Audio is pulled with a main-thread `ScriptProcessorNode`: Chrome's `AudioWorkletGlobalScope`
+exposes no `fetch`/`importScripts` and forbids `import()`, so hosting the WASM inside an
+AudioWorklet would additionally require SharedArrayBuffer plus COOP/COEP cross-origin-
+isolation headers — a deployment burden not worth it for this use case. The context rate is
+requested at 44100 Hz; when the browser forces another device rate (Safari) the engine
+resamples on the fly.
 
 ## Using the library
 
